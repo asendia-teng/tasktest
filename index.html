@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaskMaster Pro - 視覺化圖標版</title>
+    <title>TaskMaster Pro - 企業級全自定義任務系統</title>
     <style>
         :root {
             --primary: #6366f1; --primary-dark: #4f46e5; --secondary: #64748b;
             --bg: #f3f4f6; --card-bg: #ffffff; --text: #1e293b; --border: #e2e8f0; --accent: #eff6ff;
-            --danger: #ef4444;
+            --danger: #ef4444; --success: #22c55e;
         }
         body { font-family: 'Inter', "PingFang TC", "Microsoft JhengHei", sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
         
         /* Header & Nav */
         header { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 0 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .nav-container { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 70px; }
-        .logo { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .nav-container { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 70px; }
+        .logo { font-size: 22px; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 8px; }
         .tabs { display: flex; gap: 8px; }
         .tab-btn { padding: 10px 18px; cursor: pointer; border: none; background: transparent; font-weight: 600; color: var(--secondary); border-radius: 8px; transition: 0.2s; }
         .tab-btn.active { background: var(--accent); color: var(--primary); }
 
         /* Layout */
-        .main-content { max-width: 1100px; margin: 30px auto; padding: 0 20px; }
+        .main-content { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
         .card { background: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid var(--border); margin-bottom: 25px; }
         .tab-panel { display: none; }
         .tab-panel.active { display: block; animation: fadeIn 0.3s; }
@@ -33,42 +33,48 @@
         thead th { background: #f8fafc; padding: 15px; text-align: left; position: sticky; top: 0; z-index: 5; border-bottom: 2px solid var(--border); font-size: 14px; }
         tbody tr:hover { background: var(--accent); cursor: pointer; }
         td { padding: 14px; border-bottom: 1px solid var(--border); font-size: 14px; }
-        .icon-cell { font-size: 1.2em; }
 
-        /* 表單元素 */
+        /* 表單與欄位 */
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #475569; }
         .required-mark { color: var(--danger); margin-left: 4px; }
         input, select, textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-size: 15px; }
-
-        /* 屬性配置卡片 (優化顯示效果) */
-        .schema-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 15px; position: relative; }
-        .schema-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; align-items: end; }
-        .schema-actions { position: absolute; top: 15px; right: 15px; }
-
-        /* 圖標選擇器專用 */
-        .icon-selector { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: white; }
-        .icon-option { 
-            display: flex; align-items: center; justify-content: center; height: 40px; border-radius: 6px; 
-            cursor: pointer; border: 1px solid transparent; font-size: 1.2em; transition: 0.2s;
+        
+        /* 屬性配置卡片 (支援拖拽) */
+        .schema-card { 
+            background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; 
+            padding: 18px; margin-bottom: 15px; position: relative; cursor: default;
+            transition: all 0.2s;
         }
-        .icon-option:hover { background: var(--accent); }
-        .icon-option.selected { border-color: var(--primary); background: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+        .schema-card.dragging { opacity: 0.5; border: 2px dashed var(--primary); transform: scale(0.98); }
+        .drag-handle { 
+            cursor: grab; color: var(--secondary); font-size: 20px; position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+            display: flex; align-items: center; justify-content: center; width: 30px;
+        }
+        .schema-grid { margin-left: 35px; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; align-items: end; }
+
+        /* 圖標選擇器 */
+        .icon-selector { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 8px; margin-top: 5px; }
+        .icon-option { 
+            display: flex; align-items: center; justify-content: center; height: 42px; border-radius: 8px; 
+            cursor: pointer; border: 1px solid var(--border); font-size: 1.2em; background: white;
+        }
+        .icon-option.selected { border-color: var(--primary); background: var(--accent); box-shadow: 0 0 0 2px var(--primary); }
 
         /* 按鈕系統 */
-        .btn { padding: 12px 24px; border-radius: 8px; cursor: pointer; border: none; font-weight: 700; font-size: 14px; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .btn { padding: 12px 24px; border-radius: 8px; cursor: pointer; border: none; font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-outline { background: white; border: 1px solid var(--border); color: var(--secondary); }
-        .btn-danger-text { color: var(--danger); padding: 5px; font-size: 18px; line-height: 1; background:none; border:none; cursor:pointer;}
-
-        .json-editor { width: 100%; height: 250px; font-family: monospace; font-size: 13px; padding: 15px; background: #0f172a; color: #cbd5e1; border-radius: 8px; }
+        .btn-danger-text { color: var(--danger); border: none; background: none; cursor: pointer; font-size: 18px; }
+        
+        .json-editor { width: 100%; height: 200px; font-family: 'Fira Code', monospace; font-size: 12px; padding: 12px; background: #1e293b; color: #cbd5e1; border-radius: 8px; }
     </style>
 </head>
 <body>
 
 <header>
     <div class="nav-container">
-        <div class="logo">TaskMaster <span style="font-weight: 300; font-size: 0.7em; opacity: 0.7;">v5.0</span></div>
+        <div class="logo">TaskMaster <span>⚡</span></div>
         <nav class="tabs">
             <button class="tab-btn active" onclick="switchTab('list')">任務列表</button>
             <button class="tab-btn" id="editor-trigger" onclick="switchTab('editor')">新增/編輯</button>
@@ -81,8 +87,8 @@
     <!-- 1. 任務列表 -->
     <div id="list" class="tab-panel active">
         <div class="card">
-            <div style="display:flex; gap:12px; margin-bottom:20px; align-items:center;">
-                <input type="text" id="searchBar" style="flex:1" placeholder="搜尋任務內容..." oninput="renderTaskList()">
+            <div style="display:flex; gap:12px; margin-bottom:20px;">
+                <input type="text" id="searchBar" placeholder="搜尋任意內容..." oninput="renderTaskList()">
                 <div id="filterArea" style="display:flex; gap:10px;"></div>
             </div>
             <div class="table-wrapper">
@@ -97,13 +103,10 @@
             <h2 id="formTitle" style="margin-top:0">新增任務</h2>
             <form id="taskForm">
                 <input type="hidden" id="editIndex" value="-1">
-                <div class="form-group">
-                    <label>排序權重</label>
-                    <input type="number" id="taskWeight" value="0">
-                </div>
+                <div class="form-group"><label>排序權重 (越小越靠前)</label><input type="number" id="taskWeight" value="0"></div>
                 <div id="dynamicFields"></div>
-                <div class="btn-group" style="display:flex; gap:12px; margin-top:30px;">
-                    <button type="submit" class="btn btn-primary" style="flex:1">儲存任務</button>
+                <div style="display:flex; gap:12px; margin-top:30px;">
+                    <button type="submit" class="btn btn-primary" style="flex:1">儲存數據</button>
                     <button type="button" class="btn btn-outline" onclick="resetAndReturn()">取消</button>
                 </div>
             </form>
@@ -113,21 +116,23 @@
     <!-- 3. 配置/備份 -->
     <div id="config" class="tab-panel">
         <div class="card">
-            <h3>屬性結構定義 (Schema)</h3>
-            <div id="schemaList"></div>
+            <h3>屬性配置與拖拽排序</h3>
+            <p style="color:var(--secondary); font-size:13px; margin-bottom:15px;">💡 您可以拖拽 ⠿ 圖標來調整屬性在表單與列表中的順序。</p>
+            <div id="schemaContainer"></div>
             <button class="btn btn-outline" onclick="addSchemaField()" style="width:100%; border-style:dashed; margin-top:10px;">+ 新增屬性欄位</button>
-            <div style="margin-top:20px; border-top:1px solid var(--border); padding-top:20px;">
-                <button class="btn btn-primary" onclick="applySchema()">儲存配置並刷新</button>
+            <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
+                <button class="btn btn-primary" onclick="applySchema()">套用配置變更</button>
             </div>
         </div>
 
         <div class="card">
-            <h3>數據備份</h3>
+            <h3>數據導出與備份</h3>
             <div style="display:flex; gap:10px; margin-bottom:20px;">
-                <button class="btn btn-outline" onclick="downloadJSON()">下載 JSON</button>
-                <button class="btn btn-outline" onclick="saveToLocalSystem()">保存到本地</button>
-                <button class="btn btn-outline" onclick="importJSON()">匯入數據</button>
+                <button class="btn btn-outline" onclick="downloadJSON()">下載備份</button>
+                <button class="btn btn-outline" onclick="saveToLocalSystem()">本地存檔 (Picker)</button>
+                <button class="btn btn-outline" onclick="importJSON()">匯入備份</button>
             </div>
+            <label>原始數據 (JSON)</label>
             <textarea id="fullDataEditor" class="json-editor"></textarea>
             <button class="btn btn-primary" onclick="saveEditorToBrowser()" style="margin-top:10px;">更新 LocalStorage</button>
         </div>
@@ -135,21 +140,24 @@
 </div>
 
 <script>
-    // 預設圖標庫
-    const ICON_LIBRARY = ["🎯", "🔥", "✅", "⏳", "⚠️", "🚀", "💡", "🛑", "⭐", "📅", "👤", "💼", "🛠️", "🔔"];
-
+    const ICONS = ["🎯", "✅", "⏳", "🚀", "⚠️", "🛑", "⭐", "💡", "👤", "📅", "🔥", "🔔"];
+    
     let appData = {
         schema: [
-            { id: "icon", name: "圖標", type: "icon", required: false },
-            { id: "title", name: "任務名稱", type: "text", required: true },
-            { id: "status", name: "狀態", type: "select", options: "待辦, 進行中, 已完成", required: true }
+            { id: "icon", name: "圖標", type: "icon", required: false, options: "" },
+            { id: "title", name: "任務名稱", type: "text", required: true, options: "" },
+            { id: "status", name: "狀態", type: "select", required: true, options: "待辦, 執行中, 已完成" }
         ],
         tasks: []
     };
 
     function init() {
-        const saved = localStorage.getItem('taskApp_V5');
+        const saved = localStorage.getItem('TaskApp_Final_V1');
         if (saved) appData = JSON.parse(saved);
+        renderAll();
+    }
+
+    function renderAll() {
         renderSchemaManager(); renderDynamicForm(); renderFilters(); renderTaskList();
     }
 
@@ -160,17 +168,26 @@
         if(t === 'config') document.getElementById('fullDataEditor').value = JSON.stringify(appData, null, 2);
     }
 
-    // --- Schema 管理 ---
+    // --- Schema & Drag Drop 邏輯 ---
     function renderSchemaManager() {
-        const container = document.getElementById('schemaList');
-        container.innerHTML = appData.schema.map((f, i) => `
-            <div class="schema-card">
-                <div class="schema-actions"><button class="btn-danger-text" onclick="removeSchemaField(${i})">✕</button></div>
+        const container = document.getElementById('schemaContainer');
+        container.innerHTML = '';
+        appData.schema.forEach((f, i) => {
+            const card = document.createElement('div');
+            card.className = 'schema-card';
+            card.draggable = true;
+            card.dataset.index = i;
+            
+            card.innerHTML = `
+                <div class="drag-handle">⠿</div>
+                <div class="schema-actions" style="position:absolute; right:15px; top:15px;">
+                    <button class="btn-danger-text" onclick="removeSchemaField(${i})">✕</button>
+                </div>
                 <div class="schema-grid">
-                    <div class="form-group" style="margin:0"><label>屬性 ID</label><input type="text" value="${f.id}" onchange="updateSchemaItem(${i},'id',this.value)"></div>
-                    <div class="form-group" style="margin:0"><label>顯示名稱</label><input type="text" value="${f.name}" onchange="updateSchemaItem(${i},'name',this.value)"></div>
+                    <div class="form-group" style="margin:0"><label>ID</label><input type="text" value="${f.id}" onchange="updateSchema(${i},'id',this.value)"></div>
+                    <div class="form-group" style="margin:0"><label>顯示名稱</label><input type="text" value="${f.name}" onchange="updateSchema(${i},'name',this.value)"></div>
                     <div class="form-group" style="margin:0"><label>類型</label>
-                        <select onchange="updateSchemaItem(${i},'type',this.value)">
+                        <select onchange="updateSchema(${i},'type',this.value)">
                             <option value="text" ${f.type==='text'?'selected':''}>純文字</option>
                             <option value="date" ${f.type==='date'?'selected':''}>日期</option>
                             <option value="number" ${f.type==='number'?'selected':''}>數字</option>
@@ -178,44 +195,51 @@
                             <option value="icon" ${f.type==='icon'?'selected':''}>圖標</option>
                         </select>
                     </div>
-                    <div style="padding-bottom:10px;"><label><input type="checkbox" ${f.required?'checked':''} onchange="updateSchemaItem(${i},'required',this.checked)"> 必填</label></div>
+                    <div style="margin-bottom:10px;"><label><input type="checkbox" ${f.required?'checked':''} onchange="updateSchema(${i},'required',this.checked)"> 必填</label></div>
                 </div>
-                ${f.type==='select' ? `<div style="margin-top:10px;"><label>選項 (逗號隔開)</label><input type="text" value="${f.options||''}" onchange="updateSchemaItem(${i},'options',this.value)"></div>` : ''}
-            </div>
-        `).join('');
+                ${f.type === 'select' ? `<div style="margin: 15px 0 0 35px;"><label>選單選項 (逗號隔開)</label><input type="text" value="${f.options}" onchange="updateSchema(${i},'options',this.value)"></div>` : ''}
+            `;
+            
+            // 綁定拖拽事件
+            card.addEventListener('dragstart', handleDragStart);
+            card.addEventListener('dragover', handleDragOver);
+            card.addEventListener('drop', handleDrop);
+            card.addEventListener('dragend', handleDragEnd);
+            container.appendChild(card);
+        });
     }
+
+    let dragSourceIndex = null;
+    function handleDragStart(e) { dragSourceIndex = this.dataset.index; this.classList.add('dragging'); }
+    function handleDragOver(e) { e.preventDefault(); }
+    function handleDrop(e) {
+        const targetIndex = this.dataset.index;
+        if (dragSourceIndex !== targetIndex) {
+            const movedItem = appData.schema.splice(dragSourceIndex, 1)[0];
+            appData.schema.splice(targetIndex, 0, movedItem);
+            renderSchemaManager();
+        }
+    }
+    function handleDragEnd() { this.classList.remove('dragging'); }
 
     function addSchemaField() {
-        appData.schema.push({ id: "attr_"+Date.now(), name: "新屬性", type: "text", required: false });
+        appData.schema.push({ id: "field_"+Date.now(), name: "新屬性", type: "text", required: false, options: "" });
         renderSchemaManager();
     }
-
     function removeSchemaField(i) { if(confirm("確定刪除？")) { appData.schema.splice(i,1); renderSchemaManager(); } }
+    function updateSchema(i, k, v) { appData.schema[i][k] = v; if(k==='type') renderSchemaManager(); }
+    function applySchema() { localStorage.setItem('TaskApp_Final_V1', JSON.stringify(appData)); renderAll(); alert("配置已更新！"); }
 
-    function updateSchemaItem(i, k, v) { appData.schema[i][k] = v; if(k==='type') renderSchemaManager(); }
-
-    function applySchema() {
-        localStorage.setItem('taskApp_V5', JSON.stringify(appData));
-        renderDynamicForm(); renderFilters(); renderTaskList();
-        alert("配置已套用！");
-    }
-
-    // --- 任務表單渲染 ---
+    // --- 任務表單與列表 ---
     function renderDynamicForm() {
         const container = document.getElementById('dynamicFields');
         container.innerHTML = appData.schema.map(f => {
             let input = '';
             if (f.type === 'icon') {
-                input = `
-                <input type="hidden" id="field_${f.id}" value="">
-                <div class="icon-selector" id="wrapper_${f.id}">
-                    ${ICON_LIBRARY.map(icon => `<div class="icon-option" onclick="selectIcon('${f.id}', '${icon}')">${icon}</div>`).join('')}
-                </div>`;
+                input = `<input type="hidden" id="field_${f.id}" ${f.required?'required':''} value="">
+                         <div class="icon-selector" id="wrap_${f.id}">${ICONS.map(icon => `<div class="icon-option" onclick="pickIcon('${f.id}','${icon}')">${icon}</div>`).join('')}</div>`;
             } else if (f.type === 'select') {
-                input = `<select id="field_${f.id}" ${f.required?'required':''}>
-                    <option value="">選擇${f.name}</option>
-                    ${(f.options||"").split(/[,，]/).map(o => `<option value="${o.trim()}">${o.trim()}</option>`).join('')}
-                </select>`;
+                input = `<select id="field_${f.id}" ${f.required?'required':''}><option value="">請選擇</option>${f.options.split(/[,，]/).map(o => `<option value="${o.trim()}">${o.trim()}</option>`).join('')}</select>`;
             } else {
                 input = `<input type="${f.type}" id="field_${f.id}" ${f.required?'required':''} placeholder="請輸入${f.name}">`;
             }
@@ -223,13 +247,11 @@
         }).join('');
     }
 
-    function selectIcon(fieldId, icon) {
-        document.getElementById(`field_${fieldId}`).value = icon;
-        const options = document.querySelectorAll(`#wrapper_${fieldId} .icon-option`);
-        options.forEach(opt => opt.classList.toggle('selected', opt.innerText === icon));
+    function pickIcon(fid, icon) {
+        document.getElementById('field_'+fid).value = icon;
+        document.querySelectorAll(`#wrap_${fid} .icon-option`).forEach(opt => opt.classList.toggle('selected', opt.innerText === icon));
     }
 
-    // --- 列表與過濾 ---
     function renderTaskList() {
         const q = document.getElementById('searchBar').value.toLowerCase();
         document.getElementById('taskHeader').innerHTML = `<tr><th>權重</th>${appData.schema.map(f => `<th>${f.name}</th>`).join('')}<th>操作</th></tr>`;
@@ -246,18 +268,16 @@
         document.getElementById('taskList').innerHTML = filtered.map(t => {
             const idx = appData.tasks.indexOf(t);
             return `<tr onclick="editTask(${idx})"><td>${t._w||0}</td>
-                ${appData.schema.map(f => `<td class="${f.type==='icon'?'icon-cell':''}">${t[f.id]||''}</td>`).join('')}
-                <td><button class="btn-danger-text" onclick="event.stopPropagation(); deleteTask(${idx})">刪除</button></td></tr>`;
+                ${appData.schema.map(f => `<td>${t[f.id]||''}</td>`).join('')}
+                <td><button class="btn-danger-text" onclick="event.stopPropagation(); deleteTask(${idx})">✕</button></td></tr>`;
         }).join('');
     }
 
     function renderFilters() {
-        document.getElementById('filterArea').innerHTML = appData.schema.filter(f => f.type === 'select').map(f => `
-            <select id="filter_${f.id}" onchange="renderTaskList()" style="width:auto">
-                <option value="">所有${f.name}</option>
-                ${(f.options||"").split(/[,，]/).map(o => `<option value="${o.trim()}">${o.trim()}</option>`).join('')}
-            </select>
-        `).join('');
+        document.getElementById('filterArea').innerHTML = appData.schema.filter(f => f.type==='select').map(f => `
+            <select id="filter_${f.id}" onchange="renderTaskList()" style="width:auto; padding:8px;">
+                <option value="">所有${f.name}</option>${f.options.split(/[,，]/).map(o => `<option value="${o.trim()}">${o.trim()}</option>`).join('')}
+            </select>`).join('');
     }
 
     // --- CRUD ---
@@ -266,9 +286,8 @@
         const idx = parseInt(document.getElementById('editIndex').value);
         const task = { _w: parseInt(document.getElementById('taskWeight').value) };
         appData.schema.forEach(f => task[f.id] = document.getElementById(`field_${f.id}`).value);
-        
         if (idx === -1) appData.tasks.push(task); else appData.tasks[idx] = task;
-        localStorage.setItem('taskApp_V5', JSON.stringify(appData));
+        localStorage.setItem('TaskApp_Final_V1', JSON.stringify(appData));
         resetAndReturn();
     };
 
@@ -279,20 +298,22 @@
         document.getElementById('taskWeight').value = t._w || 0;
         appData.schema.forEach(f => {
             const val = t[f.id] || '';
-            const el = document.getElementById(`field_${f.id}`);
-            if(el) el.value = val;
-            if(f.type === 'icon' && val) selectIcon(f.id, val);
+            if (document.getElementById(`field_${f.id}`)) {
+                document.getElementById(`field_${f.id}`).value = val;
+                if(f.type === 'icon' && val) pickIcon(f.id, val);
+            }
         });
         switchTab('editor');
     }
 
-    function deleteTask(i) { if(confirm('確定刪除？')) { appData.tasks.splice(i,1); localStorage.setItem('taskApp_V5', JSON.stringify(appData)); renderTaskList(); } }
+    function deleteTask(i) { if(confirm('確定刪除？')) { appData.tasks.splice(i,1); localStorage.setItem('TaskApp_Final_V1', JSON.stringify(appData)); renderTaskList(); } }
     function resetAndReturn() { document.getElementById('taskForm').reset(); document.getElementById('editIndex').value="-1"; renderTaskList(); switchTab('list'); }
 
-    // --- IO ---
+    // --- 數據 IO ---
     function downloadJSON() {
-        const blob = new Blob([JSON.stringify(appData, null, 2)], { type: "application/json" });
-        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "taskApp.json"; a.click();
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(appData, null, 2)], { type: "application/json" }));
+        a.download = "taskApp.json"; a.click();
     }
     async function saveToLocalSystem() {
         try {
@@ -304,12 +325,12 @@
         const i = document.createElement('input'); i.type = 'file';
         i.onchange = e => {
             const r = new FileReader();
-            r.onload = ev => { appData = JSON.parse(ev.target.result); localStorage.setItem('taskApp_V5', JSON.stringify(appData)); location.reload(); };
+            r.onload = ev => { appData = JSON.parse(ev.target.result); localStorage.setItem('TaskApp_Final_V1', JSON.stringify(appData)); location.reload(); };
             r.readAsText(e.target.files[0]);
         };
         i.click();
     }
-    function saveEditorToBrowser() { try { appData = JSON.parse(document.getElementById('fullDataEditor').value); localStorage.setItem('taskApp_V5', JSON.stringify(appData)); location.reload(); } catch(e){alert('格式錯誤');} }
+    function saveEditorToBrowser() { try { appData = JSON.parse(document.getElementById('fullDataEditor').value); localStorage.setItem('TaskApp_Final_V1', JSON.stringify(appData)); location.reload(); } catch(e){alert('JSON 格式錯誤');} }
 
     init();
 </script>
