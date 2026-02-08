@@ -558,7 +558,7 @@
     button.addEventListener('click', event => {
       if (event.clientX || event.targetTouches) ripple(event)
       menu.classList.toggle('visible')
-      qr.setAttribute('href', '/qr' + location.hash)
+      qr.setAttribute('href', '/tasktest/qr.html' + location.hash)
       shareLink.setAttribute('href', location.href)
     })
 
