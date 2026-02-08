@@ -65,9 +65,9 @@
 <script>
   function render() {
     const hash = location.hash
-    const url = 'https://asendia-teng.github.io/tasktest/qr.html#' + hash
+    const url = 'https://asendia-teng.github.io/tasktest/qr.html' + hash
     const link = document.getElementById('link')
-    link.href = '/tasktest/qr.html' + hash
+    link.href = '/tasktest/' + hash
 
     const typeNumber = 0
     const errorCorrectionLevel = 'L'
