@@ -1,0 +1,2080 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小學生詞記憶 - Dictation Learning</title>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+    <!-- Hanzi Writer for stroke order animation -->
+    <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1024px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .panel h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            color: #555;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-group textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+        }
+
+        .example-sentence-container {
+            margin-top: 15px;
+            padding: 15px;
+            background: #fff9e6;
+            border-radius: 8px;
+            border-left: 4px solid #f0ad4e;
+        }
+
+        .example-sentence-title {
+            font-size: 0.9em;
+            color: #f0ad4e;
+            margin-bottom: 10px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .example-sentence-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .example-sentence-item {
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .example-sentence-item:hover {
+            background: #f0f4ff;
+            transform: translateX(3px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .example-sentence-text {
+            flex: 1;
+            color: #333;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        .example-icon {
+            font-size: 1.2em;
+            flex-shrink: 0;
+        }
+
+        .loading-examples {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .no-examples {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .retry-examples-btn {
+            margin-top: 10px;
+            padding: 6px 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .retry-examples-btn:hover {
+            background: #5568d3;
+        }
+
+        .example-translation {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .example-translation:hover {
+            color: #667eea;
+        }
+
+        .date-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .date-display-btn {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            background: white;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: border-color 0.3s;
+        }
+
+        .date-display-btn:hover {
+            border-color: #667eea;
+        }
+
+        .date-picker-popup {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            z-index: 100;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            padding: 15px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .date-picker-popup.active {
+            display: block;
+        }
+
+        .date-picker-popup input[type="date"] {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+
+        .quick-dates {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .quick-date-btn {
+            padding: 6px 12px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .quick-date-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .quick-date-btn.today {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .calendar-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+        }
+
+        .calendar-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .calendar-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            z-index: 2000;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            display: none;
+            max-width: 90vw;
+            max-height: 90vh;
+        }
+
+        .calendar-popup.active {
+            display: block;
+            animation: popupFadeIn 0.3s ease-out forwards;
+        }
+
+        @keyframes popupFadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .calendar-popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .calendar-popup-header h3 {
+            color: #667eea;
+            font-size: 1.5em;
+            margin: 0;
+        }
+
+        .close-calendar-btn {
+            background: none;
+            border: none;
+            font-size: 2em;
+            cursor: pointer;
+            color: #999;
+            line-height: 1;
+        }
+
+        .close-calendar-btn:hover {
+            color: #333;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1999;
+            display: none;
+        }
+
+        .modal-overlay.active {
+            display: block;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.9em;
+            width: auto;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .word-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .word-item {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .word-item:hover {
+            transform: translateX(5px);
+        }
+
+        .word-item .english {
+            font-size: 1.4em;
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .word-item .english:hover {
+            color: #764ba2;
+        }
+
+        .word-item .chinese {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+        }
+
+        .word-item .chinese:hover {
+            color: #667eea;
+        }
+
+        .stroke-order-container {
+            margin-top: 10px;
+            padding: 15px;
+            background: #f0f4ff;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stroke-order-title {
+            font-size: 0.9em;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .hanzi-writer-target {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto;
+        }
+
+        .stroke-loading {
+            font-size: 0.8em;
+            color: #999;
+            margin-top: 8px;
+        }
+
+        .stroke-error {
+            font-size: 0.8em;
+            color: #f5576c;
+            margin-top: 8px;
+            padding: 8px;
+            background: #fff0f0;
+            border-radius: 4px;
+        }
+
+        .word-item .date {
+            font-size: 0.9em;
+            color: #999;
+            margin-top: 8px;
+        }
+
+        .speaker-icon {
+            font-size: 1.2em;
+        }
+
+        #calendar {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .fc-event {
+            cursor: pointer;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            border: none !important;
+            border-radius: 4px !important;
+            padding: 2px 4px !important;
+            font-size: 0.9em !important;
+        }
+
+        .fc-event:hover {
+            opacity: 0.8;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state p {
+            font-size: 1.2em;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            flex: 1;
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .stat-card .number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-card .label {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            color: #667eea;
+            font-size: 1.8em;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2em;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .delete-btn {
+            background: #f5576c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+
+        .delete-btn:hover {
+            background: #d43f52;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 小學生詞記憶</h1>
+            <p>Dictation Learning - 每天記錄英文單詞和繁體中文</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Left Panel: Input Form -->
+            <div class="left-panel">
+                <div class="panel">
+                    <h2>➕ 添加新單詞</h2>
+                    <form id="wordForm">
+                        <div class="input-group">
+                            <label for="englishWord">英文單詞</label>
+                            <input type="text" id="englishWord" placeholder="輸入英文單詞，例如：apple">
+                            <div style="font-size: 0.85em; color: #999; margin-top: 5px;">
+                                💡 輸入後自動從網絡獲取例句
+                            </div>
+                        </div>
+
+                        <div id="exampleSentencesSection" style="display: none;">
+                            <div class="example-sentence-container">
+                                <ul class="example-sentence-list" id="exampleSentenceList"></ul>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="chineseText">繁體中文</label>
+                            <textarea id="chineseText" placeholder="輸入繁體中文解釋，例如：蘋果"></textarea>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="wordDate">日期</label>
+                            <div class="date-input-wrapper">
+                                <button type="button" class="date-display-btn" onclick="toggleDatePicker()">
+                                    <span id="dateDisplayText">📅 選擇日期</span>
+                                    <span>📅</span>
+                                </button>
+                                <div class="date-picker-popup" id="datePickerPopup">
+                                    <input type="date" id="wordDate">
+                                    <div class="quick-dates">
+                                        <button type="button" class="quick-date-btn today" onclick="selectQuickDate('today')">今天</button>
+                                        <button type="button" class="quick-date-btn" onclick="selectQuickDate('yesterday')">昨天</button>
+                                        <button type="button" class="quick-date-btn" onclick="selectQuickDate('tomorrow')">明天</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn">💾 保存單詞</button>
+                    </form>
+
+                    <div class="stats" style="margin-top: 30px;">
+                        <div class="stat-card">
+                            <div class="number" id="totalWords">0</div>
+                            <div class="label">總單詞數</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="number" id="todayWords">0</div>
+                            <div class="label">今日單詞</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="number" id="totalDays">0</div>
+                            <div class="label">學習天數</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Calendar & Word List -->
+            <div class="right-panel">
+                <button class="calendar-btn" onclick="openCalendar()">
+                    📅 日曆
+                </button>
+
+                <div class="panel">
+                    <h2>
+                        📖 單詞列表
+                        <button id="showAllBtn" onclick="showAllWords()" style="display: none; float: right; padding: 8px 16px; font-size: 0.9em;">🔙 返回全部</button>
+                    </h2>
+                    <div class="word-list" id="wordList">
+                        <div class="empty-state">
+                            <p>暫無單詞，請先添加</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar Popup -->
+    <div class="modal-overlay" id="calendarOverlay" onclick="closeCalendar()"></div>
+    <div class="calendar-popup" id="calendarPopup">
+        <div class="calendar-popup-header">
+            <h3>📅 日曆視圖</h3>
+            <button class="close-calendar-btn" onclick="closeCalendar()">&times;</button>
+        </div>
+        <div id="calendar"></div>
+    </div>
+
+    <script>
+        // Data storage
+        let words = [];
+        let calendar;
+        let exampleCache = {}; // Cache fetched examples
+        let translationCache = {}; // Cache translations
+        let wordDetailsCache = {}; // Cache word details (phonetic, meaning, etc.)
+
+        // Fetch word details (phonetic, part of speech, meanings)
+        async function fetchWordDetails(word) {
+            if (!word || word.length === 0) return null;
+            
+            const lowerWord = word.toLowerCase();
+            
+            // Check cache first
+            if (wordDetailsCache[lowerWord]) {
+                console.log('Using cached word details for:', lowerWord);
+                return wordDetailsCache[lowerWord];
+            }
+            
+            try {
+                console.log('Fetching word details for:', lowerWord);
+                
+                const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${lowerWord}`);
+                if (!response.ok) {
+                    console.log('Dictionary API returned:', response.status);
+                    return null;
+                }
+                
+                const data = await response.json();
+                
+                if (!Array.isArray(data) || data.length === 0) {
+                    return null;
+                }
+                
+                const entry = data[0];
+                const details = {
+                    phonetic: '',
+                    phoneticAudio: '',
+                    meanings: [] // Array of {partOfSpeech, definitions}
+                };
+                
+                // Get phonetic and audio
+                if (entry.phonetic) {
+                    details.phonetic = entry.phonetic;
+                }
+                
+                if (entry.phonetics && Array.isArray(entry.phonetics)) {
+                    const phoneticObj = entry.phonetics.find(p => p.text && p.audio);
+                    if (phoneticObj) {
+                        if (!details.phonetic && phoneticObj.text) {
+                            details.phonetic = phoneticObj.text;
+                        }
+                        details.phoneticAudio = phoneticObj.audio;
+                    }
+                }
+                
+                // Get meanings (part of speech and definitions)
+                if (entry.meanings && Array.isArray(entry.meanings)) {
+                    entry.meanings.forEach(meaning => {
+                        if (meaning.partOfSpeech && meaning.definitions && Array.isArray(meaning.definitions)) {
+                            const topDefinitions = meaning.definitions.slice(0, 3).map(def => def.definition);
+                            details.meanings.push({
+                                partOfSpeech: meaning.partOfSpeech,
+                                definitions: topDefinitions
+                            });
+                        }
+                    });
+                }
+                
+                // Cache the results
+                wordDetailsCache[lowerWord] = details;
+                return details;
+                
+            } catch (error) {
+                console.error('Failed to fetch word details:', error);
+                return null;
+            }
+        }
+
+        // Fetch example sentences from free API
+        async function fetchExampleSentences(word) {
+            if (!word || word.length === 0) return [];
+            
+            const lowerWord = word.toLowerCase();
+            
+            // Check cache first
+            if (exampleCache[lowerWord]) {
+                console.log('Using cached examples for:', lowerWord);
+                return exampleCache[lowerWord];
+            }
+            
+            try {
+                console.log('Fetching examples for:', lowerWord);
+                
+                // Only use Dictionary API for better quality examples
+                const examples = await fetchFromDictionaryAPI(lowerWord);
+                
+                // If no examples found, try to generate simple ones
+                if (examples.length === 0) {
+                    console.log('No examples from API, generating simple ones');
+                    return generateSimpleExamples(lowerWord);
+                }
+                
+                // Cache the results
+                exampleCache[lowerWord] = examples;
+                return examples;
+                
+            } catch (error) {
+                console.error('Failed to fetch examples:', error);
+                return generateSimpleExamples(lowerWord);
+            }
+        }
+
+        // Fetch example sentences with Traditional Chinese translations
+        async function fetchExampleSentencesWithTranslations(word) {
+            if (!word || word.length === 0) return [];
+            
+            const lowerWord = word.toLowerCase();
+            
+            // Check cache first
+            if (exampleCache[lowerWord]) {
+                console.log('Using cached examples for:', lowerWord);
+                return exampleCache[lowerWord];
+            }
+            
+            try {
+                console.log('Fetching examples with translations for:', lowerWord);
+                
+                // Only use Dictionary API for better quality examples
+                const rawExamples = await fetchFromDictionaryAPI(lowerWord);
+                
+                // If no examples found, try to generate simple ones
+                if (rawExamples.length === 0) {
+                    console.log('No examples from API, generating simple ones');
+                    const simpleExamples = generateSimpleExamples(lowerWord);
+                    return simpleExamples.map(en => ({ en, zh: '' }));
+                }
+                
+                // Translate all examples to Traditional Chinese
+                const examplesWithTranslations = await Promise.all(
+                    rawExamples.map(async (sentence) => {
+                        const translation = await translateToChinese(sentence);
+                        return {
+                            en: sentence,
+                            zh: translation || ''
+                        };
+                    })
+                );
+                
+                // Cache the results
+                exampleCache[lowerWord] = examplesWithTranslations;
+                return examplesWithTranslations;
+                
+            } catch (error) {
+                console.error('Failed to fetch examples with translations:', error);
+                const simpleExamples = generateSimpleExamples(lowerWord);
+                return simpleExamples.map(en => ({ en, zh: '' }));
+            }
+        }
+
+        // Translate English text to Chinese using MyMemory API
+        async function translateToChinese(text) {
+            // Check cache first
+            if (translationCache[text]) {
+                console.log('Using cached translation for:', text);
+                return translationCache[text];
+            }
+            
+            try {
+                console.log('Translating:', text);
+                
+                // Use MyMemory Translation API (free, no API key required)
+                // langpair=en|zh-TW for Traditional Chinese (for Hong Kong)
+                const response = await fetch(
+                    `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|zh-TW`
+                );
+                
+                if (!response.ok) throw new Error('Translation API error');
+                
+                const data = await response.json();
+                const translation = data.responseData.translatedText;
+                
+                // Cache the translation
+                translationCache[text] = translation;
+                
+                return translation;
+                
+            } catch (error) {
+                console.error('Translation failed:', error);
+                return null; // Return null if translation fails
+            }
+        }
+
+        // Fetch from Free Dictionary API
+        async function fetchFromDictionaryAPI(word) {
+            try {
+                const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+                if (!response.ok) {
+                    console.log('Dictionary API returned:', response.status);
+                    return [];
+                }
+                
+                const data = await response.json();
+                const examples = [];
+                
+                if (Array.isArray(data)) {
+                    data.forEach(entry => {
+                        // Collect examples from different sources
+                        if (entry.meanings && Array.isArray(entry.meanings)) {
+                            entry.meanings.forEach(meaning => {
+                                // From definitions with examples
+                                if (meaning.definitions && Array.isArray(meaning.definitions)) {
+                                    meaning.definitions.forEach(def => {
+                                        if (def.example) {
+                                            examples.push(def.example);
+                                        }
+                                    });
+                                }
+                                // Direct examples array
+                                if (meaning.examples && Array.isArray(meaning.examples)) {
+                                    examples.push(...meaning.examples);
+                                }
+                            });
+                        }
+                    });
+                }
+                
+                // Remove duplicates and limit to 5
+                const unique = [...new Set(examples)];
+                return unique.slice(0, 5);
+                
+            } catch (error) {
+                console.error('Dictionary API failed:', error);
+                return [];
+            }
+        }
+
+        // Generate simple example sentences when API fails
+        function generateSimpleExamples(word) {
+            const templates = [
+                `This is a ${word}.`,
+                `I have a ${word}.`,
+                `The ${word} is here.`,
+                `Do you like ${word}?`,
+                `Look at the ${word}.`
+            ];
+            return templates;
+        }
+
+        // Translate English text to Chinese using MyMemory API
+        async function translateToChinese(text) {
+            // Check cache first
+            if (translationCache[text]) {
+                console.log('Using cached translation for:', text);
+                return translationCache[text];
+            }
+            
+            try {
+                console.log('Translating:', text);
+                
+                // Use MyMemory Translation API (free, no API key required)
+                // langpair=en|zh-TW for Traditional Chinese (for Hong Kong)
+                const response = await fetch(
+                    `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|zh-TW`
+                );
+                
+                if (!response.ok) throw new Error('Translation API error');
+                
+                const data = await response.json();
+                const translation = data.responseData.translatedText;
+                
+                // Cache the translation
+                translationCache[text] = translation;
+                
+                return translation;
+                
+            } catch (error) {
+                console.error('Translation failed:', error);
+                return null; // Return null if translation fails
+            }
+        }
+
+
+
+        // Display example sentences (when adding new word)
+        async function displayExamples(word) {
+            const section = document.getElementById('exampleSentencesSection');
+            const list = document.getElementById('exampleSentenceList');
+            
+            if (!word || word.trim().length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+            
+            // Show loading state
+            section.style.display = 'block';
+            list.innerHTML = '<li class="loading-examples">🔄 正在加載單詞詳情和例句...</li>';
+            
+            // Fetch word details and examples with translations in parallel
+            const [wordDetails, examples] = await Promise.all([
+                fetchWordDetails(word),
+                fetchExampleSentencesWithTranslations(word)
+            ]);
+            
+            let html = '';
+            
+            // Add word details section
+            if (wordDetails) {
+                html += `
+                    <div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%); border-radius: 8px; border-left: 4px solid #667eea;">
+                        <div style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px;">
+                            <strong style="font-size: 1.3em; color: #667eea;">${escapeHtml(word)}</strong>
+                            ${wordDetails.phonetic ? `
+                                <span style="font-size: 1.1em; color: #666; font-family: 'Lucida Sans Unicode', 'Arial Unicode MS', sans-serif;">${escapeHtml(wordDetails.phonetic)}</span>
+                                ${wordDetails.phoneticAudio ? `
+                                    <button type="button" onclick="playPhoneticAudio('${escapeJs(wordDetails.phoneticAudio)}')" 
+                                            style="padding: 2px 8px; background: #667eea; border: none; border-radius: 4px; cursor: pointer; color: white; font-size: 0.9em;">
+                                        🔊
+                                    </button>
+                                ` : ''}
+                            ` : ''}
+                        </div>
+                        ${wordDetails.meanings.length > 0 ? `
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                ${wordDetails.meanings.map(meaning => `
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; background: white; border-radius: 4px; font-size: 0.85em; color: #555;">
+                                        <em style="color: #667eea; font-style: normal; font-weight: bold;">${escapeHtml(meaning.partOfSpeech)}</em>
+                                    </span>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                        ${wordDetails.meanings.length > 0 ? `
+                            <div style="margin-top: 10px;">
+                                ${wordDetails.meanings.slice(0, 2).map((meaning, idx) => `
+                                    <div style="margin-bottom: 8px; font-size: 0.9em; color: #555;">
+                                        <span style="color: #667eea; font-weight: bold;">${idx + 1}. ${escapeHtml(meaning.partOfSpeech)}</span>
+                                        <ul style="margin: 4px 0 0 20px; padding: 0;">
+                                            ${meaning.definitions.slice(0, 2).map(def => `
+                                                <li style="margin-bottom: 3px;">${escapeHtml(def)}</li>
+                                            `).join('')}
+                                        </ul>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            // Add example sentences section
+            html += `
+                <div style="border-top: 2px solid #eee; padding-top: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div class="example-sentence-title" style="margin: 0;">
+                            🌐 網絡例句（點擊選擇）
+                        </div>
+                        <button type="button" onclick="refreshAPIExamples()" 
+                                style="padding: 4px 10px; background: #f0f4ff; border: 1px solid #667eea; border-radius: 4px; cursor: pointer; color: #667eea; font-size: 0.85em;">
+                            🔄 重新獲取
+                        </button>
+                    </div>
+                    <ul class="example-sentence-list">
+            `;
+            
+            if (examples.length > 0) {
+                html += examples.map((item, index) => `
+                    <li class="example-sentence-item" style="flex-direction: column; align-items: flex-start;" onclick="selectExampleSentence('${escapeJs(item.en)}')">
+                        <div style="display: flex; align-items: center; gap: 8px; width: 100%; margin-bottom: 4px;">
+                            <span class="example-icon">✅</span>
+                            <span class="example-sentence-text" style="flex: 1;">${index + 1}. ${escapeHtml(item.en)}</span>
+                        </div>
+                        ${item.zh ? `
+                            <div style="padding-left: 28px; color: #666; font-size: 0.9em; margin-top: 4px;">
+                                🔊 ${escapeHtml(item.zh)}
+                            </div>
+                        ` : ''}
+                    </li>
+                `).join('');
+            } else {
+                html += `
+                    <li class="no-examples">
+                        😕 暫時沒有找到例句<br>
+                        <small>可能是因為這個單詞比較少見，或者網絡連接有問題</small>
+                    </li>
+                    <button class="retry-examples-btn" onclick="displayExamples('${word}')">
+                        🔄 重試
+                    </button>
+                `;
+            }
+            
+            html += `</ul></div>`;
+            list.innerHTML = html;
+        }
+
+        // Play phonetic audio
+        function playPhoneticAudio(audioUrl) {
+            try {
+                const audio = new Audio(audioUrl);
+                audio.play();
+            } catch (error) {
+                console.error('Failed to play phonetic audio:', error);
+                alert('抱歉，無法播放發音');
+            }
+        }
+
+        // Select example sentence from API list (when adding new word)
+        function selectExampleSentence(sentenceOrObject) {
+            const sentence = typeof sentenceOrObject === 'string' ? sentenceOrObject : sentenceOrObject.en;
+            const translation = typeof sentenceOrObject === 'object' ? sentenceOrObject.zh : null;
+            
+            const word = words.find(w => w.english === currentInputWord);
+            
+            // Initialize customExamples array if not exists
+            if (!word) {
+                word = {
+                    id: Date.now(),
+                    english: currentInputWord,
+                    chinese: '',
+                    date: new Date().toISOString().split('T')[0],
+                    createdAt: new Date().toISOString(),
+                    customExamples: []
+                };
+                words.push(word);
+            }
+            
+            if (!word.customExamples) {
+                word.customExamples = [];
+            }
+            
+            // Check if already exists
+            const exists = word.customExamples.some(ex => ex.en === sentence);
+            if (exists) {
+                alert('這個例句已經存在！');
+                return;
+            }
+            
+            // Use existing translation or fetch new one
+            const saveExample = (zhTranslation) => {
+                word.customExamples.push({
+                    en: sentence,
+                    zh: zhTranslation || '',
+                    createdAt: new Date().toISOString(),
+                    fromAPI: true
+                });
+                
+                saveWords();
+                renderWordList();
+                
+                // Hide the example section after selection
+                document.getElementById('exampleSentencesSection').style.display = 'none';
+                document.getElementById('englishWord').value = '';
+                document.getElementById('chineseText').focus();
+            };
+            
+            if (translation) {
+                // Translation already available, save immediately
+                saveExample(translation);
+            } else {
+                // Need to fetch translation
+                translateToChinese(sentence).then(zhTranslation => {
+                    saveExample(zhTranslation);
+                });
+            }
+        }
+
+        let currentInputWord = '';
+
+        // Refresh API examples (when adding new word)
+        function refreshAPIExamples() {
+            const word = document.getElementById('englishWord').value.trim();
+            if (word) {
+                displayExamples(word);
+            }
+        }
+
+        // Listen to English word input
+        let debounceTimer;
+        document.getElementById('englishWord').addEventListener('input', function() {
+            const word = this.value.trim();
+            currentInputWord = word;
+            
+            // Clear previous timer
+            clearTimeout(debounceTimer);
+            
+            // Debounce - wait 500ms after user stops typing
+            debounceTimer = setTimeout(() => {
+                if (word && word.length > 0) {
+                    displayExamples(word);
+                } else {
+                    document.getElementById('exampleSentencesSection').style.display = 'none';
+                }
+            }, 500);
+        });
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load words from localStorage
+            loadWords();
+            
+            // Set default date to today (using local time)
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+            document.getElementById('wordDate').value = todayStr;
+            updateDateDisplay(todayStr);
+            
+            // Initialize calendar (hidden)
+            initCalendar();
+            
+            // Render word list
+            renderWordList();
+            
+            // Update stats
+            updateStats();
+            
+            // Close date picker when clicking outside
+            document.addEventListener('click', function(e) {
+                const wrapper = document.querySelector('.date-input-wrapper');
+                if (wrapper && !wrapper.contains(e.target)) {
+                    closeDatePicker();
+                }
+            });
+        });
+
+        // Load words from localStorage
+        function loadWords() {
+            const stored = localStorage.getItem('dictationWords');
+            if (stored) {
+                words = JSON.parse(stored);
+            }
+        }
+
+        // Save words to localStorage
+        function saveWords() {
+            localStorage.setItem('dictationWords', JSON.stringify(words));
+            updateStats();
+            updateCalendarEvents();
+        }
+
+        // Add custom translation to word
+        function addCustomTranslation(wordId) {
+            const word = words.find(w => w.id === wordId);
+            if (!word || !word.english) return;
+            
+            const customTranslation = prompt('輸入自定義翻譯（繁體中文）：', word.customTranslation || '');
+            if (customTranslation !== null) {
+                word.customTranslation = customTranslation.trim();
+                saveWords();
+                renderWordList();
+            }
+        }
+
+        // Add custom example sentence
+        async function addCustomExample(wordId) {
+            const word = words.find(w => w.id === wordId);
+            if (!word || !word.english) return;
+            
+            const englishSentence = prompt('輸入英文例句：');
+            if (!englishSentence || !englishSentence.trim()) return;
+            
+            const sentence = englishSentence.trim();
+            
+            // Auto-translate to Traditional Chinese
+            const chineseTranslation = await translateToChinese(sentence);
+            
+            // Initialize customExamples array if not exists
+            if (!word.customExamples) {
+                word.customExamples = [];
+            }
+            
+            word.customExamples.push({
+                en: sentence,
+                zh: chineseTranslation || '',
+                createdAt: new Date().toISOString()
+            });
+            
+            saveWords();
+            renderWordList();
+        }
+
+        // Edit example translation
+        function editExampleTranslation(wordId, exampleIndex) {
+            const word = words.find(w => w.id === wordId);
+            if (!word || !word.customExamples || !word.customExamples[exampleIndex]) return;
+            
+            const currentTranslation = word.customExamples[exampleIndex].zh;
+            const newTranslation = prompt('修改翻譯（繁體中文）：', currentTranslation);
+            
+            if (newTranslation !== null) {
+                word.customExamples[exampleIndex].zh = newTranslation.trim();
+                saveWords();
+                renderWordList();
+            }
+        }
+
+        // Save API sentence as default (in word list view)
+        function saveAPISentenceAsDefault(wordId, sentence, currentIndex) {
+            const word = words.find(w => w.id === wordId);
+            if (!word || !word.english) return;
+            
+            // Initialize customExamples array if not exists
+            if (!word.customExamples) {
+                word.customExamples = [];
+            }
+            
+            // Check if already exists
+            const exists = word.customExamples.some(ex => ex.en === sentence);
+            if (exists) {
+                alert('這個例句已經存在！');
+                return;
+            }
+            
+            // Auto-translate to Traditional Chinese
+            translateToChinese(sentence).then(translation => {
+                word.customExamples.push({
+                    en: sentence,
+                    zh: translation || '',
+                    createdAt: new Date().toISOString(),
+                    fromAPI: true
+                });
+                
+                saveWords();
+                renderWordList();
+                
+                // Show success message
+                alert('✅ 已將此例句設為預設例句！');
+            });
+        }
+
+        // Delete custom example
+        function deleteCustomExample(wordId, exampleIndex) {
+            if (!confirm('確定要刪除這個例句嗎？')) return;
+            
+            const word = words.find(w => w.id === wordId);
+            if (!word || !word.customExamples) return;
+            
+            word.customExamples.splice(exampleIndex, 1);
+            saveWords();
+            renderWordList();
+        }
+
+        // Form submission
+        document.getElementById('wordForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const englishWord = document.getElementById('englishWord').value.trim();
+            const chineseText = document.getElementById('chineseText').value.trim();
+            const wordDate = document.getElementById('wordDate').value;
+            
+            if (!englishWord && !chineseText) {
+                alert('請至少填寫英文單詞或繁體中文其中一項！');
+                return;
+            }
+            
+            if (!wordDate) {
+                alert('請選擇日期！');
+                return;
+            }
+            
+            // Create new word object
+            const newWord = {
+                id: Date.now(),
+                english: englishWord,
+                chinese: chineseText,
+                date: wordDate,
+                createdAt: new Date().toISOString()
+            };
+            
+            // Add to array
+            words.push(newWord);
+            
+            // Save to localStorage
+            saveWords();
+            
+            // Re-render
+            renderWordList();
+            updateStats();
+            updateCalendarEvents();
+            
+            // Clear form
+            document.getElementById('englishWord').value = '';
+            document.getElementById('chineseText').value = '';
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('wordDate').value = today;
+            updateDateDisplay(today);
+            
+            alert('✅ 單詞已保存！');
+        });
+
+        // Text-to-Speech for English
+        function speakEnglish(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.8;
+                utterance.pitch = 1;
+                speechSynthesis.speak(utterance);
+            } else {
+                alert('抱歉，您的瀏覽器不支持語音播放功能');
+            }
+        }
+
+        // Text-to-Speech for Cantonese
+        function speakCantonese(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-HK';
+                utterance.rate = 0.8;
+                utterance.pitch = 1;
+                speechSynthesis.speak(utterance);
+            } else {
+                alert('抱歉，您的瀏覽器不支持語音播放功能');
+            }
+        }
+
+        // Render word list
+        function renderWordList(filterDate = null) {
+            const wordListEl = document.getElementById('wordList');
+            
+            let filteredWords = words;
+            if (filterDate) {
+                filteredWords = words.filter(w => w.date === filterDate);
+            }
+            
+            // Sort by date (newest first)
+            filteredWords.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            if (filteredWords.length === 0) {
+                wordListEl.innerHTML = '<div class="empty-state"><p>暫無單詞</p></div>';
+                return;
+            }
+            
+            wordListEl.innerHTML = filteredWords.map((word, index) => {
+                let html = '<div class="word-item">';
+                
+                if (word.english) {
+                    const exampleContainerId = `example-container-${word.id}`;
+                    const toggleBtnId = `toggle-btn-${word.id}`;
+                    
+                    html += `
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                            <div class="english" onclick="speakEnglish('${escapeJs(word.english)}')" style="flex: 1;">
+                                <span class="speaker-icon">🔊</span>
+                                <span>${escapeHtml(word.english)}</span>
+                            </div>
+                            <button type="button" id="${toggleBtnId}" 
+                                    onclick="toggleWordExamples('${exampleContainerId}', '${toggleBtnId}', '${escapeJs(word.english)}')" 
+                                    style="padding: 6px 12px; background: #f0f4ff; border: none; border-radius: 4px; cursor: pointer; color: #667eea; font-size: 0.85em;">
+                                📖 查看例句
+                            </button>
+                        </div>
+                        <div id="${exampleContainerId}" style="display: none; margin-top: 10px;"></div>
+                    `;
+                } else {
+                    // No English word, just add empty div for alignment
+                    html += `<div style="margin-bottom: 5px;"></div>`;
+                }
+                
+                if (word.chinese) {
+                    const showStrokeOrder = !word.english;
+                    const chineseId = `chinese-${word.id}`;
+                    const containerId = `stroke-${word.id}`;
+                    
+                    console.log(`Word ${word.id}: english="${word.english}", chinese="${word.chinese}", showStrokeOrder=${showStrokeOrder}`);
+                    
+                    html += `
+                        <div class="chinese" onclick="speakCantonese('${escapeJs(word.chinese)}')">
+                            <span class="speaker-icon">🔊</span>
+                            <span>${escapeHtml(word.chinese)}</span>
+                        </div>
+                    `;
+                    
+                    if (showStrokeOrder) {
+                        html += `
+                            <button type="button" 
+                                    onclick="showAndPlayStrokeOrder('${containerId}', '${chineseId}', '${escapeJs(word.chinese.charAt(0))}')" 
+                                    style="margin-top: 8px; padding: 6px 12px; background: #f0f4ff; border: none; border-radius: 4px; cursor: pointer; color: #667eea; font-size: 0.85em; display: flex; align-items: center; gap: 5px;">
+                                📝 筆順
+                            </button>
+                            <div id="${containerId}" class="stroke-order-container" style="display: none;">
+                                <div class="stroke-order-title">筆畫順序：</div>
+                                <div id="${chineseId}" class="hanzi-writer-target"></div>
+                                <div id="${containerId}-loading" class="stroke-loading">正在加載筆畫數據...</div>
+                            </div>
+                        `;
+                    }
+                }
+                
+                html += `
+                    <div class="date">📅 ${formatDate(word.date)}</div>
+                    <button class="delete-btn" onclick="deleteWord(${word.id})">刪除</button>
+                </div>
+                `;
+                
+                return html;
+            }).join('');
+            
+            // Initialize HanziWriter after DOM is fully rendered
+            setTimeout(() => {
+                filteredWords.forEach(word => {
+                    if (!word.english && word.chinese) {
+                        const chineseId = `chinese-${word.id}`;
+                        const containerId = `stroke-${word.id}`;
+                        console.log(`Initializing HanziWriter for ${word.chinese.charAt(0)} (element: ${chineseId})`);
+                        initHanziWriter(chineseId, word.chinese.charAt(0), containerId);
+                    }
+                });
+            }, 300);
+        }
+
+        // Initialize calendar
+        function initCalendar() {
+            const calendarEl = document.getElementById('calendar');
+            
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'zh-cn',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,listMonth'
+                },
+                events: [],
+                dateClick: function(info) {
+                    showDayWords(info.dateStr);
+                },
+                eventClick: function(info) {
+                    showDayWords(info.event.startStr);
+                }
+            });
+            
+            calendar.render();
+            updateCalendarEvents();
+        }
+
+        // Update calendar events
+        function updateCalendarEvents() {
+            if (!calendar) return;
+            
+            // Group words by date
+            const wordsByDate = {};
+            words.forEach(word => {
+                if (!wordsByDate[word.date]) {
+                    wordsByDate[word.date] = [];
+                }
+                wordsByDate[word.date].push(word);
+            });
+            
+            // Create calendar events
+            const events = Object.keys(wordsByDate).map(date => ({
+                title: `${wordsByDate[date].length}個單詞`,
+                start: date,
+                allDay: true
+            }));
+            
+            calendar.removeAllEvents();
+            calendar.addEventSource(events);
+        }
+
+        // Show words for a specific day
+        function showDayWords(dateStr) {
+            // Update calendar title to show selected date
+            const calendarTitle = document.querySelector('.fc-toolbar-title');
+            if (calendarTitle) {
+                calendarTitle.textContent = formatDate(dateStr) + '的單詞';
+            }
+            
+            // Show "Show All" button
+            const showAllBtn = document.getElementById('showAllBtn');
+            if (showAllBtn) {
+                showAllBtn.style.display = 'inline-block';
+            }
+            
+            // Render the filtered word list directly in the main panel
+            renderWordList(dateStr);
+            
+            // Scroll to word list smoothly
+            const wordListEl = document.getElementById('wordList');
+            if (wordListEl) {
+                wordListEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        // Render modal words (for refresh after delete)
+        function renderModalWords(dateStr) {
+            const modalWordList = document.getElementById('modalWordList');
+            const filteredWords = words.filter(w => w.date === dateStr);
+            
+            if (filteredWords.length === 0) {
+                modalWordList.innerHTML = '<div class="empty-state"><p>這天沒有記錄單詞</p></div>';
+            } else {
+                modalWordList.innerHTML = filteredWords.map(word => {
+                    let html = '<div class="word-item">';
+                    
+                    if (word.english) {
+                        html += `
+                            <div class="english" onclick="speakEnglish('${escapeJs(word.english)}')">
+                                <span class="speaker-icon">🔊</span>
+                                <span>${escapeHtml(word.english)}</span>
+                            </div>
+                        `;
+                    }
+                    
+                    if (word.chinese) {
+                        const showStrokeOrder = !word.english;
+                        const chineseId = `modal-chinese-${word.id}`;
+                        const containerId = `modal-stroke-${word.id}`;
+                        
+                        html += `
+                            <div class="chinese" onclick="speakCantonese('${escapeJs(word.chinese)}')">
+                                <span class="speaker-icon">🔊</span>
+                                <span>${escapeHtml(word.chinese)}</span>
+                            </div>
+                        `;
+                        
+                        if (showStrokeOrder) {
+                            html += `
+                                <button type="button" 
+                                        onclick="showAndPlayStrokeOrder('${containerId}', '${chineseId}', '${escapeJs(word.chinese.charAt(0))}')" 
+                                        style="margin-top: 8px; padding: 6px 12px; background: #f0f4ff; border: none; border-radius: 4px; cursor: pointer; color: #667eea; font-size: 0.85em; display: flex; align-items: center; gap: 5px;">
+                                    📝 筆順
+                                </button>
+                                <div id="${containerId}" class="stroke-order-container" style="display: none;">
+                                    <div class="stroke-order-title">筆畫順序：</div>
+                                    <div id="${chineseId}" class="hanzi-writer-target"></div>
+                                </div>
+                            `;
+                        }
+                    }
+                    
+                    html += `
+                        <button class="delete-btn" onclick="deleteWord(${word.id}); renderModalWords('${dateStr}');">刪除</button>
+                    </div>
+                    `;
+                    
+                    return html;
+                }).join('');
+            }
+        }
+
+        // Add "Show All" button functionality
+        function showAllWords() {
+            // Reset calendar title
+            const calendarTitle = document.querySelector('.fc-toolbar-title');
+            if (calendarTitle) {
+                calendarTitle.textContent = '月曆';
+            }
+            
+            // Hide "Show All" button
+            const showAllBtn = document.getElementById('showAllBtn');
+            if (showAllBtn) {
+                showAllBtn.style.display = 'none';
+            }
+            
+            renderWordList();
+        }
+
+        // Delete word
+        function deleteWord(id) {
+            if (confirm('確定要刪除這個單詞嗎？')) {
+                words = words.filter(w => w.id !== id);
+                saveWords();
+                renderWordList();
+                updateStats();
+                updateCalendarEvents();
+                
+                // Refresh modal if open
+                const modal = document.getElementById('wordModal');
+                if (modal.classList.contains('active')) {
+                    const modalTitle = document.getElementById('modalTitle').textContent;
+                    const dateMatch = modalTitle.match(/(\d{4}-\d{2}-\d{2})/);
+                    if (dateMatch) {
+                        renderModalWords(dateMatch[1]);
+                    }
+                }
+            }
+        }
+
+        // Update statistics
+        function updateStats() {
+            const totalWords = words.length;
+            
+            const today = new Date().toISOString().split('T')[0];
+            const todayWordsCount = words.filter(w => w.date === today).length;
+            
+            const uniqueDays = new Set(words.map(w => w.date)).size;
+            
+            document.getElementById('totalWords').textContent = totalWords;
+            document.getElementById('todayWords').textContent = todayWordsCount;
+            document.getElementById('totalDays').textContent = uniqueDays;
+        }
+
+        // Helper: Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Helper: Escape JavaScript strings
+        function escapeJs(text) {
+            return text.replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n');
+        }
+
+        // Helper: Format date
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}年${month}月${day}日`;
+        }
+
+        // Toggle date picker
+        function toggleDatePicker() {
+            const popup = document.getElementById('datePickerPopup');
+            popup.classList.toggle('active');
+        }
+
+        // Close date picker
+        function closeDatePicker() {
+            const popup = document.getElementById('datePickerPopup');
+            popup.classList.remove('active');
+        }
+
+        // Select quick date
+        function selectQuickDate(type) {
+            const date = new Date();
+            
+            if (type === 'yesterday') {
+                date.setDate(date.getDate() - 1);
+            } else if (type === 'tomorrow') {
+                date.setDate(date.getDate() + 1);
+            }
+            
+            // Format as local date string (YYYY-MM-DD)
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const dateStr = `${year}-${month}-${day}`;
+            
+            document.getElementById('wordDate').value = dateStr;
+            updateDateDisplay(dateStr);
+            closeDatePicker();
+        }
+
+        // Update date display
+        function updateDateDisplay(dateStr) {
+            const displayEl = document.getElementById('dateDisplayText');
+            if (dateStr) {
+                displayEl.textContent = '📅 ' + formatDate(dateStr);
+            } else {
+                displayEl.textContent = '📅 選擇日期';
+            }
+        }
+
+        // Listen to date input change
+        document.getElementById('wordDate').addEventListener('change', function() {
+            updateDateDisplay(this.value);
+            closeDatePicker();
+        });
+
+        // Initialize Hanzi Writer for stroke order animation
+        function initHanziWriter(elementId, chineseChar, containerId) {
+            const loadingEl = document.getElementById(`${containerId}-loading`);
+            const targetEl = document.getElementById(elementId);
+            
+            console.log('Initializing HanziWriter for:', chineseChar, 'element:', elementId);
+            console.log('HanziWriter available:', typeof HanziWriter !== 'undefined');
+            
+            if (typeof HanziWriter === 'undefined') {
+                console.error('HanziWriter library not loaded!');
+                if (loadingEl) {
+                    loadingEl.innerHTML = '<div class="stroke-error">⚠️ 筆畫庫未加載<br><small>請檢查網絡連接</small></div>';
+                }
+                return;
+            }
+            
+            if (!chineseChar) {
+                console.warn('No Chinese character provided');
+                return;
+            }
+            
+            try {
+                console.log('Creating HanziWriter instance...');
+                
+                // Clear any existing content in the target element
+                if (targetEl) {
+                    targetEl.innerHTML = '';
+                }
+                
+                const writer = HanziWriter.create(elementId, chineseChar, {
+                    width: 120,
+                    height: 120,
+                    padding: 5,
+                    showOutline: true,
+                    strokeAnimationSpeed: 1,
+                    delayBetweenStrokes: 200,
+                    radicalColor: '#168F16',
+                    outlineColor: '#ddd',
+                    strokeColor: '#667eea'
+                });
+                
+                console.log('HanziWriter instance created successfully');
+                
+                // Auto-animate the character after creation
+                setTimeout(() => {
+                    if (writer && typeof writer.animateCharacter === 'function') {
+                        console.log('Starting character animation...');
+                        writer.animateCharacter();
+                    }
+                }, 300);
+                
+                // Hide loading indicator after successful creation
+                setTimeout(() => {
+                    if (loadingEl) {
+                        loadingEl.style.display = 'none';
+                        console.log('Loading indicator hidden');
+                    }
+                }, 500);
+                
+            } catch (e) {
+                console.error('Error creating HanziWriter:', e);
+                if (loadingEl) {
+                    loadingEl.innerHTML = '<div class="stroke-error">⚠️ 筆畫加載失敗<br><small>' + e.message + '</small></div>';
+                }
+            }
+        }
+
+        // Show and play stroke order animation
+        function showAndPlayStrokeOrder(containerId, chineseId, chineseChar) {
+            const container = document.getElementById(containerId);
+            
+            if (!container) return;
+            
+            // If already visible, hide it
+            if (container.style.display === 'block') {
+                container.style.display = 'none';
+                return;
+            }
+            
+            // Show the container
+            container.style.display = 'block';
+            
+            // Initialize and play the animation
+            setTimeout(() => {
+                initHanziWriter(chineseId, chineseChar, containerId);
+            }, 100);
+        }
+
+        // Toggle stroke order display
+        function toggleStrokeOrder(containerId) {
+            const container = document.getElementById(containerId);
+            if (container) {
+                const isHidden = container.style.display === 'none';
+                container.style.display = isHidden ? 'block' : 'none';
+            }
+        }
+
+        // Toggle word examples display
+        async function toggleWordExamples(containerId, btnId, word) {
+            const container = document.getElementById(containerId);
+            const button = document.getElementById(btnId);
+            
+            if (!container || !button) return;
+            
+            const isHidden = container.style.display === 'none';
+            
+            if (isHidden) {
+                // Show examples
+                container.style.display = 'block';
+                button.textContent = '📖 隱藏例句';
+                
+                // Get saved word data
+                const savedWord = words.find(w => w.english === word);
+                const customExamples = savedWord?.customExamples || [];
+                
+                // If word has custom examples, show them directly without fetching API
+                if (customExamples.length > 0) {
+                    displaySavedExamples(container, savedWord, customExamples);
+                } else {
+                    // No custom examples, fetch from API
+                    container.innerHTML = '<div class="loading-examples">🔄 正在加載例句和翻譯...</div>';
+                    
+                    // Fetch and display examples with translations
+                    const examples = await fetchExampleSentences(word);
+                    displaySavedExamples(container, savedWord, customExamples, examples);
+                }
+            } else {
+                // Hide examples
+                container.style.display = 'none';
+                button.textContent = '📖 查看例句';
+            }
+        }
+
+        // Display saved/custom examples
+        async function displaySavedExamples(container, savedWord, customExamples, apiExamples = []) {
+            let allExamples = [];
+            
+            // Add custom examples first
+            customExamples.forEach((example, idx) => {
+                allExamples.push({
+                    en: example.en,
+                    zh: example.zh,
+                    isCustom: true,
+                    index: idx,
+                    fromAPI: example.fromAPI
+                });
+            });
+            
+            // Add API examples only if requested or no custom examples
+            if (apiExamples.length > 0 && customExamples.length === 0) {
+                const examplesWithTranslations = await Promise.all(
+                    apiExamples.map(async (sentence) => {
+                        const translation = await translateToChinese(sentence);
+                        return { en: sentence, zh: translation, isCustom: false };
+                    })
+                );
+                
+                allExamples = [...allExamples, ...examplesWithTranslations];
+            }
+            
+            if (allExamples.length > 0) {
+                let html = `
+                    <div class="example-sentence-container">
+                        ${savedWord?.english ? `
+                            <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #eee;">
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                    <strong style="font-size: 1.1em; color: #667eea;">${escapeHtml(savedWord.english)}</strong>
+                                    <button type="button" onclick="addCustomTranslation(${savedWord.id})" 
+                                            style="padding: 4px 10px; background: #f0f4ff; border: none; border-radius: 4px; cursor: pointer; color: #667eea; font-size: 0.85em;">
+                                        ✏️ 編輯翻譯
+                                    </button>
+                                </div>
+                                ${savedWord.customTranslation ? `
+                                    <div style="color: #666; font-size: 0.95em;">
+                                        🔊 ${escapeHtml(savedWord.customTranslation)}
+                                    </div>
+                                ` : `
+                                    <div style="color: #999; font-size: 0.9em; font-style: italic;">
+                                        點擊「編輯翻譯」添加自定義翻譯
+                                    </div>
+                                `}
+                            </div>
+                        ` : ''}
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <strong style="color: #667eea;">例句：</strong>
+                            <div style="display: flex; gap: 8px;">
+                                ${savedWord?.english && customExamples.length === 0 ? `
+                                    <button type="button" onclick="fetchAndShowAPIExamples('${savedWord.english}', '${escapeJs(container.id)}')" 
+                                            style="padding: 6px 12px; background: #f0f4ff; border: 1px solid #667eea; border-radius: 4px; cursor: pointer; color: #667eea; font-size: 0.85em;">
+                                        🌐 聯網獲取例句
+                                    </button>
+                                ` : ''}
+                                ${savedWord?.english ? `
+                                    <button type="button" onclick="addCustomExample(${savedWord.id})" 
+                                            style="padding: 6px 12px; background: #667eea; border: none; border-radius: 4px; cursor: pointer; color: white; font-size: 0.85em;">
+                                        ➕ 添加例句
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        <ul class="example-sentence-list">
+                            ${allExamples.map((item, index) => `
+                                <li class="example-sentence-item" style="flex-direction: column; align-items: flex-start;">
+                                    <div style="display: flex; align-items: center; gap: 8px; width: 100%; margin-bottom: 4px;">
+                                        <span class="example-icon" style="cursor: pointer;" onclick="speakEnglish('${escapeJs(item.en)}')">🔊</span>
+                                        <span class="example-sentence-text" style="flex: 1; font-weight: 500;">${index + 1}. ${escapeHtml(item.en)}</span>
+                                        ${item.isCustom ? `
+                                            <span style="font-size: 0.75em; background: #f0f4ff; color: #667eea; padding: 2px 6px; border-radius: 3px;">${item.fromAPI ? '網絡' : '自定義'}</span>
+                                        ` : ''}
+                                        ${!item.isCustom ? `
+                                            <button type="button" 
+                                                    onclick="event.stopPropagation(); saveAPISentenceAsDefault(${savedWord.id}, '${escapeJs(item.en)}', ${savedWord.customExamples ? savedWord.customExamples.length : 0})" 
+                                                    style="padding: 2px 6px; background: #f0f4ff; border: 1px solid #667eea; border-radius: 3px; cursor: pointer; color: #667eea; font-size: 0.75em;">
+                                                💾 設為預設
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                    ${item.zh ? `
+                                        <div style="display: flex; align-items: center; gap: 8px; width: 100%; padding-left: 28px;" onclick="speakCantonese('${escapeJs(item.zh)}')">
+                                            <span class="example-icon" style="font-size: 1em;">🔊</span>
+                                            <span class="example-sentence-text" style="color: #666; font-size: 0.9em;">${escapeHtml(item.zh)}</span>
+                                            ${item.isCustom ? `
+                                                <button type="button" onclick="editExampleTranslation(${savedWord.id}, ${item.index})" 
+                                                        style="padding: 2px 6px; background: none; border: 1px solid #ddd; border-radius: 3px; cursor: pointer; color: #999; font-size: 0.75em; margin-left: auto;">
+                                                    ✏️ 編輯
+                                                </button>
+                                                <button type="button" onclick="deleteCustomExample(${savedWord.id}, ${item.index})" 
+                                                        style="padding: 2px 6px; background: #f5576c; border: none; border-radius: 3px; cursor: pointer; color: white; font-size: 0.75em;">
+                                                    🗑️ 刪除
+                                                </button>
+                                            ` : ''}
+                                        </div>
+                                    ` : ''}
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+                
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<div class="no-examples">😕 暫時沒有找到例句</div>';
+            }
+        }
+
+        // Fetch and show API examples (for existing words)
+        async function fetchAndShowAPIExamples(word, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            container.innerHTML = '<div class="loading-examples">🔄 正在從網絡獲取例句...</div>';
+            
+            const examples = await fetchExampleSentences(word);
+            const savedWord = words.find(w => w.english === word);
+            const customExamples = savedWord?.customExamples || [];
+            
+            displaySavedExamples(container, savedWord, customExamples, examples);
+        }
+
+        // Open calendar popup
+        function openCalendar() {
+            const popup = document.getElementById('calendarPopup');
+            const overlay = document.getElementById('calendarOverlay');
+            popup.classList.add('active');
+            overlay.classList.add('active');
+            
+            // Re-render calendar to ensure proper sizing
+            if (calendar) {
+                setTimeout(() => {
+                    calendar.render();
+                }, 100);
+            }
+        }
+
+        // Close calendar popup
+        function closeCalendar() {
+            const popup = document.getElementById('calendarPopup');
+            const overlay = document.getElementById('calendarOverlay');
+            popup.classList.remove('active');
+            overlay.classList.remove('active');
+        }
+    </script>
+</body>
+</html>
