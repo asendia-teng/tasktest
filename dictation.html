@@ -49,16 +49,161 @@
         }
 
         .main-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
             padding: 30px;
         }
 
-        @media (max-width: 1024px) {
-            .main-content {
-                grid-template-columns: 1fr;
+        /* Tab Styles */
+        .tab-container {
+            margin-bottom: 20px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            border-bottom: 3px solid #e0e0e0;
+            padding-bottom: 0;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -3px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
             }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Toast Notification */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(81, 207, 102, 0.3);
+            font-size: 1em;
+            font-weight: bold;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideInRight 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+                visibility: hidden;
+            }
+        }
+
+        /* Speech Rate Controller */
+        .speech-rate-control {
+            background: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .speech-rate-label {
+            font-weight: bold;
+            color: #333;
+            font-size: 0.95em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .speech-rate-buttons {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .rate-btn {
+            padding: 6px 14px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.2s ease;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .rate-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+            transform: translateY(-1px);
+        }
+
+        .rate-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: white;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
         }
 
         .panel {
@@ -559,6 +704,16 @@
             margin-top: 5px;
         }
 
+        /* Review button hover effects */
+        #reviewContainer button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        #reviewContainer button:active {
+            transform: translateY(0);
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -624,26 +779,134 @@
         .delete-btn:hover {
             background: #d43f52;
         }
+
+        /* Autocomplete Dropdown */
+        .autocomplete-wrapper {
+            position: relative;
+        }
+
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #667eea;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 280px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .autocomplete-dropdown.show {
+            display: block;
+            animation: slideDown 0.2s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .autocomplete-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item:hover,
+        .autocomplete-item.selected {
+            background: #f0f4ff;
+        }
+
+        .autocomplete-word {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1em;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .autocomplete-definition {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.4;
+            flex: 1;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Speech Rate Controller -->
+        <div class="speech-rate-control">
+            <div class="speech-rate-label">
+                <span>🔊</span>
+                <span>語速:</span>
+            </div>
+            <div class="speech-rate-buttons" id="speechRateButtons">
+                <button class="rate-btn" data-rate="0.5" onclick="setSpeechRate(0.5)">0.5x</button>
+                <button class="rate-btn" data-rate="0.75" onclick="setSpeechRate(0.75)">0.75x</button>
+                <button class="rate-btn active" data-rate="1.0" onclick="setSpeechRate(1.0)">1.0x</button>
+                <button class="rate-btn" data-rate="1.25" onclick="setSpeechRate(1.25)">1.25x</button>
+                <button class="rate-btn" data-rate="1.5" onclick="setSpeechRate(1.5)">1.5x</button>
+                <button class="rate-btn" data-rate="2.0" onclick="setSpeechRate(2.0)">2.0x</button>
+            </div>
+        </div>
+
         <header>
             <h1>📚 小學生詞記憶</h1>
             <p>Dictation Learning - 每天記錄英文單詞和繁體中文</p>
         </header>
 
         <div class="main-content">
-            <!-- Left Panel: Input Form -->
-            <div class="left-panel">
+            <!-- Tab Buttons -->
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchTab('add-word')">
+                        ➕ 添加單詞
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('word-list')">
+                        📖 單詞列表
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('review')">
+                        📚 複習
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab 1: Add Word Form -->
+            <div id="tab-add-word" class="tab-content active">
                 <div class="panel">
-                    <h2>➕ 添加新單詞</h2>
+                    <h2 style="display: flex; align-items: center; gap: 10px;">
+                        ➕ 添加新單詞
+                        <span id="dictStatus" style="font-size: 0.5em; color: #51cf66; font-weight: normal; opacity: 0; transition: opacity 0.3s ease;">✅ 词典已加载</span>
+                    </h2>
                     <form id="wordForm">
                         <div class="input-group">
                             <label for="englishWord">英文單詞</label>
-                            <input type="text" id="englishWord" placeholder="輸入英文單詞，例如：apple">
+                            <div class="autocomplete-wrapper">
+                                <input type="text" id="englishWord" placeholder="輸入英文單詞，例如：apple" autocomplete="off">
+                                <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
+                            </div>
                             <div style="font-size: 0.85em; color: #999; margin-top: 5px;">
-                                💡 輸入後自動從網絡獲取例句
+                                💡 輸入 3 個字母後自動提示，輸入後自動從網絡獲取例句
                             </div>
                         </div>
 
@@ -696,20 +959,47 @@
                 </div>
             </div>
 
-            <!-- Right Panel: Calendar & Word List -->
-            <div class="right-panel">
-                <button class="calendar-btn" onclick="openCalendar()">
-                    📅 日曆
-                </button>
-
-                <div class="panel">
-                    <h2>
+            <!-- Tab 2: Word List -->
+            <div id="tab-word-list" class="tab-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="color: #667eea; margin: 0; font-size: 1.8em; display: flex; align-items: center; gap: 10px;">
                         📖 單詞列表
-                        <button id="showAllBtn" onclick="showAllWords()" style="display: none; float: right; padding: 8px 16px; font-size: 0.9em;">🔙 返回全部</button>
+                        <button id="showAllBtn" onclick="showAllWords()" style="display: none; padding: 8px 16px; font-size: 0.9em;">🔙 返回全部</button>
                     </h2>
-                    <div class="word-list" id="wordList">
-                        <div class="empty-state">
-                            <p>暫無單詞，請先添加</p>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="calendar-btn" onclick="openCalendar()" style="margin: 0;">
+                            📅 日曆
+                        </button>
+                        <button id="toggleDeleteBtn" onclick="toggleDeleteMode()" style="padding: 10px 20px; background: #ff6b6b; border: none; border-radius: 8px; color: white; font-size: 1em; cursor: pointer; transition: all 0.2s;">
+                            🗑️ 刪除模式
+                        </button>
+                    </div>
+                </div>
+                <div class="word-list" id="wordList">
+                    <div class="empty-state">
+                        <p>暫無單詞，請先添加</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Review -->
+            <div id="tab-review" class="tab-content">
+                <div id="reviewContainer">
+                    <div style="text-align: center; padding: 40px 20px;">
+                        <h2 style="color: #667eea; margin-bottom: 20px;">📚 今日複習</h2>
+                        <div id="reviewStats" style="margin-bottom: 30px; font-size: 1.2em; color: #666;">
+                            載入中...
+                        </div>
+                        <button id="startReviewBtn" onclick="startReviewSession()" style="padding: 15px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 1.2em; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+                            開始複習
+                        </button>
+                        <div id="reviewComplete" style="display: none; margin-top: 30px;">
+                            <div style="font-size: 3em; margin-bottom: 20px;">🎉</div>
+                            <h3 style="color: #51cf66; margin-bottom: 10px;">太棒了！</h3>
+                            <p style="color: #666; margin-bottom: 20px;">你已完成今日所有複習任務</p>
+                            <button onclick="initReviewTab()" style="padding: 10px 20px; background: #f0f4ff; border: none; border-radius: 8px; color: #667eea; cursor: pointer;">
+                                🔄 重新整理
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -735,6 +1025,489 @@
         let translationCache = {}; // Cache translations
         let wordDetailsCache = {}; // Cache word details (phonetic, meaning, etc.)
 
+        // Offline Dictionary Service Class
+        class OfflineDictionary {
+            constructor() {
+                this.dbName = 'DictationDictionary';
+                this.storeName = 'words';
+                this.version = 2;  // Incremented to force reload with Traditional Chinese
+                this.db = null;
+                this.isLoaded = false;
+                this.loadPromise = null;
+            }
+            
+            // Initialize IndexedDB
+            async init() {
+                if (this.loadPromise) return this.loadPromise;
+                
+                this.loadPromise = new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.version);
+                    
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        console.log('🔄 Database upgrade needed (version:', event.oldVersion, '->', event.newVersion, ')');
+                        if (!db.objectStoreNames.contains(this.storeName)) {
+                            console.log('   Creating new object store...');
+                            db.createObjectStore(this.storeName);
+                        } else {
+                            console.log('   Object store already exists, clearing old data...');
+                            // Clear existing data to ensure fresh Traditional Chinese data
+                            const transaction = event.target.transaction;
+                            const store = transaction.objectStore(this.storeName);
+                            store.clear();
+                            console.log('   ✅ Old data cleared');
+                        }
+                    };
+                    
+                    request.onsuccess = (event) => {
+                        this.db = event.target.result;
+                        console.log('✅ IndexedDB initialized');
+                        resolve();
+                    };
+                    
+                    request.onerror = (event) => {
+                        console.error('❌ IndexedDB error:', event.target.error);
+                        reject(event.target.error);
+                    };
+                });
+                
+                return this.loadPromise;
+            }
+            
+            // Load dictionary from JSON file
+            async loadDictionary() {
+                await this.init();
+                
+                // Check if already loaded
+                const testRequest = this.db.transaction([this.storeName], 'readonly')
+                    .objectStore(this.storeName)
+                    .get('__loaded__');
+                
+                return new Promise((resolve) => {
+                    testRequest.onsuccess = async () => {
+                        if (testRequest.result) {
+                            console.log('✅ Dictionary already loaded');
+                            this.isLoaded = true;
+                            
+                            // Show toast notification for cached dictionary
+                            showToast(`词典已就绪！共 ${testRequest.result.count?.toLocaleString() || 'N/A'} 个单词`, 3000);
+                            
+                            // Update status in UI
+                            updateDictStatus(true);
+                            
+                            // Load words from IndexedDB to build Trie
+                            console.log(' Building Trie from IndexedDB...');
+                            const allWords = {};
+                            
+                            const readTransaction = this.db.transaction([this.storeName], 'readonly');
+                            const store = readTransaction.objectStore(this.storeName);
+                            const cursorRequest = store.openCursor();
+                            
+                            cursorRequest.onsuccess = (event) => {
+                                const cursor = event.target.result;
+                                if (cursor) {
+                                    if (cursor.key !== '__loaded__') {
+                                        allWords[cursor.key] = cursor.value;
+                                    }
+                                    cursor.continue();
+                                } else {
+                                    // All words loaded, build Trie
+                                    console.log(`✅ Loaded ${Object.keys(allWords).length} words from IndexedDB`);
+                                    wordTrie.buildFromDictionary(allWords).then(() => {
+                                        console.log('✅ Autocomplete ready!');
+                                    });
+                                }
+                            };
+                            
+                            resolve(true);
+                            return;
+                        }
+                        
+                        // Load dictionary file
+                        try {
+                            console.log('📚 Loading offline dictionary...');
+                            const startTime = Date.now();
+                            // Add timestamp to prevent caching
+                            const dictUrl = `dictionary-with-frequency-traditional.json?v=${Date.now()}`;
+                            console.log('🔗 Dictionary URL:', dictUrl);
+                            const response = await fetch(dictUrl);
+                            
+                            if (!response.ok) {
+                                throw new Error(`HTTP ${response.status}`);
+                            }
+                            
+                            console.log('📥 Downloading dictionary...');
+                            const dictionary = await response.json();
+                            const downloadTime = ((Date.now() - startTime) / 1000).toFixed(2);
+                            const wordCount = Object.keys(dictionary).length;
+                            console.log(`✅ Downloaded ${wordCount.toLocaleString()} words in ${downloadTime}s`);
+                            
+                            // Sample check: verify Traditional Chinese
+                            const sampleWords = ['book', 'country', 'computer'];
+                            console.log('🔍 Sample check (Traditional Chinese):');
+                            sampleWords.forEach(word => {
+                                if (dictionary[word]) {
+                                    console.log(`   ${word}: ${dictionary[word].t}`);
+                                }
+                            });
+                            
+                            // Build Trie in background (async)
+                            const trieBuildPromise = wordTrie.buildFromDictionary(dictionary);
+                            
+                            // Store in IndexedDB
+                            console.log('💾 Storing in IndexedDB...');
+                            const transaction = this.db.transaction([this.storeName], 'readwrite');
+                            const store = transaction.objectStore(this.storeName);
+                            
+                            let count = 0;
+                            Object.entries(dictionary).forEach(([word, data]) => {
+                                store.put(data, word);
+                                count++;
+                                
+                                // Progress indicator for large dictionaries
+                                if (count % 5000 === 0) {
+                                    console.log(`   Stored: ${count.toLocaleString()} words...`);
+                                }
+                            });
+                            
+                            // Mark as loaded
+                            store.put({ timestamp: Date.now(), count: count }, '__loaded__');
+                            
+                            return new Promise((res) => {
+                                transaction.oncomplete = () => {
+                                    const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
+                                    console.log(`✅ Dictionary loaded: ${count.toLocaleString()} words in ${totalTime}s`);
+                                    this.isLoaded = true;
+                                    
+                                    // Show toast notification
+                                    showToast(`词典加载成功！共 ${count.toLocaleString()} 个单词`, 3000);
+                                    
+                                    // Update status in UI
+                                    updateDictStatus(true);
+                                    
+                                    // Wait for Trie to finish building
+                                    trieBuildPromise.then(() => {
+                                        console.log('✅ Autocomplete ready!');
+                                    });
+                                    
+                                    res(true);
+                                };
+                                
+                                transaction.onerror = (event) => {
+                                    console.error('❌ Failed to store dictionary:', event.target.error);
+                                    res(false);
+                                };
+                            });
+                        } catch (error) {
+                            console.error('❌ Failed to load dictionary:', error);
+                            console.error('Error details:', error.message, error.stack);
+                            resolve(false);
+                        }
+                    };
+                    
+                    testRequest.onerror = () => {
+                        console.error('Failed to check dictionary status');
+                        resolve(false);
+                    };
+                });
+            }
+            
+            // Look up a word
+            async lookup(word) {
+                if (!this.db) await this.init();
+                
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readonly');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.get(word.toLowerCase());
+                    
+                    request.onsuccess = () => {
+                        const result = request.result;
+                        if (result) {
+                            console.log(`✅ IndexedDB found: ${word}`);
+                        } else {
+                            console.log(`❌ IndexedDB not found: ${word}`);
+                        }
+                        resolve(result || null);
+                    };
+                    
+                    request.onerror = () => {
+                        console.error(`❌ IndexedDB lookup error for ${word}:`, request.error);
+                        reject(request.error);
+                    };
+                });
+            }
+            
+            // Check if dictionary is ready
+            async isReady() {
+                if (this.isLoaded) return true;
+                await this.init();
+                return this.isLoaded;
+            }
+        }
+
+        // Global instance
+        const offlineDict = new OfflineDictionary();
+
+        // Trie (字典树) for autocomplete
+        class DictionaryTrie {
+            constructor() {
+                this.root = { children: {}, isEnd: false, words: [], data: null };
+                this.wordCount = 0;
+                this.isBuilt = false;
+            }
+
+            // Insert a word with its data into the trie
+            insert(word, data) {
+                let node = this.root;
+                word = word.toLowerCase();
+                
+                for (const char of word) {
+                    if (!node.children[char]) {
+                        node.children[char] = { children: {}, isEnd: false, words: [], data: null };
+                    }
+                    node = node.children[char];
+                }
+                
+                node.isEnd = true;
+                node.words.push(word);
+                node.data = data;
+                this.wordCount++;
+            }
+
+            // Build trie from dictionary object
+            async buildFromDictionary(dictionary) {
+                console.log(' Building Trie from dictionary...');
+                const startTime = Date.now();
+                
+                // Sort words alphabetically
+                const sortedWords = Object.entries(dictionary).sort(([a], [b]) => a.localeCompare(b));
+                
+                let count = 0;
+                for (const [word, data] of sortedWords) {
+                    this.insert(word, data);
+                    count++;
+                    
+                    if (count % 5000 === 0) {
+                        console.log(`   Trie built: ${count.toLocaleString()} words...`);
+                    }
+                }
+                
+                this.isBuilt = true;
+                const buildTime = ((Date.now() - startTime) / 1000).toFixed(2);
+                console.log(`✅ Trie built: ${this.wordCount.toLocaleString()} words in ${buildTime}s`);
+            }
+
+            // Search for words with given prefix
+            searchPrefix(prefix, limit = 5) {
+                if (!this.isBuilt || !prefix) return [];
+                
+                let node = this.root;
+                prefix = prefix.toLowerCase();
+                
+                // Navigate to the prefix node
+                for (const char of prefix) {
+                    if (!node.children[char]) {
+                        return []; // No match
+                    }
+                    node = node.children[char];
+                }
+                
+                // Collect all words under this node
+                const results = [];
+                this._collectWords(node, results, limit);
+                
+                return results;
+            }
+
+            // Helper: collect words from a node (DFS)
+            _collectWords(node, results, limit) {
+                if (results.length >= limit) return;
+                
+                // If this node marks the end of a word
+                if (node.isEnd && node.words.length > 0) {
+                    for (const word of node.words) {
+                        if (results.length >= limit) return;
+                        
+                        const definition = node.data?.t || '';
+                        const shortDef = this._getShortDefinition(definition);
+                        
+                        results.push({
+                            word: word,
+                            definition: shortDef,
+                            data: node.data
+                        });
+                    }
+                }
+                
+                // Traverse children in alphabetical order
+                const childrenKeys = Object.keys(node.children).sort();
+                for (const char of childrenKeys) {
+                    if (results.length >= limit) return;
+                    this._collectWords(node.children[char], results, limit);
+                }
+            }
+
+            // Extract short definition from translation string
+            _getShortDefinition(translation) {
+                if (!translation) return '';
+                
+                // Remove \n and get first line
+                const firstLine = translation.split('\\n')[0];
+                
+                // Log for debugging (first few times only)
+                if (!this._logCount) this._logCount = 0;
+                if (this._logCount < 3) {
+                    console.log('🔤 Trie definition source:', translation.substring(0, 50));
+                    this._logCount++;
+                }
+                
+                // Limit to 50 characters
+                return firstLine.length > 50 ? firstLine.substring(0, 50) + '...' : firstLine;
+            }
+        }
+
+        // Global Trie instance
+        const wordTrie = new DictionaryTrie();
+
+        // Autocomplete functionality
+        const autocompleteState = {
+            selectedIndex: -1,
+            currentResults: [],
+            debounceTimer: null
+        };
+
+        // Show autocomplete dropdown
+        function showAutocomplete(results) {
+            const dropdown = document.getElementById('autocompleteDropdown');
+            autocompleteState.currentResults = results;
+            autocompleteState.selectedIndex = -1;
+            
+            if (results.length === 0) {
+                dropdown.classList.remove('show');
+                return;
+            }
+            
+            // Log autocomplete results for debugging
+            console.log('🔍 Autocomplete results:', results.map(r => `${r.word}: ${r.definition}`));
+            
+            // Definitions are already in Traditional Chinese from pre-converted dictionary
+            const html = results.map((item, index) => `
+                <div class="autocomplete-item" data-index="${index}" onclick="selectAutocompleteWord('${item.word.replace(/'/g, "\\'")}')">
+                    <span class="autocomplete-word">${escapeHtml(item.word)}</span>
+                    ${item.definition ? `<span class="autocomplete-definition">${escapeHtml(item.definition)}</span>` : ''}
+                </div>
+            `).join('');
+            
+            dropdown.innerHTML = html;
+            dropdown.classList.add('show');
+        }
+
+        // Hide autocomplete dropdown
+        function hideAutocomplete() {
+            const dropdown = document.getElementById('autocompleteDropdown');
+            dropdown.classList.remove('show');
+            autocompleteState.selectedIndex = -1;
+        }
+
+        // Select a word from autocomplete
+        function selectAutocompleteWord(word) {
+            const input = document.getElementById('englishWord');
+            input.value = word;
+            hideAutocomplete();
+            
+            // Trigger word lookup
+            displayExamples(word);
+        }
+
+        // Handle autocomplete input
+        function handleAutocompleteInput(value) {
+            clearTimeout(autocompleteState.debounceTimer);
+            
+            if (value.length < 3 || !wordTrie.isBuilt) {
+                hideAutocomplete();
+                return;
+            }
+            
+            autocompleteState.debounceTimer = setTimeout(() => {
+                const results = wordTrie.searchPrefix(value.trim(), 5);
+                showAutocomplete(results);
+            }, 200);
+        }
+
+        // Handle keyboard navigation in autocomplete
+        function handleAutocompleteKeydown(e) {
+            const dropdown = document.getElementById('autocompleteDropdown');
+            if (!dropdown.classList.contains('show')) return;
+            
+            const items = dropdown.querySelectorAll('.autocomplete-item');
+            
+            switch (e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    autocompleteState.selectedIndex = Math.min(
+                        autocompleteState.selectedIndex + 1,
+                        items.length - 1
+                    );
+                    updateAutocompleteSelection(items);
+                    break;
+                    
+                case 'ArrowUp':
+                    e.preventDefault();
+                    autocompleteState.selectedIndex = Math.max(
+                        autocompleteState.selectedIndex - 1,
+                        -1
+                    );
+                    updateAutocompleteSelection(items);
+                    break;
+                    
+                case 'Enter':
+                    if (autocompleteState.selectedIndex >= 0 && autocompleteState.currentResults[autocompleteState.selectedIndex]) {
+                        e.preventDefault();
+                        selectAutocompleteWord(autocompleteState.currentResults[autocompleteState.selectedIndex].word);
+                    }
+                    break;
+                    
+                case 'Escape':
+                    hideAutocomplete();
+                    break;
+            }
+        }
+
+        // Update visual selection in autocomplete
+        function updateAutocompleteSelection(items) {
+            items.forEach((item, index) => {
+                if (index === autocompleteState.selectedIndex) {
+                    item.classList.add('selected');
+                    item.scrollIntoView({ block: 'nearest' });
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
+
+        // Show toast notification
+        function showToast(message, duration = 3000) {
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            toast.innerHTML = `✅ ${message}`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, duration);
+        }
+
+        // Update dictionary status in UI
+        function updateDictStatus(show) {
+            const statusEl = document.getElementById('dictStatus');
+            if (statusEl) {
+                statusEl.style.opacity = show ? '1' : '0';
+            }
+        }
+
         // Fetch word details (phonetic, part of speech, meanings)
         async function fetchWordDetails(word) {
             if (!word || word.length === 0) return null;
@@ -746,6 +1519,30 @@
                 console.log('Using cached word details for:', lowerWord);
                 return wordDetailsCache[lowerWord];
             }
+            
+            // Try offline dictionary first
+            try {
+                const offlineData = await offlineDict.lookup(lowerWord);
+                if (offlineData) {
+                    console.log('📚 Found in offline dictionary:', lowerWord);
+                    console.log('   Phonetic:', offlineData.p);
+                    console.log('   Chinese (t):', offlineData.t ? offlineData.t.substring(0, 50) : 'N/A');
+                    console.log('   Definitions (d):', offlineData.d ? offlineData.d.length : 0, 'items');
+                    const details = {
+                        phonetic: offlineData.p || '',
+                        phoneticAudio: '',
+                        meanings: offlineData.d || [],
+                        chineseTranslation: offlineData.t || ''  // Pre-converted Traditional Chinese
+                    };
+                    wordDetailsCache[lowerWord] = details;
+                    return details;
+                }
+            } catch (error) {
+                console.warn('⚠️ Offline dictionary lookup failed:', error);
+            }
+            
+            // Fallback to API
+            console.log('🌐 Fetching from API:', lowerWord);
             
             try {
                 console.log('Fetching word details for:', lowerWord);
@@ -1026,10 +1823,11 @@
             section.style.display = 'block';
             list.innerHTML = '<li class="loading-examples">🔄 正在加載單詞詳情和例句...</li>';
             
-            // Fetch word details and examples with translations in parallel
-            const [wordDetails, examples] = await Promise.all([
+            // Fetch word details, examples with translations, and word translation in parallel
+            const [wordDetails, examples, wordTranslation] = await Promise.all([
                 fetchWordDetails(word),
-                fetchExampleSentencesWithTranslations(word)
+                fetchExampleSentencesWithTranslations(word),
+                translateToChinese(word)
             ]);
             
             let html = '';
@@ -1039,17 +1837,24 @@
                 html += `
                     <div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 100%); border-radius: 8px; border-left: 4px solid #667eea;">
                         <div style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px;">
-                            <strong style="font-size: 1.3em; color: #667eea;">${escapeHtml(word)}</strong>
+                            <span style="cursor: pointer; font-size: 1.3em;" onclick="speakEnglish('${escapeJs(word)}')">🔊</span>
+                            <strong style="font-size: 1.3em; color: #667eea; cursor: pointer;" onclick="speakEnglish('${escapeJs(word)}')">${escapeHtml(word)}</strong>
                             ${wordDetails.phonetic ? `
-                                <span style="font-size: 1.1em; color: #666; font-family: 'Lucida Sans Unicode', 'Arial Unicode MS', sans-serif;">${escapeHtml(wordDetails.phonetic)}</span>
+                                <span style="font-size: 1.1em; color: #666; font-family: 'Lucida Sans Unicode', 'Arial Unicode MS', sans-serif;">[${escapeHtml(wordDetails.phonetic)}]</span>
                                 ${wordDetails.phoneticAudio ? `
-                                    <button type="button" onclick="playPhoneticAudio('${escapeJs(wordDetails.phoneticAudio)}')" 
+                                    <button type="button" onclick="event.stopPropagation(); playPhoneticAudio('${escapeJs(wordDetails.phoneticAudio)}')" 
                                             style="padding: 2px 8px; background: #667eea; border: none; border-radius: 4px; cursor: pointer; color: white; font-size: 0.9em;">
                                         🔊
                                     </button>
                                 ` : ''}
                             ` : ''}
                         </div>
+                        ${wordTranslation ? `
+                            <div style="margin-bottom: 10px; font-size: 1.1em; color: #333; display: flex; align-items: center; gap: 8px;">
+                                <span style="cursor: pointer;" onclick="speakCantonese('${escapeJs(wordTranslation)}')">🔊</span>
+                                <span>${escapeHtml(wordTranslation)}</span>
+                            </div>
+                        ` : ''}
                         ${wordDetails.meanings.length > 0 ? `
                             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                                 ${wordDetails.meanings.map(meaning => `
@@ -1063,14 +1868,45 @@
                             <div style="margin-top: 10px;">
                                 ${wordDetails.meanings.slice(0, 2).map((meaning, idx) => `
                                     <div style="margin-bottom: 8px; font-size: 0.9em; color: #555;">
-                                        <span style="color: #667eea; font-weight: bold;">${idx + 1}. ${escapeHtml(meaning.partOfSpeech)}</span>
+                                        <span style="color: #667eea; font-weight: bold;">${escapeHtml(meaning.partOfSpeech)}</span>
                                         <ul style="margin: 4px 0 0 20px; padding: 0;">
-                                            ${meaning.definitions.slice(0, 2).map(def => `
-                                                <li style="margin-bottom: 3px;">${escapeHtml(def)}</li>
-                                            `).join('')}
+                                            ${meaning.definitions.slice(0, 2).map(def => {
+                                                // Split definition by \n and create separate lines
+                                                const lines = def.split('\\n').filter(line => line.trim());
+                                                return lines.map(line => {
+                                                    // Remove part-of-speech tags for TTS (e.g., "n.", "a.", "v.", "adv.", etc.)
+                                                    const cleanText = line.replace(/^\s*[a-z]+\.\s*/i, '').trim();
+                                                    return `
+                                                        <li style="margin-bottom: 3px;">
+                                                            <div style="display: flex; align-items: flex-start; gap: 8px;">
+                                                                <span style="cursor: pointer; flex-shrink: 0;" onclick="speakEnglish('${escapeJs(cleanText)}')">🔊</span>
+                                                                <span style="flex: 1;">${escapeHtml(line)}</span>
+                                                            </div>
+                                                        </li>
+                                                    `;
+                                                }).join('');
+                                            }).join('')}
                                         </ul>
                                     </div>
                                 `).join('')}
+                            </div>
+                        ` : ''}
+                        ${wordDetails.chineseTranslation ? `
+                            <div style="margin-top: 10px; padding: 10px; background: white; border-radius: 6px; border-left: 3px solid #667eea;">
+                                ${(() => {
+                                    // Split by \n and process each line
+                                    const lines = wordDetails.chineseTranslation.split('\\n').filter(line => line.trim());
+                                    return lines.map(line => {
+                                        // Remove part-of-speech tags for TTS (e.g., "n.", "a.", "v.", "adv.", etc.)
+                                        const cleanText = line.replace(/^\s*[a-z]+\.\s*/i, '').trim();
+                                        return `
+                                            <div style="margin-bottom: 6px; display: flex; align-items: flex-start; gap: 8px;">
+                                                <span style="cursor: pointer; flex-shrink: 0;" onclick="speakCantonese('${escapeJs(cleanText)}')">🔊</span>
+                                                <span style="flex: 1; color: #333; line-height: 1.6;">${escapeHtml(line)}</span>
+                                            </div>
+                                        `;
+                                    }).join('');
+                                })()}
                             </div>
                         ` : ''}
                     </div>
@@ -1094,14 +1930,15 @@
             
             if (examples.length > 0) {
                 html += examples.map((item, index) => `
-                    <li class="example-sentence-item" style="flex-direction: column; align-items: flex-start;" onclick="selectExampleSentence('${escapeJs(item.en)}')">
+                    <li class="example-sentence-item" style="flex-direction: column; align-items: flex-start;">
                         <div style="display: flex; align-items: center; gap: 8px; width: 100%; margin-bottom: 4px;">
-                            <span class="example-icon">✅</span>
-                            <span class="example-sentence-text" style="flex: 1;">${index + 1}. ${escapeHtml(item.en)}</span>
+                            <span class="example-icon" style="cursor: pointer;" onclick="event.stopPropagation(); speakEnglish('${escapeJs(item.en)}')">🔊</span>
+                            <span class="example-sentence-text" style="flex: 1; cursor: pointer;" onclick="selectExampleSentence(${JSON.stringify(item).replace(/'/g, "\\'")})">${escapeHtml(item.en)}</span>
                         </div>
                         ${item.zh ? `
-                            <div style="padding-left: 28px; color: #666; font-size: 0.9em; margin-top: 4px;">
-                                🔊 ${escapeHtml(item.zh)}
+                            <div style="padding-left: 28px; color: #666; font-size: 0.9em; margin-top: 4px; display: flex; align-items: center; gap: 8px;">
+                                <span style="cursor: pointer;" onclick="event.stopPropagation(); speakCantonese('${escapeJs(item.zh)}')">🔊</span>
+                                <span>${escapeHtml(item.zh)}</span>
                             </div>
                         ` : ''}
                     </li>
@@ -1195,6 +2032,322 @@
 
         let currentInputWord = '';
 
+        // Tab switching function
+        function switchTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            tabButtons.forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            const selectedTab = document.getElementById(`tab-${tabName}`);
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+            }
+            
+            // Add active class to clicked button
+            event.target.closest('.tab-btn').classList.add('active');
+            
+            // Refresh word list when switching to word list tab
+            if (tabName === 'word-list') {
+                renderWordList();
+            }
+            
+            // Initialize review tab when switching to it
+            if (tabName === 'review') {
+                initReviewTab();
+            }
+        }
+
+        // Toggle delete mode
+        let deleteMode = false;
+        function toggleDeleteMode() {
+            deleteMode = !deleteMode;
+            const btn = document.getElementById('toggleDeleteBtn');
+            if (deleteMode) {
+                btn.textContent = '✅ 完成刪除';
+                btn.style.background = '#51cf66';
+            } else {
+                btn.textContent = '🗑️ 刪除模式';
+                btn.style.background = '#ff6b6b';
+            }
+            renderWordList();
+        }
+
+        // Initialize SRS data for a word
+        function initSRSData(word) {
+            if (!word.srs) {
+                word.srs = {
+                    easeFactor: 2.5,
+                    interval: 0,
+                    repetitions: 0,
+                    nextReviewDate: null,
+                    lastReviewDate: null
+                };
+            }
+        }
+
+        // Calculate next review date using SM-2 algorithm
+        function calculateNextReview(word, quality) {
+            initSRSData(word);
+            
+            const srs = word.srs;
+            let { easeFactor, interval, repetitions } = srs;
+            
+            // Quality: 0=Again, 1=Hard, 2=Good, 3=Easy
+            if (quality === 0) {
+                // Again - forgot completely
+                repetitions = 0;
+                interval = 1;
+                easeFactor = Math.max(1.3, easeFactor - 0.2);
+            } else if (quality === 1) {
+                // Hard
+                if (repetitions === 0) interval = 1;
+                else if (repetitions === 1) interval = 6;
+                else interval = Math.round(interval * easeFactor * 0.85);
+                
+                repetitions++;
+                easeFactor = Math.max(1.3, easeFactor - 0.15);
+            } else if (quality === 2) {
+                // Good
+                if (repetitions === 0) interval = 1;
+                else if (repetitions === 1) interval = 6;
+                else interval = Math.round(interval * easeFactor);
+                
+                repetitions++;
+                // easeFactor stays the same
+            } else if (quality === 3) {
+                // Easy
+                if (repetitions === 0) interval = 4;
+                else if (repetitions === 1) interval = 8;
+                else interval = Math.round(interval * easeFactor * 1.3);
+                
+                repetitions++;
+                easeFactor += 0.15;
+            }
+            
+            // Cap interval at 365 days (1 year)
+            interval = Math.min(interval, 365);
+            
+            // Update word's SRS data
+            srs.easeFactor = easeFactor;
+            srs.interval = interval;
+            srs.repetitions = repetitions;
+            srs.lastReviewDate = new Date().toISOString().split('T')[0];
+            
+            // Calculate next review date
+            const nextDate = new Date();
+            nextDate.setDate(nextDate.getDate() + interval);
+            srs.nextReviewDate = nextDate.toISOString().split('T')[0];
+            
+            return srs;
+        }
+
+        // Get words due for review today
+        function getDueWords() {
+            const today = new Date().toISOString().split('T')[0];
+            return words.filter(word => {
+                // Include words with English OR Chinese
+                if (!word.english && !word.chinese) return false;
+                
+                initSRSData(word);
+                return word.srs.nextReviewDate && word.srs.nextReviewDate <= today;
+            });
+        }
+
+        // Review session state
+        let reviewSession = {
+            words: [],
+            currentIndex: 0,
+            showAnswer: false
+        };
+
+        // Initialize review tab
+        function initReviewTab() {
+            const dueWords = getDueWords();
+            const statsEl = document.getElementById('reviewStats');
+            const startBtn = document.getElementById('startReviewBtn');
+            const completeEl = document.getElementById('reviewComplete');
+            
+            completeEl.style.display = 'none';
+            
+            if (dueWords.length === 0) {
+                statsEl.innerHTML = '<div style="font-size: 2em; margin-bottom: 10px;">✨</div><p>沒有需要複習的單詞</p>';
+                startBtn.style.display = 'none';
+            } else {
+                statsEl.innerHTML = `
+                    <div style="font-size: 3em; margin-bottom: 10px;">📚</div>
+                    <p style="font-size: 1.5em; color: #667eea; font-weight: bold;">${dueWords.length} 個單詞待複習</p>
+                    <p style="margin-top: 10px;">今天是你複習這些單詞的好日子！</p>
+                `;
+                startBtn.style.display = 'inline-block';
+            }
+        }
+
+        // Start review session
+        function startReviewSession() {
+            const dueWords = getDueWords();
+            if (dueWords.length === 0) {
+                alert('沒有需要複習的單詞！');
+                return;
+            }
+            
+            reviewSession = {
+                words: dueWords,
+                currentIndex: 0,
+                showAnswer: false
+            };
+            
+            showReviewCard();
+        }
+
+        // Show current review card
+        function showReviewCard() {
+            const container = document.getElementById('reviewContainer');
+            const { words, currentIndex, showAnswer } = reviewSession;
+            
+            if (currentIndex >= words.length) {
+                // Review complete
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px;">
+                        <div style="font-size: 3em; margin-bottom: 20px;">🎉</div>
+                        <h3 style="color: #51cf66; margin-bottom: 10px;">太棒了！</h3>
+                        <p style="color: #666; margin-bottom: 20px;">你已完成今日所有複習任務</p>
+                        <button onclick="initReviewTab()" style="padding: 10px 20px; background: #f0f4ff; border: none; border-radius: 8px; color: #667eea; cursor: pointer;">
+                            🔄 返回
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            const word = words[currentIndex];
+            const progress = currentIndex + 1;
+            const total = words.length;
+            
+            // Determine what to display based on word type
+            const isChineseOnly = !word.english && word.chinese;
+            const displayWord = word.english || word.chinese;
+            const displayText = word.customTranslation || word.chinese;
+            
+            let html = `
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <!-- Progress Bar -->
+                    <div style="margin-bottom: 30px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: #666;">
+                            <span>進度</span>
+                            <span>${progress}/${total}</span>
+                        </div>
+                        <div style="background: #e0e0e0; border-radius: 10px; height: 10px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); height: 100%; width: ${(progress/total)*100}%; transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Word Card -->
+                    <div style="background: white; border-radius: 15px; padding: 40px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center;">
+            `;
+            
+            // Display the word (English or Chinese)
+            if (word.english) {
+                html += `
+                        <div style="font-size: 2.5em; color: #667eea; margin-bottom: 15px; cursor: pointer;" onclick="speakEnglish('${escapeJs(word.english)}')">
+                            🔊 ${escapeHtml(word.english)}
+                        </div>
+                `;
+            } else if (word.chinese) {
+                html += `
+                        <div style="font-size: 2.5em; color: #667eea; margin-bottom: 15px; cursor: pointer;" onclick="speakCantonese('${escapeJs(word.chinese)}')">
+                            🔊 ${escapeHtml(word.chinese)}
+                        </div>
+                `;
+            }
+            
+            if (showAnswer) {
+                html += `
+                        <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #f0f0f0;">
+                            <div style="font-size: 2em; color: #333; margin-bottom: 10px; cursor: pointer;" onclick="speakCantonese('${escapeJs(displayText)}')">
+                                🔊 ${escapeHtml(displayText)}
+                            </div>
+                `;
+                
+                // Add stroke order button and container for Chinese-only words
+                if (isChineseOnly && word.chinese) {
+                    const chineseId = `review-chinese-${word.id}`;
+                    const containerId = `review-stroke-${word.id}`;
+                    
+                    html += `
+                            <button type="button" 
+                                    onclick="showAndPlayStrokeOrder('${containerId}', '${chineseId}', '${escapeJs(word.chinese.charAt(0))}')" 
+                                    style="margin-top: 15px; padding: 8px 16px; background: #f0f4ff; border: none; border-radius: 6px; cursor: pointer; color: #667eea; font-size: 0.95em; display: inline-flex; align-items: center; gap: 5px;">
+                                📝 筆順動畫
+                            </button>
+                            <div id="${containerId}" class="stroke-order-container" style="display: none; margin-top: 15px;">
+                                <div class="stroke-order-title">筆畫順序：</div>
+                                <div id="${chineseId}" class="hanzi-writer-target"></div>
+                                <div id="${containerId}-loading" class="stroke-loading">正在加載筆畫數據...</div>
+                            </div>
+                    `;
+                }
+                
+                html += `
+                        </div>
+                        
+                        <!-- Rating Buttons -->
+                        <div style="margin-top: 30px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                            <button onclick="rateWord(0)" style="padding: 15px; background: #ff6b6b; color: white; border: none; border-radius: 10px; font-size: 1.1em; cursor: pointer; transition: transform 0.2s;">
+                                ❌ 忘記
+                            </button>
+                            <button onclick="rateWord(1)" style="padding: 15px; background: #ffa94d; color: white; border: none; border-radius: 10px; font-size: 1.1em; cursor: pointer; transition: transform 0.2s;">
+                                😕 困難
+                            </button>
+                            <button onclick="rateWord(2)" style="padding: 15px; background: #51cf66; color: white; border: none; border-radius: 10px; font-size: 1.1em; cursor: pointer; transition: transform 0.2s;">
+                                👍 良好
+                            </button>
+                            <button onclick="rateWord(3)" style="padding: 15px; background: #339af0; color: white; border: none; border-radius: 10px; font-size: 1.1em; cursor: pointer; transition: transform 0.2s;">
+                                ✅ 簡單
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            } else {
+                html += `
+                        <button onclick="toggleShowAnswer()" style="margin-top: 30px; padding: 15px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 1.1em; cursor: pointer; transition: transform 0.2s;">
+                            顯示答案
+                        </button>
+                    </div>
+                </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        // Toggle show answer
+        function toggleShowAnswer() {
+            reviewSession.showAnswer = true;
+            showReviewCard();
+        }
+
+        // Rate word and move to next
+        function rateWord(quality) {
+            const word = reviewSession.words[reviewSession.currentIndex];
+            calculateNextReview(word, quality);
+            saveWords();
+            
+            // Move to next word
+            reviewSession.currentIndex++;
+            reviewSession.showAnswer = false;
+            showReviewCard();
+        }
+
         // Refresh API examples (when adding new word)
         function refreshAPIExamples() {
             const word = document.getElementById('englishWord').value.trim();
@@ -1224,8 +2377,20 @@
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
+            // Load speech rate preference from localStorage
+            loadSpeechRate();
+            
             // Load words from localStorage
             loadWords();
+            
+            // Initialize offline dictionary in background
+            offlineDict.loadDictionary().then((success) => {
+                if (success) {
+                    console.log('✅ Offline dictionary ready');
+                } else {
+                    console.warn('⚠️ Offline dictionary not available, using API only');
+                }
+            });
             
             // Set default date to today (using local time)
             const today = new Date();
@@ -1252,6 +2417,27 @@
                     closeDatePicker();
                 }
             });
+            
+            // Initialize autocomplete
+            const englishInput = document.getElementById('englishWord');
+            const dropdown = document.getElementById('autocompleteDropdown');
+            
+            // Input event for autocomplete
+            englishInput.addEventListener('input', function(e) {
+                handleAutocompleteInput(e.target.value);
+            });
+            
+            // Keyboard navigation
+            englishInput.addEventListener('keydown', function(e) {
+                handleAutocompleteKeydown(e);
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!englishInput.contains(e.target) && !dropdown.contains(e.target)) {
+                    hideAutocomplete();
+                }
+            });
         });
 
         // Load words from localStorage
@@ -1259,6 +2445,17 @@
             const stored = localStorage.getItem('dictationWords');
             if (stored) {
                 words = JSON.parse(stored);
+                // Initialize SRS data for all existing words
+                words.forEach(word => {
+                    // Include words with English OR Chinese
+                    if (word.english || word.chinese) {
+                        initSRSData(word);
+                        // If no nextReviewDate set, set it to today for immediate review
+                        if (!word.srs.nextReviewDate) {
+                            word.srs.nextReviewDate = new Date().toISOString().split('T')[0];
+                        }
+                    }
+                });
             }
         }
 
@@ -1372,7 +2569,7 @@
         }
 
         // Form submission
-        document.getElementById('wordForm').addEventListener('submit', function(e) {
+        document.getElementById('wordForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const englishWord = document.getElementById('englishWord').value.trim();
@@ -1398,6 +2595,42 @@
                 createdAt: new Date().toISOString()
             };
             
+            // If there's an English word, try to get translation
+            if (englishWord) {
+                // If user entered Chinese text, use it as customTranslation
+                if (chineseText) {
+                    newWord.customTranslation = chineseText;
+                } else {
+                    // Otherwise, fetch translation from API
+                    try {
+                        const translation = await translateToChinese(englishWord);
+                        if (translation) {
+                            newWord.customTranslation = translation;
+                        }
+                    } catch (error) {
+                        console.error('Failed to fetch translation:', error);
+                    }
+                }
+            }
+            
+            // Initialize SRS data for new word with English or Chinese
+            if (englishWord || chineseText) {
+                initSRSData(newWord);
+                
+                // Determine when to schedule first review
+                const today = new Date().toISOString().split('T')[0];
+                
+                // If word date is in the past or today, schedule for immediate review
+                // If word date is in the future, schedule for that date
+                if (wordDate <= today) {
+                    // Past or today - review immediately
+                    newWord.srs.nextReviewDate = today;
+                } else {
+                    // Future date - schedule for that date
+                    newWord.srs.nextReviewDate = wordDate;
+                }
+            }
+            
             // Add to array
             words.push(newWord);
             
@@ -1419,12 +2652,45 @@
             alert('✅ 單詞已保存！');
         });
 
+        // Global speech rate (default 1.0x)
+        let globalSpeechRate = 1.0;
+
+        // Set speech rate and save to localStorage
+        function setSpeechRate(rate) {
+            globalSpeechRate = rate;
+            localStorage.setItem('speechRate', rate.toString());
+            
+            // Update UI - remove active class from all buttons
+            document.querySelectorAll('.rate-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Add active class to selected button
+            const selectedBtn = document.querySelector(`.rate-btn[data-rate="${rate}"]`);
+            if (selectedBtn) {
+                selectedBtn.classList.add('active');
+            }
+            
+            console.log(`🔊 Speech rate set to: ${rate}x`);
+        }
+
+        // Load speech rate from localStorage on page load
+        function loadSpeechRate() {
+            const savedRate = localStorage.getItem('speechRate');
+            if (savedRate) {
+                const rate = parseFloat(savedRate);
+                if (!isNaN(rate) && rate > 0) {
+                    setSpeechRate(rate);
+                }
+            }
+        }
+
         // Text-to-Speech for English
         function speakEnglish(text) {
             if ('speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'en-US';
-                utterance.rate = 0.8;
+                utterance.rate = globalSpeechRate;
                 utterance.pitch = 1;
                 speechSynthesis.speak(utterance);
             } else {
@@ -1437,7 +2703,7 @@
             if ('speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'zh-HK';
-                utterance.rate = 0.8;
+                utterance.rate = globalSpeechRate;
                 utterance.pitch = 1;
                 speechSynthesis.speak(utterance);
             } else {
@@ -1471,12 +2737,12 @@
                     
                     html += `
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                            <div class="english" onclick="speakEnglish('${escapeJs(word.english)}')" style="flex: 1;">
+                            <div class="english" onclick="speakEnglish('${escapeJs(word.english)}')" style="flex: 1; cursor: pointer;">
                                 <span class="speaker-icon">🔊</span>
                                 <span>${escapeHtml(word.english)}</span>
                             </div>
                             <button type="button" id="${toggleBtnId}" 
-                                    onclick="toggleWordExamples('${exampleContainerId}', '${toggleBtnId}', '${escapeJs(word.english)}')" 
+                                    onclick="event.stopPropagation(); toggleWordExamples('${exampleContainerId}', '${toggleBtnId}', '${escapeJs(word.english)}')" 
                                     style="padding: 6px 12px; background: #f0f4ff; border: none; border-radius: 4px; cursor: pointer; color: #667eea; font-size: 0.85em;">
                                 📖 查看例句
                             </button>
@@ -1488,17 +2754,25 @@
                     html += `<div style="margin-bottom: 5px;"></div>`;
                 }
                 
-                if (word.chinese) {
-                    const showStrokeOrder = !word.english;
+                // Display translation if available (either customTranslation or chinese)
+                const displayText = word.customTranslation || word.chinese;
+                if (displayText) {
+                    const showStrokeOrder = !word.english && word.chinese;
                     const chineseId = `chinese-${word.id}`;
                     const containerId = `stroke-${word.id}`;
                     
-                    console.log(`Word ${word.id}: english="${word.english}", chinese="${word.chinese}", showStrokeOrder=${showStrokeOrder}`);
+                    console.log(`Word ${word.id}: english="${word.english}", displayText="${displayText}", showStrokeOrder=${showStrokeOrder}`);
                     
                     html += `
-                        <div class="chinese" onclick="speakCantonese('${escapeJs(word.chinese)}')">
-                            <span class="speaker-icon">🔊</span>
-                            <span>${escapeHtml(word.chinese)}</span>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px;">
+                            <div class="chinese" style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                                <span style="cursor: pointer; font-size: 1.2em;" onclick="speakCantonese('${escapeJs(displayText)}'); event.stopPropagation();">🔊</span>
+                                <span style="cursor: pointer;" onclick="speakCantonese('${escapeJs(displayText)}'); event.stopPropagation();">${escapeHtml(displayText)}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                                <div class="date" style="margin: 0;">📅 ${formatDate(word.date)}</div>
+                                ${deleteMode ? `<button class="delete-btn" onclick="event.stopPropagation(); deleteWord(${word.id})">刪除</button>` : ''}
+                            </div>
                         </div>
                     `;
                     
@@ -1518,11 +2792,7 @@
                     }
                 }
                 
-                html += `
-                    <div class="date">📅 ${formatDate(word.date)}</div>
-                    <button class="delete-btn" onclick="deleteWord(${word.id})">刪除</button>
-                </div>
-                `;
+                html += `</div>`;
                 
                 return html;
             }).join('');
@@ -1626,22 +2896,24 @@
                     
                     if (word.english) {
                         html += `
-                            <div class="english" onclick="speakEnglish('${escapeJs(word.english)}')">
+                            <div class="english" onclick="speakEnglish('${escapeJs(word.english)}')" style="cursor: pointer;">
                                 <span class="speaker-icon">🔊</span>
                                 <span>${escapeHtml(word.english)}</span>
                             </div>
                         `;
                     }
                     
-                    if (word.chinese) {
-                        const showStrokeOrder = !word.english;
+                    // Display translation if available (either customTranslation or chinese)
+                    const displayText = word.customTranslation || word.chinese;
+                    if (displayText) {
+                        const showStrokeOrder = !word.english && word.chinese;
                         const chineseId = `modal-chinese-${word.id}`;
                         const containerId = `modal-stroke-${word.id}`;
                         
                         html += `
-                            <div class="chinese" onclick="speakCantonese('${escapeJs(word.chinese)}')">
-                                <span class="speaker-icon">🔊</span>
-                                <span>${escapeHtml(word.chinese)}</span>
+                            <div class="chinese" style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+                                <span style="cursor: pointer; font-size: 1.2em;" onclick="speakCantonese('${escapeJs(displayText)}'); event.stopPropagation();">🔊</span>
+                                <span style="cursor: pointer;" onclick="speakCantonese('${escapeJs(displayText)}'); event.stopPropagation();">${escapeHtml(displayText)}</span>
                             </div>
                         `;
                         
@@ -1999,7 +3271,7 @@
                                 <li class="example-sentence-item" style="flex-direction: column; align-items: flex-start;">
                                     <div style="display: flex; align-items: center; gap: 8px; width: 100%; margin-bottom: 4px;">
                                         <span class="example-icon" style="cursor: pointer;" onclick="speakEnglish('${escapeJs(item.en)}')">🔊</span>
-                                        <span class="example-sentence-text" style="flex: 1; font-weight: 500;">${index + 1}. ${escapeHtml(item.en)}</span>
+                                        <span class="example-sentence-text" style="flex: 1; font-weight: 500;">${escapeHtml(item.en)}</span>
                                         ${item.isCustom ? `
                                             <span style="font-size: 0.75em; background: #f0f4ff; color: #667eea; padding: 2px 6px; border-radius: 3px;">${item.fromAPI ? '網絡' : '自定義'}</span>
                                         ` : ''}
