@@ -2878,6 +2878,16 @@
                     chineseInput.value = currentValue ? currentValue + finalTranscript : finalTranscript;
                     console.log('✅ 識別結果:', finalTranscript);
                     showToast('✅ 識別成功', 1500);
+                    
+                    // IMPORTANT: Stop recognition after getting final result
+                    // This ensures microphone is released on iOS Safari
+                    if (recognition && isRecording) {
+                        try {
+                            recognition.stop();
+                        } catch (error) {
+                            console.error('Error stopping after result:', error);
+                        }
+                    }
                 }
             };
 
@@ -2911,20 +2921,31 @@
 
             // Handle end
             recognition.onend = () => {
+                console.log('🎤 Recognition onend triggered');
                 isRecording = false;
                 voiceBtn.classList.remove('recording');
                 voiceBtn.title = '長按開始錄音，鬆開停止';
-                console.log('🎤 語音輸入結束');
+                
+                // Ensure recognition object is cleaned up
+                if (recognition) {
+                    recognition = null;
+                }
+                
+                console.log('🎤 Voice input fully stopped and cleaned up');
             };
         }
 
         function stopVoiceInput() {
-            if (recognition && isRecording) {
+            if (recognition) {
                 try {
+                    // Always try to stop, regardless of isRecording state
+                    // This ensures microphone is released on iOS Safari
                     recognition.stop();
-                    showToast('⏹️ 錄音停止', 1000);
+                    isRecording = false;
+                    console.log('⏹️ Recognition stopped manually');
                 } catch (error) {
-                    console.error('Error stopping recognition:', error);
+                    // It's OK if stop() fails (e.g., already stopped)
+                    console.log('Recognition already stopped or error:', error.message);
                 }
             }
         }
