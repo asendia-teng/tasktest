@@ -206,6 +206,27 @@
             box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
         }
 
+        /* Voice Input Button Animation */
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.7;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        #voiceInputBtn.recording {
+            animation: pulse 1s infinite;
+            background: rgba(255, 0, 0, 0.1) !important;
+        }
+
         .panel {
             background: #f8f9fa;
             border-radius: 15px;
@@ -861,12 +882,12 @@
                 <span>語速:</span>
             </div>
             <div class="speech-rate-buttons" id="speechRateButtons">
+                <button class="rate-btn" data-rate="0.25" onclick="setSpeechRate(0.25)">0.25x</button>
                 <button class="rate-btn" data-rate="0.5" onclick="setSpeechRate(0.5)">0.5x</button>
                 <button class="rate-btn" data-rate="0.75" onclick="setSpeechRate(0.75)">0.75x</button>
                 <button class="rate-btn active" data-rate="1.0" onclick="setSpeechRate(1.0)">1.0x</button>
                 <button class="rate-btn" data-rate="1.25" onclick="setSpeechRate(1.25)">1.25x</button>
                 <button class="rate-btn" data-rate="1.5" onclick="setSpeechRate(1.5)">1.5x</button>
-                <button class="rate-btn" data-rate="2.0" onclick="setSpeechRate(2.0)">2.0x</button>
             </div>
         </div>
 
@@ -918,7 +939,17 @@
 
                         <div class="input-group">
                             <label for="chineseText">繁體中文</label>
-                            <textarea id="chineseText" placeholder="輸入繁體中文解釋，例如：蘋果"></textarea>
+                            <div style="position: relative;">
+                                <textarea id="chineseText" placeholder="輸入繁體中文解釋，例如：蘋果" style="padding-right: 50px;"></textarea>
+                                <button type="button" id="voiceInputBtn" onclick="startVoiceInput()" 
+                                        style="position: absolute; right: 10px; top: 10px; background: none; border: none; font-size: 1.5em; cursor: pointer; padding: 5px; border-radius: 50%; transition: all 0.2s;"
+                                        title="粵語語音輸入">
+                                    🎤
+                                </button>
+                            </div>
+                            <div style="font-size: 0.85em; color: #999; margin-top: 5px;">
+                                💡 點擊 🎤 按鈕，使用粵語語音輸入
+                            </div>
                         </div>
 
                         <div class="input-group">
@@ -2709,6 +2740,114 @@
             } else {
                 alert('抱歉，您的瀏覽器不支持語音播放功能');
             }
+        }
+
+        // Voice Input for Cantonese (Speech Recognition)
+        let recognition = null;
+        let isRecording = false;
+
+        function startVoiceInput() {
+            // Check browser support
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                alert('抱歉，您的瀏覽器不支持語音識別功能\n\n請使用 Chrome 或 Safari 瀏覽器');
+                return;
+            }
+
+            const chineseInput = document.getElementById('chineseText');
+            const voiceBtn = document.getElementById('voiceInputBtn');
+
+            // If already recording, stop it
+            if (isRecording && recognition) {
+                recognition.stop();
+                return;
+            }
+
+            // Create recognition instance
+            recognition = new SpeechRecognition();
+            recognition.lang = 'zh-HK';  // Cantonese (Hong Kong)
+            recognition.continuous = false;  // Stop after one sentence
+            recognition.interimResults = true;  // Show intermediate results
+            recognition.maxAlternatives = 1;
+
+            // Start recording
+            try {
+                recognition.start();
+                isRecording = true;
+                
+                // Visual feedback - add recording class
+                voiceBtn.classList.add('recording');
+                voiceBtn.title = '錄音中...點擊停止';
+                
+                console.log('🎤 開始粵語語音輸入...');
+            } catch (error) {
+                console.error('Failed to start recognition:', error);
+                alert('無法啟動語音識別，請檢查麥克風權限');
+                return;
+            }
+
+            // Handle results
+            recognition.onresult = (event) => {
+                let finalTranscript = '';
+                let interimTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                // Update input field with interim or final result
+                if (finalTranscript) {
+                    // Append to existing text or replace
+                    const currentValue = chineseInput.value;
+                    chineseInput.value = currentValue ? currentValue + finalTranscript : finalTranscript;
+                    console.log('✅ 識別結果:', finalTranscript);
+                } else if (interimTranscript) {
+                    // Show interim result (optional - can be removed if distracting)
+                    console.log('⏳ 中間結果:', interimTranscript);
+                }
+            };
+
+            // Handle errors
+            recognition.onerror = (event) => {
+                console.error('語音識別錯誤:', event.error);
+                isRecording = false;
+                voiceBtn.classList.remove('recording');
+                voiceBtn.title = '粵語語音輸入';
+
+                let errorMessage = '語音識別失敗：';
+                switch (event.error) {
+                    case 'no-speech':
+                        errorMessage += '未檢測到語音，請再試一次';
+                        break;
+                    case 'audio-capture':
+                        errorMessage += '無法訪問麥克風';
+                        break;
+                    case 'not-allowed':
+                        errorMessage += '麥克風權限被拒絕';
+                        break;
+                    case 'network':
+                        errorMessage += '網絡錯誤，請檢查連接';
+                        break;
+                    default:
+                        errorMessage += event.error;
+                }
+                
+                showToast(errorMessage, 3000);
+            };
+
+            // Handle end
+            recognition.onend = () => {
+                isRecording = false;
+                voiceBtn.classList.remove('recording');
+                voiceBtn.title = '粵語語音輸入';
+                console.log('🎤 語音輸入結束');
+            };
         }
 
         // Render word list
