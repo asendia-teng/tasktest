@@ -2967,14 +2967,22 @@
 
                 // Update input field
                 if (finalTranscript) {
+                    // Have final result - append to existing text
                     const currentValue = chineseInput.value;
                     chineseInput.value = currentValue ? currentValue + finalTranscript : finalTranscript;
                     console.log('✅ Updated with final result:', finalTranscript);
                     showToast('✅ 識別成功', 1500);
-                } else if (interimTranscript && (!chineseInput.value || chineseInput.value.trim() === '')) {
-                    // Show interim result if input is empty
-                    chineseInput.value = interimTranscript;
-                    console.log('⏳ Showing interim result:', interimTranscript);
+                } else if (interimTranscript) {
+                    // For interim results, always update to show latest recognition
+                    // This ensures user sees the complete text as it's being recognized
+                    const currentValue = chineseInput.value;
+                    
+                    // Only update if input was empty OR we're still recognizing
+                    // This prevents overwriting user's manual edits after recognition is done
+                    if (!currentValue || currentValue.trim() === '' || isRecording) {
+                        chineseInput.value = interimTranscript;
+                        console.log('⏳ Updated interim result:', interimTranscript);
+                    }
                 }
             };
 
