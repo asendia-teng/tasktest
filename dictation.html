@@ -2832,7 +2832,23 @@
 
             // Create recognition instance
             recognition = new SpeechRecognition();
-            recognition.lang = 'zh-HK';  // Cantonese (Hong Kong)
+            
+            // Try different language codes for better iOS Safari compatibility
+            // zh-HK: Cantonese (Hong Kong)
+            // zh-TW: Traditional Chinese (Taiwan)
+            // zh-CN: Simplified Chinese (Mainland)
+            const userAgent = navigator.userAgent.toLowerCase();
+            const isIOS = /iphone|ipad|ipod/.test(userAgent);
+            
+            if (isIOS) {
+                // iOS Safari may work better with zh-TW for traditional Chinese
+                recognition.lang = 'zh-TW';
+                console.log('📱 iOS detected, using zh-TW for traditional Chinese');
+            } else {
+                recognition.lang = 'zh-HK';
+                console.log('💻 Non-iOS, using zh-HK for Cantonese');
+            }
+            
             recognition.continuous = false;  // Stop after one sentence
             recognition.interimResults = true;  // Show intermediate results
             recognition.maxAlternatives = 1;
@@ -2862,21 +2878,30 @@
                 let finalTranscript = '';
                 let interimTranscript = '';
 
+                console.log('📝 Recognition result event:', event);
+                console.log('📝 Results length:', event.results.length);
+
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     const transcript = event.results[i][0].transcript;
-                    if (event.results[i].isFinal) {
+                    const isFinal = event.results[i].isFinal;
+                    
+                    console.log(`📝 Result ${i}:`, transcript, 'isFinal:', isFinal);
+                    
+                    if (isFinal) {
                         finalTranscript += transcript;
                     } else {
                         interimTranscript += transcript;
                     }
                 }
 
-                // Update input field with interim or final result
+                console.log('📝 Final:', finalTranscript, 'Interim:', interimTranscript);
+
+                // Update input field with final or interim result
                 if (finalTranscript) {
                     // Append to existing text or replace
                     const currentValue = chineseInput.value;
                     chineseInput.value = currentValue ? currentValue + finalTranscript : finalTranscript;
-                    console.log('✅ 識別結果:', finalTranscript);
+                    console.log('✅ 識別結果 (final):', finalTranscript);
                     showToast('✅ 識別成功', 1500);
                     
                     // IMPORTANT: Stop recognition after getting final result
@@ -2888,12 +2913,24 @@
                             console.error('Error stopping after result:', error);
                         }
                     }
+                } else if (interimTranscript) {
+                    // For iOS Safari: show interim result if no final result yet
+                    // This ensures user sees something even if isFinal is delayed
+                    const currentValue = chineseInput.value;
+                    // Only update if we don't have a value yet (avoid overwriting)
+                    if (!currentValue || currentValue.trim() === '') {
+                        chineseInput.value = interimTranscript;
+                        console.log('⏳ 臨時結果 (interim):', interimTranscript);
+                    }
                 }
             };
 
             // Handle errors
             recognition.onerror = (event) => {
-                console.error('語音識別錯誤:', event.error);
+                console.error('❌ 語音識別錯誤:', event.error);
+                console.error('❌ Error details:', event);
+                console.error('❌ isRecording:', isRecording);
+                
                 isRecording = false;
                 voiceBtn.classList.remove('recording');
                 voiceBtn.title = '長按開始錄音，鬆開停止';
@@ -2912,6 +2949,12 @@
                     case 'network':
                         errorMessage += '網絡錯誤';
                         break;
+                    case 'aborted':
+                        errorMessage += '錄音已取消';
+                        break;
+                    case 'service-not-allowed':
+                        errorMessage += '語音服務不可用';
+                        break;
                     default:
                         errorMessage += event.error;
                 }
@@ -2922,6 +2965,8 @@
             // Handle end
             recognition.onend = () => {
                 console.log('🎤 Recognition onend triggered');
+                console.log('🎤 isRecording:', isRecording);
+                
                 isRecording = false;
                 voiceBtn.classList.remove('recording');
                 voiceBtn.title = '長按開始錄音，鬆開停止';
