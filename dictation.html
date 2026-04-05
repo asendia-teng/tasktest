@@ -909,6 +909,20 @@
             </div>
         </div>
 
+        <!-- Debug Log Panel (visible on mobile for debugging) -->
+        <div id="debugLogPanel" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.9); color: #0f0; font-family: monospace; font-size: 12px; padding: 10px; z-index: 99999; border-top: 2px solid #0f0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <strong style="color: #0f0;">📱 調試日誌</strong>
+                <button onclick="toggleDebugLog()" style="background: #333; color: #fff; border: 1px solid #0f0; padding: 2px 8px; cursor: pointer; font-size: 11px;">關閉</button>
+            </div>
+            <div id="debugLogContent" style="white-space: pre-wrap; word-break: break-all;"></div>
+        </div>
+
+        <!-- Debug Toggle Button -->
+        <button id="debugToggleBtn" onclick="toggleDebugLog()" style="position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); z-index: 99998; display: flex; align-items: center; justify-content: center;" title="顯示/隱藏調試日誌">
+            🐛
+        </button>
+
         <header id="appHeader" style="transition: all 0.5s ease; cursor: pointer;" onclick="toggleHeader()">
             <h1>📚 小學生詞記憶</h1>
             <p>Dictation Learning - 每天記錄英文單詞和繁體中文</p>
@@ -2778,6 +2792,80 @@
             }
         }
 
+        // Debug Log Functions
+        let debugLogEnabled = false;
+        const debugLogs = [];
+        const MAX_DEBUG_LOGS = 100;
+
+        // Store original console methods BEFORE overriding
+        const originalConsoleLog = console.log.bind(console);
+        const originalConsoleError = console.error.bind(console);
+        const originalConsoleWarn = console.warn.bind(console);
+
+        function addDebugLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            
+            debugLogs.push(logEntry);
+            if (debugLogs.length > MAX_DEBUG_LOGS) {
+                debugLogs.shift();
+            }
+            
+            // Update display if panel is visible
+            if (debugLogEnabled) {
+                const content = document.getElementById('debugLogContent');
+                if (content) {
+                    content.textContent = debugLogs.join('\n');
+                    content.scrollTop = content.scrollHeight;
+                }
+            }
+            
+            // Use ORIGINAL console methods to avoid recursion
+            if (type === 'error') {
+                originalConsoleError(message);
+            } else if (type === 'warn') {
+                originalConsoleWarn(message);
+            } else {
+                originalConsoleLog(message);
+            }
+        }
+
+        function toggleDebugLog() {
+            const panel = document.getElementById('debugLogPanel');
+            if (!panel) return;
+            
+            debugLogEnabled = !debugLogEnabled;
+            
+            if (debugLogEnabled) {
+                panel.style.display = 'block';
+                const content = document.getElementById('debugLogContent');
+                if (content) {
+                    content.textContent = debugLogs.join('\n');
+                    content.scrollTop = content.scrollHeight;
+                }
+                // Use original console to avoid recursion
+                originalConsoleLog('📱 調試日誌已啟用');
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+
+        // Override console methods to capture logs
+        console.log = function(...args) {
+            const message = args.join(' ');
+            addDebugLog(message, 'info');
+        };
+
+        console.error = function(...args) {
+            const message = '❌ ' + args.join(' ');
+            addDebugLog(message, 'error');
+        };
+
+        console.warn = function(...args) {
+            const message = '⚠️ ' + args.join(' ');
+            addDebugLog(message, 'warn');
+        };
+
         // Text-to-Speech for English
         function speakEnglish(text) {
             if ('speechSynthesis' in window) {
@@ -2809,11 +2897,6 @@
         let isRecording = false;
 
         function startVoiceInput(event) {
-            // Prevent default to avoid issues with touch events
-            if (event) {
-                event.preventDefault();
-            }
-
             // If already recording, don't start again
             if (isRecording) {
                 return;
@@ -2823,7 +2906,7 @@
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             
             if (!SpeechRecognition) {
-                showToast('抱歉，您的瀏覽器不支持語音識別功能\n\n請使用 Chrome 或 Safari 瀏覽器', 3000);
+                showToast('抱歉，您的瀏覽器不支持語音識別功能', 3000);
                 return;
             }
 
@@ -2832,60 +2915,45 @@
 
             // Create recognition instance
             recognition = new SpeechRecognition();
-            
-            // Try different language codes for better iOS Safari compatibility
-            // zh-HK: Cantonese (Hong Kong)
-            // zh-TW: Traditional Chinese (Taiwan)
-            // zh-CN: Simplified Chinese (Mainland)
-            const userAgent = navigator.userAgent.toLowerCase();
-            const isIOS = /iphone|ipad|ipod/.test(userAgent);
-            
-            if (isIOS) {
-                // iOS Safari may work better with zh-TW for traditional Chinese
-                recognition.lang = 'zh-TW';
-                console.log('📱 iOS detected, using zh-TW for traditional Chinese');
-            } else {
-                recognition.lang = 'zh-HK';
-                console.log('💻 Non-iOS, using zh-HK for Cantonese');
-            }
-            
-            recognition.continuous = false;  // Stop after one sentence
-            recognition.interimResults = true;  // Show intermediate results
+            recognition.lang = 'zh-HK';  // Use zh-HK for all devices
+            recognition.continuous = false;
+            recognition.interimResults = true;
             recognition.maxAlternatives = 1;
+
+            console.log('🎤 Starting voice input...');
+            console.log('🎤 Language:', recognition.lang);
+            console.log('🎤 User Agent:', navigator.userAgent);
 
             // Start recording
             try {
                 recognition.start();
                 isRecording = true;
                 
-                // Visual feedback - add recording class
                 voiceBtn.classList.add('recording');
                 voiceBtn.title = '錄音中...鬆開停止';
-                
-                // Show toast notification
                 showToast('🎤 開始錄音...', 1500);
                 
-                console.log('🎤 開始粵語語音輸入...');
+                console.log('✅ Recognition started successfully');
             } catch (error) {
-                console.error('Failed to start recognition:', error);
-                showToast('無法啟動語音識別，請檢查麥克風權限', 3000);
+                console.error('❌ Failed to start:', error);
+                showToast('無法啟動語音識別', 3000);
                 isRecording = false;
                 return;
             }
 
             // Handle results
             recognition.onresult = (event) => {
+                console.log('📝 onresult triggered');
+                console.log('📝 Results count:', event.results.length);
+                
                 let finalTranscript = '';
                 let interimTranscript = '';
-
-                console.log('📝 Recognition result event:', event);
-                console.log('📝 Results length:', event.results.length);
 
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     const transcript = event.results[i][0].transcript;
                     const isFinal = event.results[i].isFinal;
                     
-                    console.log(`📝 Result ${i}:`, transcript, 'isFinal:', isFinal);
+                    console.log(`📝 Result ${i}: "${transcript}" (isFinal: ${isFinal})`);
                     
                     if (isFinal) {
                         finalTranscript += transcript;
@@ -2894,34 +2962,19 @@
                     }
                 }
 
-                console.log('📝 Final:', finalTranscript, 'Interim:', interimTranscript);
+                console.log('📝 Final:', finalTranscript);
+                console.log('📝 Interim:', interimTranscript);
 
-                // Update input field with final or interim result
+                // Update input field
                 if (finalTranscript) {
-                    // Append to existing text or replace
                     const currentValue = chineseInput.value;
                     chineseInput.value = currentValue ? currentValue + finalTranscript : finalTranscript;
-                    console.log('✅ 識別結果 (final):', finalTranscript);
+                    console.log('✅ Updated with final result:', finalTranscript);
                     showToast('✅ 識別成功', 1500);
-                    
-                    // IMPORTANT: Stop recognition after getting final result
-                    // This ensures microphone is released on iOS Safari
-                    if (recognition && isRecording) {
-                        try {
-                            recognition.stop();
-                        } catch (error) {
-                            console.error('Error stopping after result:', error);
-                        }
-                    }
-                } else if (interimTranscript) {
-                    // For iOS Safari: show interim result if no final result yet
-                    // This ensures user sees something even if isFinal is delayed
-                    const currentValue = chineseInput.value;
-                    // Only update if we don't have a value yet (avoid overwriting)
-                    if (!currentValue || currentValue.trim() === '') {
-                        chineseInput.value = interimTranscript;
-                        console.log('⏳ 臨時結果 (interim):', interimTranscript);
-                    }
+                } else if (interimTranscript && (!chineseInput.value || chineseInput.value.trim() === '')) {
+                    // Show interim result if input is empty
+                    chineseInput.value = interimTranscript;
+                    console.log('⏳ Showing interim result:', interimTranscript);
                 }
             };
 
@@ -2981,16 +3034,16 @@
         }
 
         function stopVoiceInput() {
+            console.log('⏹️ stopVoiceInput called');
+            console.log('⏹️ isRecording:', isRecording);
+            console.log('⏹️ recognition exists:', !!recognition);
+            
             if (recognition) {
                 try {
-                    // Always try to stop, regardless of isRecording state
-                    // This ensures microphone is released on iOS Safari
                     recognition.stop();
-                    isRecording = false;
-                    console.log('⏹️ Recognition stopped manually');
+                    console.log('✅ Recognition stopped');
                 } catch (error) {
-                    // It's OK if stop() fails (e.g., already stopped)
-                    console.log('Recognition already stopped or error:', error.message);
+                    console.log('⚠️ Stop error (may be already stopped):', error.message);
                 }
             }
         }
