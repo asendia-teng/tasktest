@@ -49,7 +49,7 @@
         }
 
         .main-content {
-            padding: 30px;
+            padding: 15px 30px 30px 30px;
         }
 
         /* Tab Styles */
@@ -235,13 +235,15 @@
             }
         }
 
-        #voiceInputBtn.recording {
+        #voiceInputBtn.recording,
+        #englishVoiceInputBtn.recording {
             animation: recording-pulse 1s ease-in-out infinite;
             border-color: #ff0000 !important;
             background: rgba(255, 0, 0, 0.15) !important;
         }
 
-        #voiceInputBtn:active {
+        #voiceInputBtn:active,
+        #englishVoiceInputBtn:active {
             transform: scale(0.95);
         }
 
@@ -954,12 +956,22 @@
                     <form id="wordForm">
                         <div class="input-group">
                             <label for="englishWord">英文單詞</label>
-                            <div class="autocomplete-wrapper">
-                                <input type="text" id="englishWord" placeholder="輸入英文單詞，例如：apple" autocomplete="off">
+                            <div class="autocomplete-wrapper" style="position: relative;">
+                                <input type="text" id="englishWord" placeholder="輸入英文單詞，例如：apple" autocomplete="off" style="padding-right: 50px;">
+                                <button type="button" id="englishVoiceInputBtn" 
+                                        onmousedown="startEnglishVoiceInput(event)" 
+                                        onmouseup="stopEnglishVoiceInput()" 
+                                        ontouchstart="startEnglishVoiceInput(event)" 
+                                        ontouchend="stopEnglishVoiceInput()"
+                                        onmouseleave="stopEnglishVoiceInput()"
+                                        style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: 2px solid #667eea; font-size: 1.5em; cursor: pointer; padding: 8px; border-radius: 50%; transition: all 0.2s; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; z-index: 10;"
+                                        title="長按開始錄音，鬆開停止">
+                                    🎤
+                                </button>
                                 <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
                             </div>
                             <div style="font-size: 0.85em; color: #999; margin-top: 5px;">
-                                💡 輸入 3 個字母後自動提示，輸入後自動從網絡獲取例句
+                                💡 輸入 3 個字母後自動提示，或長按 🎤 語音輸入
                             </div>
                         </div>
 
@@ -2448,6 +2460,8 @@
             // Auto-hide header after 5 seconds
             setTimeout(() => {
                 const header = document.getElementById('appHeader');
+                const speechRateControl = document.querySelector('.speech-rate-control');
+                
                 if (header) {
                     header.style.opacity = '0';
                     header.style.maxHeight = '0';
@@ -2456,6 +2470,12 @@
                     header.style.overflow = 'hidden';
                     isHeaderVisible = false;
                     console.log('📚 Header auto-hidden');
+                }
+                
+                // Also reduce speech rate control margin when header is hidden
+                if (speechRateControl) {
+                    speechRateControl.style.marginBottom = '5px';
+                    console.log('📚 Speech rate control margin reduced');
                 }
             }, 5000);
             
@@ -2771,6 +2791,8 @@
         let isHeaderVisible = true;
         function toggleHeader() {
             const header = document.getElementById('appHeader');
+            const speechRateControl = document.querySelector('.speech-rate-control');
+            
             if (!header) return;
             
             if (isHeaderVisible) {
@@ -2780,6 +2802,12 @@
                 header.style.margin = '0';
                 header.style.padding = '0';
                 header.style.overflow = 'hidden';
+                
+                // Reduce speech rate control margin
+                if (speechRateControl) {
+                    speechRateControl.style.marginBottom = '5px';
+                }
+                
                 isHeaderVisible = false;
             } else {
                 // Show header
@@ -2788,6 +2816,12 @@
                 header.style.margin = '';
                 header.style.padding = '';
                 header.style.overflow = 'visible';
+                
+                // Restore speech rate control margin
+                if (speechRateControl) {
+                    speechRateControl.style.marginBottom = '20px';
+                }
+                
                 isHeaderVisible = true;
             }
         }
@@ -2895,8 +2929,17 @@
         // Voice Input for Cantonese (Speech Recognition)
         let recognition = null;
         let isRecording = false;
+        let recordingStartTime = 0;  // Track when recording started
+        const MIN_RECORDING_TIME = 500;  // Minimum 500ms recording time
+        let hasShownSuccessToast = false;  // Track if success toast was shown
+        
+        // Voice Input for English (separate instance)
+        let englishRecognition = null;
+        let isEnglishRecording = false;
+        let englishRecordingStartTime = 0;
+        let hasShownEnglishSuccessToast = false;
 
-        function startVoiceInput(event) {
+        async function startVoiceInput(event) {
             // If already recording, don't start again
             if (isRecording) {
                 return;
@@ -2926,16 +2969,41 @@
 
             // Start recording
             try {
+                console.log('🎤 Requesting microphone access...');
+                
+                // Test microphone access first
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    console.log('✅ Microphone access granted');
+                    stream.getTracks().forEach(track => track.stop()); // Release immediately
+                } catch (micError) {
+                    console.error('❌ Microphone access failed:', micError);
+                    showToast('無法訪問麥克風，請檢查權限設置', 3000);
+                    isRecording = false;
+                    return;
+                }
+                
                 recognition.start();
                 isRecording = true;
+                recordingStartTime = Date.now();  // Record start time
                 
                 voiceBtn.classList.add('recording');
                 voiceBtn.title = '錄音中...鬆開停止';
-                showToast('🎤 開始錄音...', 1500);
+                
+                // Show "ready" message after recognition engine is fully initialized
+                // Wait a bit longer to ensure engine is ready
+                setTimeout(() => {
+                    if (isRecording) {
+                        showToast('🎤 請說話...', 800);  // Shorter duration
+                        console.log('🎤 Recognition engine ready, please speak');
+                    }
+                }, 800);  // Delay longer before showing prompt
                 
                 console.log('✅ Recognition started successfully');
             } catch (error) {
                 console.error('❌ Failed to start:', error);
+                console.error('❌ Error name:', error.name);
+                console.error('❌ Error message:', error.message);
                 showToast('無法啟動語音識別', 3000);
                 isRecording = false;
                 return;
@@ -2965,13 +3033,17 @@
                 console.log('📝 Final:', finalTranscript);
                 console.log('📝 Interim:', interimTranscript);
 
-                // Update input field
+                // Update input field - REPLACE instead of APPEND to avoid duplication
                 if (finalTranscript) {
-                    // Have final result - append to existing text
-                    const currentValue = chineseInput.value;
-                    chineseInput.value = currentValue ? currentValue + finalTranscript : finalTranscript;
+                    // Have final result - replace the content (don't append)
+                    chineseInput.value = finalTranscript.trim();
                     console.log('✅ Updated with final result:', finalTranscript);
-                    showToast('✅ 識別成功', 1500);
+                    
+                    // Only show toast once per recording session
+                    if (!hasShownSuccessToast) {
+                        showToast('識別成功', 1500);
+                        hasShownSuccessToast = true;
+                    }
                 } else if (interimTranscript) {
                     // For interim results, always update to show latest recognition
                     // This ensures user sees the complete text as it's being recognized
@@ -2980,7 +3052,7 @@
                     // Only update if input was empty OR we're still recognizing
                     // This prevents overwriting user's manual edits after recognition is done
                     if (!currentValue || currentValue.trim() === '' || isRecording) {
-                        chineseInput.value = interimTranscript;
+                        chineseInput.value = interimTranscript.trim();
                         console.log('⏳ Updated interim result:', interimTranscript);
                     }
                 }
@@ -2991,6 +3063,7 @@
                 console.error('❌ 語音識別錯誤:', event.error);
                 console.error('❌ Error details:', event);
                 console.error('❌ isRecording:', isRecording);
+                console.error('❌ Event type:', event.type);
                 
                 isRecording = false;
                 voiceBtn.classList.remove('recording');
@@ -2999,28 +3072,31 @@
                 let errorMessage = '語音識別失敗：';
                 switch (event.error) {
                     case 'no-speech':
-                        errorMessage += '未檢測到語音';
+                        errorMessage += '未檢測到語音\n\n請檢查：\n1. 麥克風是否正常工作\n2. 是否有說話\n3. 環境是否太吵';
                         break;
                     case 'audio-capture':
-                        errorMessage += '無法訪問麥克風';
+                        errorMessage += '無法訪問麥克風\n\n請檢查：\n1. 麥克風是否連接\n2. 瀏覽器是否有權限';
                         break;
                     case 'not-allowed':
-                        errorMessage += '麥克風權限被拒絕';
+                        errorMessage += '麥克風權限被拒絕\n\n請在瀏覽器地址欄點擊🔒圖標，允許麥克風權限';
                         break;
                     case 'network':
-                        errorMessage += '網絡錯誤';
+                        errorMessage += '網絡錯誤\n\n語音識別需要聯網，請檢查網絡連接';
                         break;
                     case 'aborted':
                         errorMessage += '錄音已取消';
                         break;
                     case 'service-not-allowed':
-                        errorMessage += '語音服務不可用';
+                        errorMessage += '語音服務不可用\n\nChrome 可能需要啟用語音識別服務';
+                        break;
+                    case 'language-not-supported':
+                        errorMessage += '語言不支持\n\n嘗試使用 zh-CN（普通話）或 en-US（英語）';
                         break;
                     default:
-                        errorMessage += event.error;
+                        errorMessage += event.error + '\n\n詳細信息請查看控制台';
                 }
                 
-                showToast(errorMessage, 3000);
+                showToast(errorMessage, 5000);
             };
 
             // Handle end
@@ -3029,6 +3105,7 @@
                 console.log('🎤 isRecording:', isRecording);
                 
                 isRecording = false;
+                hasShownSuccessToast = false;  // Reset for next recording
                 voiceBtn.classList.remove('recording');
                 voiceBtn.title = '長按開始錄音，鬆開停止';
                 
@@ -3046,13 +3123,227 @@
             console.log('⏹️ isRecording:', isRecording);
             console.log('⏹️ recognition exists:', !!recognition);
             
-            if (recognition) {
+            if (!recognition) {
+                console.log('⚠️ No recognition instance');
+                return;
+            }
+            
+            // Check minimum recording time
+            const recordingDuration = Date.now() - recordingStartTime;
+            console.log('⏹️ Recording duration:', recordingDuration, 'ms');
+            
+            if (recordingDuration < MIN_RECORDING_TIME) {
+                // Too short, wait a bit more
+                const waitTime = MIN_RECORDING_TIME - recordingDuration;
+                console.log(`⏳ Recording too short (${recordingDuration}ms), waiting ${waitTime}ms...`);
+                
+                setTimeout(() => {
+                    if (recognition && isRecording) {
+                        console.log('⏹️ Now stopping after minimum time');
+                        recognition.stop();
+                    }
+                }, waitTime);
+                return;
+            }
+            
+            // Duration is sufficient, stop immediately
+            try {
+                // Stop recognition but allow final results to come through
+                recognition.stop();
+                console.log('✅ Recognition stop requested');
+                // Don't set isRecording = false here, let onend handle it
+            } catch (error) {
+                console.log('⚠️ Stop error (may be already stopped):', error.message);
+            }
+        }
+
+        // English Voice Input Functions
+        async function startEnglishVoiceInput(event) {
+            if (isEnglishRecording) {
+                return;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                showToast('抱歉，您的瀏覽器不支持語音識別功能', 3000);
+                return;
+            }
+
+            const englishInput = document.getElementById('englishWord');
+            const voiceBtn = document.getElementById('englishVoiceInputBtn');
+
+            englishRecognition = new SpeechRecognition();
+            englishRecognition.lang = 'en-US';  // English (US)
+            englishRecognition.continuous = false;
+            englishRecognition.interimResults = true;
+            englishRecognition.maxAlternatives = 1;
+
+            console.log('🇺🇸 Starting English voice input...');
+            console.log('🇺🇸 Language:', englishRecognition.lang);
+
+            try {
+                console.log('🇺🇸 Requesting microphone access...');
+                
+                // Test microphone access first
                 try {
-                    recognition.stop();
-                    console.log('✅ Recognition stopped');
-                } catch (error) {
-                    console.log('⚠️ Stop error (may be already stopped):', error.message);
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    console.log('✅ Microphone access granted');
+                    stream.getTracks().forEach(track => track.stop());
+                } catch (micError) {
+                    console.error('❌ Microphone access failed:', micError);
+                    showToast('無法訪問麥克風，請檢查權限設置', 3000);
+                    isEnglishRecording = false;
+                    return;
                 }
+                
+                englishRecognition.start();
+                isEnglishRecording = true;
+                englishRecordingStartTime = Date.now();  // Record start time
+                
+                voiceBtn.classList.add('recording');
+                voiceBtn.title = '錄音中...鬆開停止';
+                
+                // Show "ready" message after recognition engine is fully initialized
+                setTimeout(() => {
+                    if (isEnglishRecording) {
+                        showToast('🎤 Please speak...', 800);  // Shorter duration
+                        console.log('🇺🇸 Recognition engine ready, please speak');
+                    }
+                }, 800);  // Delay longer before showing prompt
+                
+                console.log('✅ English recognition started');
+            } catch (error) {
+                console.error('❌ Failed to start English recognition:', error);
+                console.error('❌ Error name:', error.name);
+                console.error('❌ Error message:', error.message);
+                showToast('無法啟動語音識別', 3000);
+                isEnglishRecording = false;
+                return;
+            }
+
+            englishRecognition.onresult = (event) => {
+                console.log('🇺🇸 English onresult triggered');
+                console.log('🇺🇸 Results count:', event.results.length);
+                
+                let finalTranscript = '';
+                let interimTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    const isFinal = event.results[i].isFinal;
+                    
+                    console.log(`🇺🇸 Result ${i}: "${transcript}" (isFinal: ${isFinal})`);
+                    
+                    if (isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                console.log('🇺🇸 Final:', finalTranscript);
+                console.log('🇺🇸 Interim:', interimTranscript);
+
+                if (finalTranscript) {
+                    // Use the complete final result, trimmed and lowercased
+                    const word = finalTranscript.trim().toLowerCase();
+                    englishInput.value = word;
+                    console.log('✅ Updated with final English word:', word);
+                    
+                    // Only show toast once per recording session
+                    if (!hasShownEnglishSuccessToast) {
+                        showToast('識別成功', 1500);
+                        hasShownEnglishSuccessToast = true;
+                    }
+                } else if (interimTranscript) {
+                    // Always update with interim result while recording or just stopped
+                    // This ensures we capture the text even if stop() is called quickly
+                    const word = interimTranscript.trim().toLowerCase();
+                    englishInput.value = word;
+                    console.log('⏳ Updated interim English word:', word);
+                }
+            };
+
+            englishRecognition.onerror = (event) => {
+                console.error('❌ English recognition error:', event.error);
+                isEnglishRecording = false;
+                voiceBtn.classList.remove('recording');
+                voiceBtn.title = '長按開始英語語音輸入，鬆開停止';
+
+                let errorMessage = '語音識別失敗：';
+                switch (event.error) {
+                    case 'no-speech':
+                        errorMessage += '未檢測到語音';
+                        break;
+                    case 'audio-capture':
+                        errorMessage += '無法訪問麥克風';
+                        break;
+                    case 'not-allowed':
+                        errorMessage += '麥克風權限被拒絕';
+                        break;
+                    case 'network':
+                        errorMessage += '網絡錯誤';
+                        break;
+                    default:
+                        errorMessage += event.error;
+                }
+                
+                showToast(errorMessage, 3000);
+            };
+
+            englishRecognition.onend = () => {
+                console.log('🇺🇸 English recognition onend');
+                isEnglishRecording = false;
+                hasShownEnglishSuccessToast = false;  // Reset for next recording
+                voiceBtn.classList.remove('recording');
+                voiceBtn.title = '長按開始錄音，鬆開停止';
+                
+                if (englishRecognition) {
+                    englishRecognition = null;
+                }
+                
+                console.log('🇺🇸 English voice input cleaned up');
+            };
+        }
+
+        function stopEnglishVoiceInput() {
+            console.log('⏹️ stopEnglishVoiceInput called');
+            
+            if (!englishRecognition) {
+                console.log('⚠️ No English recognition instance');
+                return;
+            }
+            
+            // Check minimum recording time
+            const recordingDuration = Date.now() - englishRecordingStartTime;
+            console.log('⏹️ English recording duration:', recordingDuration, 'ms');
+            
+            if (recordingDuration < MIN_RECORDING_TIME) {
+                // Too short, wait a bit more
+                const waitTime = MIN_RECORDING_TIME - recordingDuration;
+                console.log(`⏳ English recording too short (${recordingDuration}ms), waiting ${waitTime}ms...`);
+                
+                setTimeout(() => {
+                    if (englishRecognition && isEnglishRecording) {
+                        console.log('⏹️ Now stopping English after minimum time');
+                        englishRecognition.stop();
+                    }
+                }, waitTime);
+                return;
+            }
+            
+            // Duration is sufficient, stop immediately
+            try {
+                // Stop recognition but don't clear immediately
+                // Allow time for final results to come through
+                englishRecognition.stop();
+                console.log('✅ English recognition stop requested');
+                
+                // Don't set isEnglishRecording = false here
+                // Let onend handle it after final results arrive
+            } catch (error) {
+                console.log('⚠️ English stop error:', error.message);
             }
         }
 
