@@ -235,6 +235,58 @@
             }
         }
 
+        /* Growth Tree Animations */
+        @keyframes sun-pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.9;
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes tree-grow {
+            from {
+                transform: scaleY(0);
+                opacity: 0;
+            }
+            to {
+                transform: scaleY(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes leaf-sway {
+            0%, 100% {
+                transform: rotate(-5deg);
+            }
+            50% {
+                transform: rotate(5deg);
+            }
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
         #voiceInputBtn.recording,
         #englishVoiceInputBtn.recording {
             animation: recording-pulse 1s ease-in-out infinite;
@@ -905,7 +957,7 @@
                 <button class="rate-btn" data-rate="0.25" onclick="setSpeechRate(0.25)">0.25x</button>
                 <button class="rate-btn" data-rate="0.5" onclick="setSpeechRate(0.5)">0.5x</button>
                 <button class="rate-btn" data-rate="0.75" onclick="setSpeechRate(0.75)">0.75x</button>
-                <button class="rate-btn active" data-rate="1.0" onclick="setSpeechRate(1.0)">1.0x</button>
+                <button class="rate-btn active" data-rate="1" onclick="setSpeechRate(1)">1x</button>
                 <button class="rate-btn" data-rate="1.25" onclick="setSpeechRate(1.25)">1.25x</button>
                 <button class="rate-btn" data-rate="1.5" onclick="setSpeechRate(1.5)">1.5x</button>
             </div>
@@ -943,6 +995,9 @@
                     <button class="tab-btn" onclick="switchTab('review')">
                         📚 複習
                     </button>
+                    <button class="tab-btn" onclick="switchTab('growth-tree')">
+                        🌳 成長樹
+                    </button>
                 </div>
             </div>
 
@@ -957,7 +1012,7 @@
                         <div class="input-group">
                             <label for="englishWord">英文單詞</label>
                             <div class="autocomplete-wrapper" style="position: relative;">
-                                <input type="text" id="englishWord" placeholder="輸入英文單詞，例如：apple" autocomplete="off" style="padding-right: 50px;">
+                                <input type="text" id="englishWord" lang="en" inputmode="text" placeholder="輸入英文單詞，例如：apple" autocomplete="off" style="padding-right: 50px;">
                                 <button type="button" id="englishVoiceInputBtn" 
                                         onmousedown="startEnglishVoiceInput(event)" 
                                         onmouseup="stopEnglishVoiceInput()" 
@@ -1070,9 +1125,14 @@
                         <div id="reviewStats" style="margin-bottom: 30px; font-size: 1.2em; color: #666;">
                             載入中...
                         </div>
-                        <button id="startReviewBtn" onclick="startReviewSession()" style="padding: 15px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 1.2em; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
-                            開始複習
-                        </button>
+                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                            <button id="startReviewBtn" onclick="startReviewSession()" style="padding: 15px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 1.2em; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+                                開始複習
+                            </button>
+                            <button id="startDictationBtn" onclick="startDictationSession()" style="padding: 15px 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 10px; font-size: 1.2em; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);">
+                                🎧 開始聽寫
+                            </button>
+                        </div>
                         <div id="reviewComplete" style="display: none; margin-top: 30px;">
                             <div style="font-size: 3em; margin-bottom: 20px;">🎉</div>
                             <h3 style="color: #51cf66; margin-bottom: 10px;">太棒了！</h3>
@@ -1081,6 +1141,88 @@
                                 🔄 重新整理
                             </button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 4: Growth Tree -->
+            <div id="tab-growth-tree" class="tab-content">
+                <div style="text-align: center; padding: 20px; position: relative;">
+                    <!-- Admin Button -->
+                    <button onclick="showAdminPanel()" style="position: absolute; top: 20px; right: 20px; padding: 8px 15px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s;"
+                            onmouseover="this.style.background='#5568d3'"
+                            onmouseout="this.style.background='#667eea'">
+                        ⚙️ 管理員
+                    </button>
+                    
+                    <h2 style="color: #667eea; margin-bottom: 10px;">🌳 我的成長樹</h2>
+                    <p style="color: #666; margin-bottom: 20px; font-size: 0.9em;">每學會一個單詞，小樹就會長大一點！</p>
+                    
+                    <!-- Stats Display -->
+                    <div id="treeStats" style="background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%); padding: 15px; border-radius: 10px; margin-bottom: 20px; display: inline-block;">
+                        <div style="font-size: 1.1em; color: #667eea; font-weight: bold; margin-bottom: 8px;">
+                            📊 已學會: <span id="totalWordsCount">0</span> 個單詞
+                        </div>
+                        <div style="font-size: 0.9em; color: #888; margin-top: 5px;">
+                            🌱 樹齡: <span id="treeAge">0</span> 天
+                        </div>
+                        <div style="font-size: 1.2em; color: #ff6b6b; font-weight: bold; margin-top: 10px; padding-top: 10px; border-top: 2px solid #ddd;">
+                            ⭐ 積分: <span id="userPointsDisplay">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Lottery Button -->
+                    <div style="margin: 20px 0;">
+                        <button id="lotteryBtn" onclick="performLottery()" style="padding: 15px 30px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 25px; font-size: 1.2em; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4); transition: all 0.3s ease; opacity: 0.5; cursor: not-allowed;" disabled>
+                            🎰 暫無機會
+                        </button>
+                        <div style="font-size: 0.85em; color: #888; margin-top: 8px;">
+                            每提升一個等級獲得一次抽獎機會（1-20隨機積分）
+                        </div>
+                    </div>
+
+                    <!-- Daily Task Button -->
+                    <div style="margin: 20px 0;">
+                        <button id="dailyTaskBtn" onclick="completeDailyTask()" style="padding: 15px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 25px; font-size: 1.2em; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;">
+                            📅 領取每日任務 (+1積分)
+                        </button>
+                        <div style="font-size: 0.85em; color: #888; margin-top: 8px;" id="dailyTaskInfo">
+                            每天點擊一次獲得 1 積分，未完成會扣減1積分，連續7天獎勵10積分
+                        </div>
+                    </div>
+
+                    <!-- Tree Visualization -->
+                    <div id="treeContainer" style="position: relative; width: 100%; max-width: 400px; height: 400px; margin: 0 auto; background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 50%, #90EE90 50%, #228B22 100%); border-radius: 15px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                        <!-- Sun -->
+                        <div style="position: absolute; top: 20px; right: 30px; width: 60px; height: 60px; background: radial-gradient(circle, #FFD700 0%, #FFA500 100%); border-radius: 50%; box-shadow: 0 0 30px #FFD700; animation: sun-pulse 3s ease-in-out infinite;"></div>
+                        
+                        <!-- Clouds -->
+                        <div style="position: absolute; top: 40px; left: 40px; font-size: 2em; opacity: 0.8; animation: float 6s ease-in-out infinite;">☁️</div>
+                        <div style="position: absolute; top: 60px; right: 120px; font-size: 1.5em; opacity: 0.6; animation: float 8s ease-in-out infinite 1s;">☁️</div>
+                        
+                        <!-- Tree will be drawn here by JavaScript -->
+                        <svg id="growthTreeSVG" width="100%" height="100%" viewBox="0 0 400 400" style="position: absolute; bottom: 0; left: 0;">
+                            <!-- Dynamic tree content -->
+                        </svg>
+                        
+                        <!-- Ground -->
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, #228B22 0%, #006400 100%);"></div>
+                    </div>
+
+                    <!-- Achievements -->
+                    <div id="treeAchievements" style="margin-top: 20px; padding: 15px; background: #fff9e6; border-radius: 10px; border: 2px solid #ffd700;">
+                        <h3 style="color: #ff8c00; margin-bottom: 10px; font-size: 1.1em;">🏆 成就徽章（左右滑動查看更多）</h3>
+                        <div id="achievementsList" style="overflow-x: auto; padding: 5px;">
+                            <!-- Achievements will be rendered here -->
+                        </div>
+                        <div style="font-size: 0.8em; color: #999; margin-top: 8px; text-align: center;">
+                            👈 左右滑動查看所有 50 個等級徽章 👉
+                        </div>
+                    </div>
+
+                    <!-- Motivational Message -->
+                    <div id="motivationalMessage" style="margin-top: 20px; padding: 15px; background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%); border-radius: 10px; font-size: 1.1em; color: #d63031; font-weight: bold;">
+                        💪 繼續加油！每天學習一點點，小樹會越來越高！
                     </div>
                 </div>
             </div>
@@ -1095,6 +1237,71 @@
             <button class="close-calendar-btn" onclick="closeCalendar()">&times;</button>
         </div>
         <div id="calendar"></div>
+    </div>
+
+    <!-- Admin Panel Popup -->
+    <div class="modal-overlay" id="adminOverlay" onclick="closeAdminPanel()" style="display: none;"></div>
+    <div class="calendar-popup" id="adminPopup" style="display: none; max-width: 500px;">
+        <div class="calendar-popup-header">
+            <h3>⚙️ 管理員 - 積分管理</h3>
+            <button class="close-calendar-btn" onclick="closeAdminPanel()">&times;</button>
+        </div>
+        <div style="padding: 20px;">
+            <div style="margin-bottom: 20px; padding: 15px; background: #f0f4ff; border-radius: 8px;">
+                <div style="font-size: 1.2em; color: #667eea; font-weight: bold;">
+                    當前積分: <span id="adminCurrentPoints">0</span>
+                </div>
+            </div>
+            
+            <!-- Two column layout -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                <div>
+                    <label style="display: block; margin-bottom: 5px; color: #666; font-weight: bold;">操作類型：</label>
+                    <select id="adminOperation" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+                        <option value="add">➕ 增加積分</option>
+                        <option value="subtract">➖ 減少積分</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 5px; color: #666; font-weight: bold;">積分類型：</label>
+                    <select id="adminPointType" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+                        <option value="bonus">🎁 獎勵</option>
+                        <option value="daily_task">📅 每日任務</option>
+                        <option value="review">📚 複習</option>
+                        <option value="dictation_bonus">🎧 聽寫獎勵</option>
+                        <option value="streak_bonus">🔥 連續獎勵</option>
+                        <option value="penalty">⚠️ 懲罰</option>
+                        <option value="review_penalty">❌ 抽查扣分</option>
+                        <option value="spend">💸 消費</option>
+                        <option value="lottery">🎰 抽獎</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; color: #666; font-weight: bold;">積分數量：</label>
+                <input type="number" id="adminPointsAmount" min="1" value="1" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 5px; color: #666; font-weight: bold;">理由：</label>
+                <textarea id="adminReason" rows="3" placeholder="請填寫具體原因..." style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em; resize: vertical;"></textarea>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button onclick="saveAdminChanges()" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 1em; font-weight: bold; cursor: pointer; transition: all 0.2s;"
+                        onmouseover="this.style.transform='scale(1.02)'"
+                        onmouseout="this.style.transform='scale(1)'">
+                    💾 保存
+                </button>
+                <button onclick="closeAdminPanel()" style="flex: 1; padding: 12px; background: #e0e0e0; color: #666; border: none; border-radius: 8px; font-size: 1em; cursor: pointer; transition: all 0.2s;"
+                        onmouseover="this.style.background='#d0d0d0'"
+                        onmouseout="this.style.background='#e0e0e0'">
+                    ❌ 取消
+                </button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -2144,6 +2351,11 @@
             if (tabName === 'review') {
                 initReviewTab();
             }
+            
+            // Initialize growth tree tab when switching to it
+            if (tabName === 'growth-tree') {
+                initGrowthTreeTab();
+            }
         }
 
         // Toggle delete mode
@@ -2169,8 +2381,18 @@
                     interval: 0,
                     repetitions: 0,
                     nextReviewDate: null,
-                    lastReviewDate: null
+                    lastReviewDate: null,
+                    reviewPointsEarned: false,      // Whether points were earned
+                    pointsAwardedDate: null,         // When points were awarded
+                    lastQualityRating: null,         // Last quality rating (0-3)
+                    pointsRevoked: false             // Whether points were revoked due to poor performance
                 };
+            } else {
+                // Initialize missing fields for existing words
+                if (word.srs.reviewPointsEarned === undefined) word.srs.reviewPointsEarned = false;
+                if (word.srs.pointsAwardedDate === undefined) word.srs.pointsAwardedDate = null;
+                if (word.srs.lastQualityRating === undefined) word.srs.lastQualityRating = null;
+                if (word.srs.pointsRevoked === undefined) word.srs.pointsRevoked = false;
             }
         }
 
@@ -2249,11 +2471,22 @@
             showAnswer: false
         };
 
+        // Dictation session state
+        let dictationSession = {
+            words: [],
+            currentIndex: 0,
+            intervalSeconds: 5,  // Default interval between words
+            timer: null,
+            countdownTimer: null,
+            isPlaying: false
+        };
+
         // Initialize review tab
         function initReviewTab() {
             const dueWords = getDueWords();
             const statsEl = document.getElementById('reviewStats');
             const startBtn = document.getElementById('startReviewBtn');
+            const dictationBtn = document.getElementById('startDictationBtn');
             const completeEl = document.getElementById('reviewComplete');
             
             completeEl.style.display = 'none';
@@ -2261,6 +2494,7 @@
             if (dueWords.length === 0) {
                 statsEl.innerHTML = '<div style="font-size: 2em; margin-bottom: 10px;">✨</div><p>沒有需要複習的單詞</p>';
                 startBtn.style.display = 'none';
+                if (dictationBtn) dictationBtn.style.display = 'none';
             } else {
                 statsEl.innerHTML = `
                     <div style="font-size: 3em; margin-bottom: 10px;">📚</div>
@@ -2268,6 +2502,7 @@
                     <p style="margin-top: 10px;">今天是你複習這些單詞的好日子！</p>
                 `;
                 startBtn.style.display = 'inline-block';
+                if (dictationBtn) dictationBtn.style.display = 'inline-block';
             }
         }
 
@@ -2419,6 +2654,37 @@
         // Rate word and move to next
         function rateWord(quality) {
             const word = reviewSession.words[reviewSession.currentIndex];
+            
+            // Initialize tracking fields if not exist
+            initSRSData(word);
+            
+            // Check if we need to revoke points due to poor performance
+            if (word.srs.reviewPointsEarned && !word.srs.pointsRevoked) {
+                // User previously earned points, now check current performance
+                if (quality <= 1) {
+                    // Poor performance (Again or Hard) - revoke points
+                    addPoints(-1, 'review_penalty', `抽查不合格: ${word.english || word.chinese}`);
+                    word.srs.pointsRevoked = true;
+                    word.srs.reviewPointsEarned = false; // Allow re-earning in future
+                    showToast('⚠️ 抽查不合格，扣回 1 積分', 2000);
+                } else if (quality === 3) {
+                    // Still performing well - keep the points
+                    // No action needed
+                }
+            }
+            
+            // Award points only for Easy (3) rating, and only if not already earned or was revoked
+            if (quality === 3 && (!word.srs.reviewPointsEarned || word.srs.pointsRevoked)) {
+                addPoints(1, 'review', `複習單詞: ${word.english || word.chinese}`);
+                word.srs.reviewPointsEarned = true;
+                word.srs.pointsAwardedDate = new Date().toISOString();
+                word.srs.pointsRevoked = false; // Reset revocation flag
+                showToast('🎉 複習優秀！獲得 1 積分', 2000);
+            }
+            
+            // Record the quality rating
+            word.srs.lastQualityRating = quality;
+            
             calculateNextReview(word, quality);
             saveWords();
             
@@ -2426,6 +2692,568 @@
             reviewSession.currentIndex++;
             reviewSession.showAnswer = false;
             showReviewCard();
+        }
+
+        // ==================== Dictation Functions ====================
+        
+        // Start dictation session
+        function startDictationSession() {
+            const dueWords = getDueWords();
+            if (dueWords.length === 0) {
+                alert('沒有需要聽寫的單詞！');
+                return;
+            }
+            
+            // Initialize with default 15 seconds interval
+            dictationSession = {
+                words: dueWords,
+                currentIndex: 0,
+                intervalSeconds: 15,  // Default 15 seconds
+                timer: null,
+                countdownTimer: null,
+                isPlaying: false
+            };
+            
+            showDictationIntro();
+        }
+        
+        // Show dictation introduction
+        function showDictationIntro() {
+            const container = document.getElementById('reviewContainer');
+            const total = dictationSession.words.length;
+            const interval = dictationSession.intervalSeconds;
+            
+            container.innerHTML = `
+                <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px; text-align: center;">
+                    <div style="font-size: 3em; margin-bottom: 20px;">🎧</div>
+                    <h2 style="color: #f5576c; margin-bottom: 15px;">準備開始聽寫</h2>
+                    <p style="font-size: 1.2em; color: #666; margin-bottom: 10px;">共有 ${total} 個單詞</p>
+                    
+                    <!-- Interval Control -->
+                    <div style="margin: 30px 0; padding: 20px; background: #f9f9f9; border-radius: 10px;">
+                        <p style="font-size: 1.1em; color: #666; margin-bottom: 15px;">每個單詞間隔</p>
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
+                            <button onclick="adjustInterval(-1)" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #667eea; background: white; color: #667eea; font-size: 1.5em; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                                -
+                            </button>
+                            <input type="number" id="intervalInput" value="${interval}" min="1" max="30" 
+                                   onchange="updateInterval(this.value)"
+                                   onkeyup="updateInterval(this.value)"
+                                   style="width: 80px; height: 50px; text-align: center; font-size: 1.5em; border: 2px solid #667eea; border-radius: 8px; outline: none;">
+                            <span style="font-size: 1.2em; color: #666;">秒</span>
+                            <button onclick="adjustInterval(1)" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #667eea; background: white; color: #667eea; font-size: 1.5em; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                                +
+                            </button>
+                        </div>
+                        <p style="font-size: 0.9em; color: #999; margin-top: 10px;">範圍：1-30秒</p>
+                    </div>
+                    
+                    <div style="display: flex; gap: 15px; justify-content: center;">
+                        <button onclick="beginDictation()" style="padding: 15px 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 10px; font-size: 1.2em; cursor: pointer; box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);">
+                            ▶️ 開始播放
+                        </button>
+                        <button onclick="initReviewTab()" style="padding: 15px 40px; background: #e0e0e0; color: #666; border: none; border-radius: 10px; font-size: 1.2em; cursor: pointer;">
+                            ❌ 取消
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Adjust interval by delta
+        function adjustInterval(delta) {
+            const input = document.getElementById('intervalInput');
+            if (!input) return;
+            
+            let newValue = parseInt(input.value) + delta;
+            
+            // Enforce limits
+            if (newValue < 1) newValue = 1;
+            if (newValue > 30) newValue = 30;
+            
+            input.value = newValue;
+            updateInterval(newValue);
+        }
+        
+        // Update interval from input
+        function updateInterval(value) {
+            let seconds = parseInt(value);
+            
+            // Validate
+            if (isNaN(seconds) || seconds < 1) {
+                seconds = 1;
+            } else if (seconds > 30) {
+                seconds = 30;
+            }
+            
+            // Update session
+            dictationSession.intervalSeconds = seconds;
+            
+            // Update input display if needed
+            const input = document.getElementById('intervalInput');
+            if (input && parseInt(input.value) !== seconds) {
+                input.value = seconds;
+            }
+            
+            console.log(`⏱️ Interval updated to: ${seconds} seconds`);
+        }
+        
+        // Begin dictation playback
+        function beginDictation() {
+            const introText = `接下來進行聽寫，每個單詞間隔${dictationSession.intervalSeconds}秒`;
+            
+            // Create speech utterance for intro
+            const utterance = new SpeechSynthesisUtterance(introText);
+            utterance.lang = 'zh-HK';
+            utterance.rate = globalSpeechRate || 1.0;
+            
+            // When intro finishes, start first word
+            utterance.onend = () => {
+                // Small delay after intro before starting
+                setTimeout(() => {
+                    playDictationWord();
+                }, 500);
+            };
+            
+            // Speak the intro
+            window.speechSynthesis.speak(utterance);
+        }
+        
+        // Play current dictation word
+        async function playDictationWord() {
+            const { words, currentIndex, intervalSeconds } = dictationSession;
+            
+            if (currentIndex >= words.length) {
+                // All words completed
+                showDictationComplete();
+                return;
+            }
+            
+            const word = words[currentIndex];
+            const progress = currentIndex + 1;
+            const total = words.length;
+            
+            // Display word info (async to support dictionary lookup)
+            await showDictationWordDisplay(word, progress, total);
+            
+            // Start countdown display from the beginning
+            startIntervalCountdown(intervalSeconds);
+            
+            // Play the word
+            if (word.english) {
+                // English word - speak English
+                setTimeout(() => {
+                    speakEnglish(word.english);
+                }, 500);
+            } else if (word.chinese) {
+                // Chinese word - speak Cantonese
+                setTimeout(() => {
+                    speakCantonese(word.chinese);
+                    // Also show stroke animation for Chinese
+                    setTimeout(() => {
+                        showStrokeAnimationForDictation(word);
+                    }, 500);
+                }, 500);
+            }
+            
+            // Schedule next word
+            dictationSession.timer = setTimeout(() => {
+                dictationSession.currentIndex++;
+                playDictationWord();
+            }, intervalSeconds * 1000);
+        }
+        
+        // Show dictation word display
+        async function showDictationWordDisplay(word, progress, total) {
+            const container = document.getElementById('reviewContainer');
+            const isChineseOnly = !word.english && word.chinese;
+            
+            // For English words: use customTranslation if available, otherwise use chinese (dictionary translation)
+            // For Chinese words: use customTranslation if available, otherwise use chinese itself
+            let displayText = word.customTranslation || word.chinese || '';
+            
+            // If no translation for English word, try to get from offline dictionary
+            if (!displayText && word.english && offlineDict.isLoaded) {
+                try {
+                    console.log(`🔍 Looking up "${word.english}" in offline dictionary...`);
+                    const dictEntry = await offlineDict.lookup(word.english);
+                    if (dictEntry && dictEntry.translation) {
+                        displayText = dictEntry.translation;
+                        console.log(`✅ Found translation: ${displayText}`);
+                        
+                        // Optionally update the word's chinese field for future use
+                        word.chinese = displayText;
+                        saveWords(); // Save the updated translation
+                    }
+                } catch (error) {
+                    console.error('Failed to lookup word in dictionary:', error);
+                }
+            }
+            
+            let html = `
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <!-- Progress Bar -->
+                    <div style="margin-bottom: 30px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: #666;">
+                            <span>進度</span>
+                            <span>${progress}/${total}</span>
+                        </div>
+                        <div style="background: #e0e0e0; border-radius: 10px; height: 10px; overflow: hidden;">
+                            <div style="background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%); height: 100%; width: ${(progress/total)*100}%; transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Word Card -->
+                    <div style="background: white; border-radius: 15px; padding: 40px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center;">
+            `;
+            
+            // For English words, show translation
+            if (word.english) {
+                html += `
+                        <div style="font-size: 2.5em; color: #667eea; margin-bottom: 15px; cursor: pointer; transition: transform 0.2s;" 
+                             onclick="replayDictationWord('${escapeJs(word.english)}', 'english')"
+                             onmouseover="this.style.transform='scale(1.05)'" 
+                             onmouseout="this.style.transform='scale(1)'">
+                            🔊 ${escapeHtml(word.english)}
+                        </div>
+                        <div style="font-size: 1.8em; color: #333; margin-top: 20px; padding-top: 20px; border-top: 2px solid #f0f0f0; cursor: pointer; transition: transform 0.2s;"
+                             onclick="replayDictationWord('${escapeJs(displayText)}', 'chinese')"
+                             onmouseover="this.style.transform='scale(1.05)'" 
+                             onmouseout="this.style.transform='scale(1)'">
+                            🔊 ${escapeHtml(displayText)}
+                        </div>
+                `;
+            } else if (word.chinese) {
+                // For Chinese words, show the character and prepare for stroke animation
+                const chineseId = `dictation-chinese-${word.id}`;
+                const containerId = `dictation-stroke-${word.id}`;
+                
+                html += `
+                        <div style="font-size: 2.5em; color: #667eea; margin-bottom: 15px; cursor: pointer; transition: transform 0.2s;" 
+                             onclick="replayChineseWordWithAnimation('${escapeJs(word.chinese)}', '${chineseId}', '${containerId}')"
+                             onmouseover="this.style.transform='scale(1.05)'" 
+                             onmouseout="this.style.transform='scale(1)'">
+                            🔊 ${escapeHtml(word.chinese)}
+                        </div>
+                        <div id="${containerId}" class="stroke-order-container" style="margin-top: 20px;">
+                            <div id="${chineseId}" class="hanzi-writer-target" style="width: 200px; height: 200px; margin: 0 auto;"></div>
+                        </div>
+                `;
+            }
+            
+            html += `
+                        <!-- Timer Display -->
+                        <div id="dictationTimer" style="margin-top: 30px; font-size: 3em; color: #f5576c; font-weight: bold;">
+                            ${dictationSession.intervalSeconds}
+                        </div>
+                    </div>
+                    
+                    <!-- Control Buttons -->
+                    <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                        <button onclick="pauseDictation()" id="pauseBtn" style="padding: 10px 20px; background: #ffa94d; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                            ⏸️ 暫停
+                        </button>
+                        <button onclick="skipToNextWord()" style="padding: 10px 20px; background: #339af0; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                            ⏭️ 下一個
+                        </button>
+                        <button onclick="stopDictation()" style="padding: 10px 20px; background: #ff6b6b; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                            ⏹️ 停止
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        // Replay dictation word on click
+        function replayDictationWord(text, type) {
+            // Cancel any ongoing speech
+            window.speechSynthesis.cancel();
+            
+            if (type === 'english') {
+                speakEnglish(text);
+            } else if (type === 'chinese') {
+                speakCantonese(text);
+            }
+            
+            showToast('🔊 重新播放', 1500);
+        }
+        
+        // Replay Chinese word with stroke animation
+        function replayChineseWordWithAnimation(text, chineseId, containerId) {
+            // Cancel any ongoing speech
+            window.speechSynthesis.cancel();
+            
+            // Play Cantonese speech
+            speakCantonese(text);
+            
+            // Replay stroke animation
+            if (typeof HanziWriter !== 'undefined') {
+                const container = document.getElementById(containerId);
+                if (container) {
+                    container.style.display = 'block';
+                    
+                    // Clear previous animation
+                    const targetDiv = document.getElementById(chineseId);
+                    if (targetDiv) {
+                        targetDiv.innerHTML = '';
+                    }
+                    
+                    // Create new animation
+                    const writer = HanziWriter.create(chineseId, text.charAt(0), {
+                        width: 200,
+                        height: 200,
+                        padding: 5,
+                        showOutline: true,
+                        strokeAnimationSpeed: 1,
+                        delayBetweenStrokes: 500,
+                        radicalColor: '#168F16',
+                        strokeColor: '#333'
+                    });
+                    
+                    // HanziWriter returns an object (not a Promise)
+                    setTimeout(() => {
+                        if (writer && writer.animateCharacter) {
+                            writer.animateCharacter();
+                        }
+                    }, 100);
+                }
+            }
+            
+            showToast('🔊 重新播放 + 筆畫動畫', 1500);
+        }
+        
+        // Show stroke animation for dictation
+        function showStrokeAnimationForDictation(word) {
+            if (!word.chinese) return;
+            
+            const chineseId = `dictation-chinese-${word.id}`;
+            const containerId = `dictation-stroke-${word.id}`;
+            const container = document.getElementById(containerId);
+            
+            if (container && typeof HanziWriter !== 'undefined') {
+                container.style.display = 'block';
+                
+                // Clear previous content
+                const targetDiv = document.getElementById(chineseId);
+                if (targetDiv) {
+                    targetDiv.innerHTML = '';
+                }
+                
+                const writer = HanziWriter.create(chineseId, word.chinese.charAt(0), {
+                    width: 200,
+                    height: 200,
+                    padding: 5,
+                    showOutline: true,
+                    strokeAnimationSpeed: 1,
+                    delayBetweenStrokes: 500,
+                    radicalColor: '#168F16',
+                    strokeColor: '#333'
+                });
+                
+                // HanziWriter returns an object (not a Promise)
+                setTimeout(() => {
+                    if (writer && writer.animateCharacter) {
+                        writer.animateCharacter();
+                    }
+                }, 100);
+            }
+        }
+        
+        // Start interval countdown from the beginning
+        function startIntervalCountdown(totalSeconds) {
+            let remaining = totalSeconds;
+            const timerEl = document.getElementById('dictationTimer');
+            
+            if (!timerEl) return;
+            
+            // Show initial value
+            timerEl.textContent = remaining;
+            timerEl.style.color = '#f5576c';
+            
+            // Flag to track if countdown sound has been played
+            let countdownSoundPlayed = false;
+            
+            // Update every second
+            dictationSession.countdownTimer = setInterval(() => {
+                remaining--;
+                
+                if (remaining > 3) {
+                    // Normal countdown
+                    timerEl.textContent = remaining;
+                    timerEl.style.color = '#f5576c';
+                } else if (remaining === 3 && !countdownSoundPlayed) {
+                    // Last 3 seconds - play "3, 2, 1" once
+                    timerEl.textContent = remaining;
+                    timerEl.style.color = '#ff6b6b';
+                    
+                    // Play "3, 2, 1" as a single utterance with slower speed
+                    const utterance = new SpeechSynthesisUtterance('3、2、1');
+                    utterance.lang = 'zh-HK';
+                    utterance.rate = 0.7;  // Slower speed for better timing
+                    window.speechSynthesis.speak(utterance);
+                    
+                    countdownSoundPlayed = true;
+                } else if (remaining > 0) {
+                    // Just update display, no sound
+                    timerEl.textContent = remaining;
+                    timerEl.style.color = '#ff6b6b';
+                } else {
+                    // Time's up
+                    timerEl.textContent = 'GO!';
+                    timerEl.style.color = '#51cf66';
+                    
+                    // Clear interval
+                    clearInterval(dictationSession.countdownTimer);
+                    
+                    setTimeout(() => {
+                        if (timerEl) timerEl.textContent = '';
+                    }, 500);
+                }
+            }, 1000);
+        }
+        
+        // Pause dictation
+        function pauseDictation() {
+            if (dictationSession.isPlaying) {
+                // Pause
+                clearTimeout(dictationSession.timer);
+                clearInterval(dictationSession.countdownTimer);
+                dictationSession.isPlaying = false;
+                document.getElementById('pauseBtn').innerHTML = '▶️ 繼續';
+                showToast('⏸️ 已暫停', 2000);
+            } else {
+                // Resume
+                dictationSession.isPlaying = true;
+                document.getElementById('pauseBtn').innerHTML = '⏸️ 暫停';
+                showToast('▶️ 繼續播放', 2000);
+                
+                // Resume from current position
+                const remainingTime = dictationSession.intervalSeconds * 1000 - (Date.now() % (dictationSession.intervalSeconds * 1000));
+                dictationSession.timer = setTimeout(() => {
+                    dictationSession.currentIndex++;
+                    playDictationWord();
+                }, remainingTime);
+            }
+        }
+        
+        // Stop dictation
+        function stopDictation() {
+            clearTimeout(dictationSession.timer);
+            clearInterval(dictationSession.countdownTimer);
+            dictationSession.isPlaying = false;
+            
+            // Stop any ongoing speech
+            window.speechSynthesis.cancel();
+            
+            // Return to review tab without confirmation
+            initReviewTab();
+            showToast('⏹️ 已停止聽寫', 2000);
+        }
+        
+        // Skip to next word
+        function skipToNextWord() {
+            // Clear current timers
+            clearTimeout(dictationSession.timer);
+            clearInterval(dictationSession.countdownTimer);
+            
+            // Stop any ongoing speech
+            window.speechSynthesis.cancel();
+            
+            // Move to next word
+            dictationSession.currentIndex++;
+            
+            // Check if there are more words
+            if (dictationSession.currentIndex >= dictationSession.words.length) {
+                // All words completed
+                showDictationComplete();
+            } else {
+                // Play next word immediately
+                playDictationWord();
+                showToast('⏭️ 跳到下一個單詞', 1500);
+            }
+        }
+        
+        // Show dictation complete
+        function showDictationComplete() {
+            const container = document.getElementById('reviewContainer');
+            const total = dictationSession.words.length;
+            
+            // Check if already earned dictation points today
+            const today = getTodayString();
+            const lastDictationDate = dailyTaskState.lastDictationDate || '';
+            const alreadyEarned = lastDictationDate === today;
+            
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 3em; margin-bottom: 20px;">🎉</div>
+                    <h3 style="color: #51cf66; margin-bottom: 10px;">聽寫完成！</h3>
+                    <p style="color: #666; margin-bottom: 10px;">共完成 ${total} 個單詞的聽寫</p>
+                    
+                    ${!alreadyEarned ? `
+                    <div style="margin: 30px 0; padding: 20px; background: #f9f9f9; border-radius: 10px;">
+                        <p style="font-size: 1.1em; color: #666; margin-bottom: 20px;">本次聽寫情況</p>
+                        <div style="display: flex; gap: 15px; justify-content: center;">
+                            <button onclick="submitDictationResult(false)" style="padding: 12px 30px; background: #ffa94d; color: white; border: none; border-radius: 8px; font-size: 1.1em; cursor: pointer; transition: all 0.2s;">
+                                ❌ 有錯誤
+                            </button>
+                            <button onclick="submitDictationResult(true)" style="padding: 12px 30px; background: #51cf66; color: white; border: none; border-radius: 8px; font-size: 1.1em; cursor: pointer; transition: all 0.2s;">
+                                ✅ 全部正確
+                            </button>
+                        </div>
+                        <p style="font-size: 0.9em; color: #999; margin-top: 15px;">全部正確可獲得 1 積分（每天限一次）</p>
+                    </div>
+                    ` : `
+                    <p style="color: #888; margin-bottom: 30px;">今日已獲得聽寫積分，明天再來吧！</p>
+                    `}
+                    
+                    <button onclick="initReviewTab()" style="padding: 10px 20px; background: #f0f4ff; border: none; border-radius: 8px; color: #667eea; cursor: pointer;">
+                        🔄 返回
+                    </button>
+                </div>
+            `;
+        }
+        
+        // Submit dictation result
+        function submitDictationResult(allCorrect) {
+            const today = getTodayString();
+            
+            // Check again to prevent double submission
+            const lastDictationDate = dailyTaskState.lastDictationDate || '';
+            if (lastDictationDate === today) {
+                showToast('⚠️ 今日已獲得聽寫積分', 2000);
+                return;
+            }
+            
+            if (allCorrect) {
+                // Award 1 point for perfect dictation
+                addPoints(1, 'dictation_bonus', '聽寫全部正確');
+                showToast('🎉 聽寫獎勵！獲得 1 積分', 3000);
+            } else {
+                showToast('💪 繼續努力，下次一定全對！', 2000);
+            }
+            
+            // Record that user has earned dictation points today
+            dailyTaskState.lastDictationDate = today;
+            localStorage.setItem('dailyTaskState', JSON.stringify(dailyTaskState));
+            
+            // Immediately disable only the result buttons (not the return button)
+            const resultButtons = document.querySelectorAll('#reviewContainer button');
+            resultButtons.forEach(btn => {
+                // Only disable buttons with specific text
+                if (btn.textContent.includes('有錯誤') || btn.textContent.includes('全部正確')) {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'not-allowed';
+                    btn.style.pointerEvents = 'none';  // Prevent all clicks
+                }
+            });
+            
+            // Return to review tab after short delay
+            setTimeout(() => {
+                initReviewTab();
+            }, 1500);
         }
 
         // Refresh API examples (when adding new word)
@@ -2455,6 +3283,826 @@
             }, 500);
         });
 
+        // ==================== Growth Tree Functions ====================
+        
+        // Draw the growth tree based on word count
+        function drawGrowthTree() {
+            const svg = document.getElementById('growthTreeSVG');
+            if (!svg) return;
+
+            const totalWords = words.length;
+            
+            // Clear existing content
+            svg.innerHTML = '';
+            
+            // Calculate tree size based on word count
+            const treeHeight = Math.min(250, 80 + totalWords * 3); // Max height 250px
+            const trunkWidth = Math.min(30, 10 + totalWords * 0.3);
+            const canopySize = Math.min(120, 40 + totalWords * 1.5);
+            
+            const centerX = 200;
+            const groundY = 340;
+            
+            // Draw trunk
+            const trunk = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            trunk.setAttribute('x', centerX - trunkWidth / 2);
+            trunk.setAttribute('y', groundY - treeHeight * 0.6);
+            trunk.setAttribute('width', trunkWidth);
+            trunk.setAttribute('height', treeHeight * 0.6);
+            trunk.setAttribute('fill', '#8B4513');
+            trunk.setAttribute('rx', 5);
+            trunk.style.animation = 'tree-grow 1s ease-out';
+            svg.appendChild(trunk);
+            
+            // Draw canopy (leaves)
+            const canopy = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            canopy.setAttribute('cx', centerX);
+            canopy.setAttribute('cy', groundY - treeHeight * 0.7);
+            canopy.setAttribute('r', canopySize);
+            canopy.setAttribute('fill', '#228B22');
+            canopy.setAttribute('opacity', '0.9');
+            canopy.style.animation = 'leaf-sway 3s ease-in-out infinite';
+            svg.appendChild(canopy);
+            
+            // Add more leaves for bigger trees
+            if (totalWords >= 10) {
+                const leaf2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                leaf2.setAttribute('cx', centerX - 30);
+                leaf2.setAttribute('cy', groundY - treeHeight * 0.65);
+                leaf2.setAttribute('r', canopySize * 0.6);
+                leaf2.setAttribute('fill', '#32CD32');
+                leaf2.setAttribute('opacity', '0.8');
+                leaf2.style.animation = 'leaf-sway 3.5s ease-in-out infinite 0.5s';
+                svg.appendChild(leaf2);
+            }
+            
+            if (totalWords >= 25) {
+                const leaf3 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                leaf3.setAttribute('cx', centerX + 35);
+                leaf3.setAttribute('cy', groundY - treeHeight * 0.68);
+                leaf3.setAttribute('r', canopySize * 0.5);
+                leaf3.setAttribute('fill', '#00FF00');
+                leaf3.setAttribute('opacity', '0.7');
+                leaf3.style.animation = 'leaf-sway 4s ease-in-out infinite 1s';
+                svg.appendChild(leaf3);
+            }
+            
+            // Add fruits/flowers for milestone achievements
+            if (totalWords >= 5) {
+                const fruit = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                fruit.setAttribute('cx', centerX - 20);
+                fruit.setAttribute('cy', groundY - treeHeight * 0.75);
+                fruit.setAttribute('r', 8);
+                fruit.setAttribute('fill', '#FF6347');
+                svg.appendChild(fruit);
+            }
+            
+            if (totalWords >= 15) {
+                const fruit2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                fruit2.setAttribute('cx', centerX + 25);
+                fruit2.setAttribute('cy', groundY - treeHeight * 0.72);
+                fruit2.setAttribute('r', 8);
+                fruit2.setAttribute('fill', '#FFD700');
+                svg.appendChild(fruit2);
+            }
+            
+            if (totalWords >= 30) {
+                const fruit3 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                fruit3.setAttribute('cx', centerX);
+                fruit3.setAttribute('cy', groundY - treeHeight * 0.8);
+                fruit3.setAttribute('r', 10);
+                fruit3.setAttribute('fill', '#FF1493');
+                svg.appendChild(fruit3);
+            }
+            
+            // Update stats
+            document.getElementById('totalWordsCount').textContent = totalWords;
+            
+            // Calculate tree age (days since first word)
+            if (words.length > 0) {
+                const firstWordDate = new Date(words[0].date);
+                const today = new Date();
+                const diffTime = Math.abs(today - firstWordDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                document.getElementById('treeAge').textContent = diffDays;
+            } else {
+                document.getElementById('treeAge').textContent = '0';
+            }
+            
+            // Update motivational message
+            updateMotivationalMessage(totalWords);
+            
+            // Render achievements
+            renderAchievements(totalWords);
+        }
+        
+        // Update motivational message based on progress
+        function updateMotivationalMessage(wordCount) {
+            const messageEl = document.getElementById('motivationalMessage');
+            if (!messageEl) return;
+            
+            let message = '';
+            if (wordCount === 0) {
+                message = '🌱 開始你的學習之旅吧！種下第一棵小樹苗！';
+            } else if (wordCount < 5) {
+                message = '💪 很好！小樹苗正在成長，繼續加油！';
+            } else if (wordCount < 10) {
+                message = '🌿 太棒了！小樹已經長出葉子了！';
+            } else if (wordCount < 20) {
+                message = '🌳 哇！小樹變成大樹了！你真厲害！';
+            } else if (wordCount < 30) {
+                message = '🍎 太神奇了！樹上結出果實了！';
+            } else if (wordCount < 50) {
+                message = '🏆 你是單詞大師！這棵樹真壯觀！';
+            } else {
+                message = '👑 傳說中的單詞之王！你的森林無敵了！';
+            }
+            
+            messageEl.textContent = message;
+        }
+        
+        // ==================== Points & Lottery System ====================
+        
+        // Initialize points system
+        let userPoints = parseInt(localStorage.getItem('userPoints') || '0');
+        let unlockedLevels = JSON.parse(localStorage.getItem('unlockedLevels') || '[]');
+        let hasPendingLottery = false;
+        
+        // Daily task state
+        let dailyTaskState = JSON.parse(localStorage.getItem('dailyTaskState') || '{}');
+        
+        // Add points
+        function addPoints(amount, type = 'lottery') {
+            userPoints += amount;
+            localStorage.setItem('userPoints', userPoints.toString());
+            
+            // Record history
+            recordPointsHistory(amount, type);
+            
+            updatePointsDisplay();
+        }
+        
+        // Spend points (for future features)
+        function spendPoints(amount, reason = 'unknown') {
+            if (userPoints < amount) {
+                showToast('❌ 積分不足', 2000);
+                return false;
+            }
+            
+            userPoints -= amount;
+            localStorage.setItem('userPoints', userPoints.toString());
+            
+            // Record history with negative amount
+            recordPointsHistory(-amount, 'spend', reason);
+            
+            updatePointsDisplay();
+            return true;
+        }
+        
+        // Record points history
+        function recordPointsHistory(amount, type, reason = '') {
+            let history = JSON.parse(localStorage.getItem('pointsHistory') || '[]');
+            
+            const record = {
+                id: Date.now(),
+                amount: amount,
+                type: type,
+                reason: reason,
+                timestamp: new Date().toISOString(),
+                balance: userPoints
+            };
+            
+            history.unshift(record); // Add to beginning
+            
+            // Keep only last 100 records
+            if (history.length > 100) {
+                history = history.slice(0, 100);
+            }
+            
+            localStorage.setItem('pointsHistory', JSON.stringify(history));
+        }
+        
+        // Update points display
+        function updatePointsDisplay() {
+            const pointsEl = document.getElementById('userPointsDisplay');
+            if (pointsEl) {
+                pointsEl.textContent = userPoints;
+                // Make it clickable
+                pointsEl.parentElement.style.cursor = 'pointer';
+                pointsEl.parentElement.title = '點擊查看積分記錄';
+                pointsEl.parentElement.onclick = showPointsHistory;
+            }
+        }
+        
+        // Show points history modal
+        function showPointsHistory() {
+            const history = JSON.parse(localStorage.getItem('pointsHistory') || '[]');
+            
+            // Create modal overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'pointsHistoryOverlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.7);
+                z-index: 100000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                animation: fadeIn 0.3s ease;
+            `;
+            
+            // Create modal content
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                background: white;
+                border-radius: 15px;
+                padding: 25px;
+                max-width: 90%;
+                max-height: 80vh;
+                width: 500px;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            `;
+            
+            // Header
+            const header = document.createElement('div');
+            header.style.cssText = `
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+                padding-bottom: 15px;
+                border-bottom: 2px solid #f0f0f0;
+            `;
+            header.innerHTML = `
+                <h3 style="margin: 0; color: #667eea; font-size: 1.3em;">📊 積分記錄</h3>
+                <button onclick="closePointsHistory()" style="background: none; border: none; font-size: 1.5em; cursor: pointer; color: #999; padding: 0; width: 30px; height: 30px;">✕</button>
+            `;
+            
+            // Stats summary
+            const totalEarned = history.filter(r => r.amount > 0).reduce((sum, r) => sum + r.amount, 0);
+            const totalSpent = history.filter(r => r.amount < 0).reduce((sum, r) => sum + Math.abs(r.amount), 0);
+            const statsDiv = document.createElement('div');
+            statsDiv.style.cssText = `
+                background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%);
+                padding: 15px;
+                border-radius: 10px;
+                margin-bottom: 15px;
+                display: flex;
+                justify-content: space-around;
+            `;
+            statsDiv.innerHTML = `
+                <div style="text-align: center;">
+                    <div style="font-size: 0.8em; color: #888;">總獲得</div>
+                    <div style="font-size: 1.3em; font-weight: bold; color: #51cf66;">+${totalEarned}</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.8em; color: #888;">總消耗</div>
+                    <div style="font-size: 1.3em; font-weight: bold; color: #ff6b6b;">-${totalSpent}</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.8em; color: #888;">當前餘額</div>
+                    <div style="font-size: 1.3em; font-weight: bold; color: #667eea;">${userPoints}</div>
+                </div>
+            `;
+            
+            // History list container
+            const listContainer = document.createElement('div');
+            listContainer.style.cssText = `
+                flex: 1;
+                overflow-y: auto;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                padding: 10px;
+            `;
+            
+            if (history.length === 0) {
+                listContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #999;">
+                        <div style="font-size: 3em; margin-bottom: 10px;">📭</div>
+                        <div>暫無積分記錄</div>
+                    </div>
+                `;
+            } else {
+                history.forEach((record, index) => {
+                    const item = document.createElement('div');
+                    const date = new Date(record.timestamp);
+                    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+                    
+                    let typeIcon = '🎰';
+                    let typeText = '抽獎';
+                    if (record.type === 'spend') {
+                        typeIcon = '💸';
+                        typeText = '消費';
+                    } else if (record.type === 'bonus') {
+                        typeIcon = '🎁';
+                        typeText = '獎勵';
+                    } else if (record.type === 'daily_task') {
+                        typeIcon = '📅';
+                        typeText = '每日任務';
+                    } else if (record.type === 'penalty') {
+                        typeIcon = '⚠️';
+                        typeText = '懲罰';
+                    } else if (record.type === 'review') {
+                        typeIcon = '📚';
+                        typeText = '複習';
+                    } else if (record.type === 'review_penalty') {
+                        typeIcon = '❌';
+                        typeText = '抽查扣分';
+                    } else if (record.type === 'streak_bonus') {
+                        typeIcon = '🔥';
+                        typeText = '連續獎勵';
+                    } else if (record.type === 'dictation_bonus') {
+                        typeIcon = '🎧';
+                        typeText = '聽寫獎勵';
+                    } else if (record.type === 'admin_adjustment') {
+                        typeIcon = '⚙️';
+                        typeText = '管理員調整';
+                    }
+                    
+                    item.style.cssText = `
+                        padding: 12px;
+                        margin-bottom: ${index < history.length - 1 ? '8px' : '0'};
+                        background: ${index % 2 === 0 ? '#f9f9f9' : 'white'};
+                        border-radius: 6px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        transition: background 0.2s;
+                    `;
+                    item.onmouseenter = () => item.style.background = '#f0f4ff';
+                    item.onmouseleave = () => item.style.background = index % 2 === 0 ? '#f9f9f9' : 'white';
+                    
+                    item.innerHTML = `
+                        <div style="flex: 1;">
+                            <div style="font-size: 0.85em; color: #666; margin-bottom: 3px;">
+                                ${typeIcon} ${typeText}
+                            </div>
+                            <div style="font-size: 0.75em; color: #999;">
+                                ${dateStr}
+                            </div>
+                            ${record.reason ? `<div style="font-size: 0.7em; color: #bbb; margin-top: 2px;">${record.reason}</div>` : ''}
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 1.1em; font-weight: bold; color: ${record.amount > 0 ? '#51cf66' : '#ff6b6b'};">
+                                ${record.amount > 0 ? '+' : ''}${record.amount}
+                            </div>
+                            <div style="font-size: 0.7em; color: #aaa;">
+                                餘額: ${record.balance}
+                            </div>
+                        </div>
+                    `;
+                    
+                    listContainer.appendChild(item);
+                });
+            }
+            
+            // Footer
+            const footer = document.createElement('div');
+            footer.style.cssText = `
+                margin-top: 15px;
+                padding-top: 15px;
+                border-top: 2px solid #f0f0f0;
+                text-align: center;
+                font-size: 0.8em;
+                color: #999;
+            `;
+            footer.innerHTML = `
+                顯示最近 ${history.length} 條記錄（最多保存100條）
+            `;
+            
+            // Assemble modal
+            modal.appendChild(header);
+            modal.appendChild(statsDiv);
+            modal.appendChild(listContainer);
+            modal.appendChild(footer);
+            
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+            
+            // Close on overlay click
+            overlay.onclick = (e) => {
+                if (e.target === overlay) {
+                    closePointsHistory();
+                }
+            };
+        }
+        
+        // Close points history modal
+        function closePointsHistory() {
+            const overlay = document.getElementById('pointsHistoryOverlay');
+            if (overlay) {
+                overlay.remove();
+            }
+        }
+        
+        // Lottery function
+        function performLottery() {
+            if (!hasPendingLottery) {
+                showToast('❌ 沒有可用的抽獎機會', 2000);
+                return;
+            }
+            
+            // Generate random points between 1-20
+            const lotteryPoints = Math.floor(Math.random() * 20) + 1;
+            addPoints(lotteryPoints, 'lottery');
+            
+            // Clear pending lottery
+            hasPendingLottery = false;
+            localStorage.setItem('hasPendingLottery', 'false');
+            
+            // Show celebration
+            showToast(`🎉 恭喜！獲得 ${lotteryPoints} 積分！`, 3000);
+            
+            // Confetti effect (simple version)
+            createConfetti();
+            
+            // Update lottery button
+            updateLotteryButton();
+        }
+        
+        // Create simple confetti effect
+        function createConfetti() {
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+            for (let i = 0; i < 30; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.style.cssText = `
+                        position: fixed;
+                        width: 10px;
+                        height: 10px;
+                        background: ${colors[Math.floor(Math.random() * colors.length)]};
+                        left: ${Math.random() * 100}vw;
+                        top: -10px;
+                        z-index: 99999;
+                        pointer-events: none;
+                        animation: confetti-fall 2s ease-out forwards;
+                    `;
+                    document.body.appendChild(confetti);
+                    setTimeout(() => confetti.remove(), 2000);
+                }, i * 50);
+            }
+        }
+        
+        // Update lottery button state
+        function updateLotteryButton() {
+            const lotteryBtn = document.getElementById('lotteryBtn');
+            if (!lotteryBtn) return;
+            
+            if (hasPendingLottery) {
+                lotteryBtn.disabled = false;
+                lotteryBtn.style.opacity = '1';
+                lotteryBtn.style.cursor = 'pointer';
+                lotteryBtn.innerHTML = '🎰 點擊抽獎';
+            } else {
+                lotteryBtn.disabled = true;
+                lotteryBtn.style.opacity = '0.5';
+                lotteryBtn.style.cursor = 'not-allowed';
+                lotteryBtn.innerHTML = '🎰 暫無機會';
+            }
+        }
+        
+        // Check for newly unlocked levels and trigger lottery
+        function checkLevelUnlock(wordCount) {
+            const currentLevel = Math.floor(wordCount / 20);
+            const previousLevel = Math.floor((wordCount - 1) / 20);
+            
+            // If we just reached a new level
+            if (currentLevel > previousLevel && !unlockedLevels.includes(currentLevel)) {
+                unlockedLevels.push(currentLevel);
+                localStorage.setItem('unlockedLevels', JSON.stringify(unlockedLevels));
+                hasPendingLottery = true;
+                localStorage.setItem('hasPendingLottery', 'true');
+                
+                // Show notification
+                setTimeout(() => {
+                    showToast(`🎊 恭喜升級到第 ${currentLevel} 級！獲得抽獎機會！`, 3000);
+                    updateLotteryButton();
+                }, 500);
+                
+                return true;
+            }
+            
+            return false;
+        }
+        
+        // Load lottery state from localStorage
+        function loadLotteryState() {
+            hasPendingLottery = localStorage.getItem('hasPendingLottery') === 'true';
+        }
+        
+        // ==================== Daily Task System ====================
+        
+        // Get today's date string (YYYY-MM-DD)
+        function getTodayString() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        // Get yesterday's date string
+        function getYesterdayString() {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const year = yesterday.getFullYear();
+            const month = String(yesterday.getMonth() + 1).padStart(2, '0');
+            const day = String(yesterday.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        // Check and process daily task on login
+        function checkDailyTaskOnLogin() {
+            const today = getTodayString();
+            const yesterday = getYesterdayString();
+            
+            // If this is the first time using daily task
+            if (!dailyTaskState.lastCheckDate) {
+                dailyTaskState = {
+                    lastCheckDate: today,
+                    lastCompletedDate: null,
+                    streak: 0
+                };
+                localStorage.setItem('dailyTaskState', JSON.stringify(dailyTaskState));
+                return;
+            }
+            
+            const lastCheckDate = dailyTaskState.lastCheckDate;
+            
+            // If already checked today, do nothing
+            if (lastCheckDate === today) {
+                return;
+            }
+            
+            // If last check was yesterday
+            if (lastCheckDate === yesterday) {
+                // Check if user completed yesterday's task
+                if (dailyTaskState.lastCompletedDate !== yesterday) {
+                    // User missed yesterday's task - penalty
+                    addPoints(-1, 'penalty', '未完成昨日每日任务');
+                    showToast('⚠️ 昨天未完成每日任务，扣减 1 积分', 3000);
+                }
+            } else {
+                // Last check was before yesterday - missed multiple days
+                const daysMissed = Math.floor((new Date(today) - new Date(lastCheckDate)) / (1000 * 60 * 60 * 24)) - 1;
+                if (daysMissed > 0 && dailyTaskState.lastCompletedDate !== yesterday) {
+                    // Only penalize once for consecutive misses
+                    addPoints(-1, 'penalty', `连续${daysMissed}天未完成每日任务`);
+                    showToast(`⚠️ 已连续${daysMissed}天未完成每日任务，扣减 1 积分`, 3000);
+                }
+            }
+            
+            // Update last check date to today
+            dailyTaskState.lastCheckDate = today;
+            localStorage.setItem('dailyTaskState', JSON.stringify(dailyTaskState));
+        }
+        
+        // Complete daily task
+        function completeDailyTask() {
+            const today = getTodayString();
+            
+            // Check if already completed today
+            if (dailyTaskState.lastCompletedDate === today) {
+                showToast('✅ 今日已完成每日任务', 2000);
+                updateDailyTaskButton();
+                return;
+            }
+            
+            // Add base points
+            addPoints(1, 'daily_task', '完成每日任务');
+            
+            // Update state
+            dailyTaskState.lastCompletedDate = today;
+            
+            // Update streak
+            const yesterday = getYesterdayString();
+            if (dailyTaskState.lastCompletedDate === yesterday || !dailyTaskState.streak) {
+                dailyTaskState.streak = (dailyTaskState.streak || 0) + 1;
+            } else {
+                dailyTaskState.streak = 1; // Reset streak
+            }
+            
+            // Check for 7-day milestone bonus
+            let bonusMessage = '';
+            if (dailyTaskState.streak % 7 === 0) {
+                // Every 7 days, award bonus points and start new cycle
+                const bonusPoints = 10;
+                addPoints(bonusPoints, 'streak_bonus', `连续${dailyTaskState.streak}天奖励`);
+                bonusMessage = `\n🎊 恭喜！连续 ${dailyTaskState.streak} 天，额外获得 ${bonusPoints} 积分！`;
+                
+                // Optional: Reset streak counter for next cycle (comment out if you want to keep counting)
+                // dailyTaskState.streak = 0; // Uncomment this line if you want to reset after each 7 days
+            }
+            
+            localStorage.setItem('dailyTaskState', JSON.stringify(dailyTaskState));
+            
+            // Show success message with bonus info if applicable
+            if (bonusMessage) {
+                showToast(`🎉 每日任务完成！获得 1 积分！连续 ${dailyTaskState.streak} 天${bonusMessage}`, 4000);
+            } else {
+                showToast(`🎉 每日任务完成！获得 1 积分！连续 ${dailyTaskState.streak} 天`, 3000);
+            }
+            
+            // Update button
+            updateDailyTaskButton();
+        }
+        
+        // Update daily task button state
+        function updateDailyTaskButton() {
+            const btn = document.getElementById('dailyTaskBtn');
+            const infoEl = document.getElementById('dailyTaskInfo');
+            if (!btn) return;
+                    
+            const today = getTodayString();
+            const isCompleted = dailyTaskState.lastCompletedDate === today;
+            const streak = dailyTaskState.streak || 0;
+                    
+            if (isCompleted) {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+                btn.innerHTML = '✅ 今日已完成';
+                btn.style.background = 'linear-gradient(135deg, #51cf66 0%, #40c057 100%)';
+            } else {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+                btn.innerHTML = '📅 領取每日任務 (+1積分)';
+                btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            }
+                    
+            // Update info text
+            if (infoEl) {
+                const daysToBonus = 7 - (streak % 7);
+                if (streak > 0) {
+                    if (daysToBonus === 7) {
+                        // Just completed a 7-day cycle
+                        infoEl.innerHTML = `每天點擊一次獲得 1 積分，未完成會扣減1積分，連續7天獎勵10積分<br><strong style="color: #ff6b6b;">🔥 當前連續: ${streak} 天 | 🎊 剛獲得 10 積分獎勵！</strong>`;
+                    } else {
+                        infoEl.innerHTML = `每天點擊一次獲得 1 積分，未完成會扣減1積分，連續7天獎勵10積分<br><strong style="color: #ff6b6b;">🔥 當前連續: ${streak} 天 | 再 ${daysToBonus} 天獲得 10 積分獎勵</strong>`;
+                    }
+                } else {
+                    infoEl.textContent = '每天點擊一次獲得 1 積分，未完成會扣減1積分，連續7天獎勵10積分';
+                }
+            }
+        }
+        
+        // Get daily task stats text
+        function getDailyTaskStatsText() {
+            const today = getTodayString();
+            const isCompleted = dailyTaskState.lastCompletedDate === today;
+            const streak = dailyTaskState.streak || 0;
+            
+            if (isCompleted) {
+                return `✅ 今日已完成 | 🔥 连续 ${streak} 天`;
+            } else {
+                return `⏳ 今日待完成 | 🔥 连续 ${streak} 天`;
+            }
+        }
+
+        // Achievement definitions - 50 levels, every 20 words
+        const achievements = [];
+        for (let i = 1; i <= 50; i++) {
+            const wordThreshold = i * 20;
+            let icon = '🌟';
+            let name = `第${i}級`;
+            
+            // Special icons for milestone levels
+            if (i === 1) { icon = '🌱'; name = '萌芽階段'; }
+            else if (i === 5) { icon = '🌿'; name = '幼苗成長'; }
+            else if (i === 10) { icon = '🌳'; name = '小樹初成'; }
+            else if (i === 15) { icon = '🍃'; name = '枝葉茂盛'; }
+            else if (i === 20) { icon = '🍎'; name = '碩果累累'; }
+            else if (i === 25) { icon = '🏅'; name = '優秀學者'; }
+            else if (i === 30) { icon = '🏆'; name = '單詞大師'; }
+            else if (i === 35) { icon = '💎'; name = '鑽石學者'; }
+            else if (i === 40) { icon = '👑'; name = '王者榮耀'; }
+            else if (i === 45) { icon = '🌈'; name = '彩虹傳說'; }
+            else if (i === 50) { icon = '⭐'; name = '傳奇之星'; }
+            
+            achievements.push({
+                id: `level_${i}`,
+                name: name,
+                icon: icon,
+                description: `學會 ${wordThreshold} 個單詞`,
+                threshold: wordThreshold,
+                level: i
+            });
+        }
+        
+        // Render achievements
+        function renderAchievements(wordCount) {
+            const container = document.getElementById('achievementsList');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            // Make container horizontally scrollable
+            container.style.cssText = `
+                display: flex;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                gap: 10px;
+                padding: 10px;
+                scroll-behavior: smooth;
+                -webkit-overflow-scrolling: touch;
+            `;
+            
+            achievements.forEach(achievement => {
+                const isUnlocked = wordCount >= achievement.threshold;
+                const badge = document.createElement('div');
+                badge.style.cssText = `
+                    padding: 12px 15px;
+                    border-radius: 12px;
+                    background: ${isUnlocked ? 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)' : '#e0e0e0'};
+                    border: 2px solid ${isUnlocked ? '#ff8c00' : '#ccc'};
+                    opacity: ${isUnlocked ? '1' : '0.4'};
+                    cursor: ${isUnlocked ? 'pointer' : 'default'};
+                    transition: all 0.3s ease;
+                    min-width: 90px;
+                    max-width: 90px;
+                    flex-shrink: 0;
+                    text-align: center;
+                    box-shadow: ${isUnlocked ? '0 4px 12px rgba(255, 215, 0, 0.4)' : 'none'};
+                `;
+                
+                if (isUnlocked) {
+                    badge.title = `${achievement.name}: ${achievement.description}`;
+                    badge.onmouseenter = () => {
+                        badge.style.transform = 'scale(1.15) translateY(-5px)';
+                        badge.style.boxShadow = '0 6px 20px rgba(255, 215, 0, 0.6)';
+                    };
+                    badge.onmouseleave = () => {
+                        badge.style.transform = 'scale(1)';
+                        badge.style.boxShadow = '0 4px 12px rgba(255, 215, 0, 0.4)';
+                    };
+                }
+                
+                badge.innerHTML = `
+                    <div style="font-size: 2em; margin-bottom: 5px;">${achievement.icon}</div>
+                    <div style="font-size: 0.75em; font-weight: bold; color: ${isUnlocked ? '#d63031' : '#999'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${achievement.name}
+                    </div>
+                    <div style="font-size: 0.65em; color: ${isUnlocked ? '#666' : '#aaa'}; margin-top: 3px;">
+                        ${achievement.threshold}個
+                    </div>
+                `;
+                
+                container.appendChild(badge);
+            });
+            
+            // Scroll to the latest unlocked achievement
+            setTimeout(() => {
+                const unlockedBadges = container.querySelectorAll('div[style*="opacity: 1"]');
+                if (unlockedBadges.length > 0) {
+                    const lastUnlocked = unlockedBadges[unlockedBadges.length - 1];
+                    lastUnlocked.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                }
+            }, 100);
+        }
+        
+        // Initialize growth tree tab
+        function initGrowthTreeTab() {
+            // Load lottery state
+            loadLotteryState();
+            
+            // Check daily task on login
+            checkDailyTaskOnLogin();
+            
+            // Draw the tree
+            drawGrowthTree();
+            
+            // Update points display
+            updatePointsDisplay();
+            
+            // Update lottery button
+            updateLotteryButton();
+            
+            // Update daily task button
+            updateDailyTaskButton();
+            
+            // Show welcome message for first-time visitors
+            const hasVisitedTree = localStorage.getItem('hasVisitedGrowthTree');
+            if (!hasVisitedTree && words.length > 0) {
+                setTimeout(() => {
+                    showToast('🌳 歡迎來到成長樹！每學會一個單詞，小樹就會長大一點！', 4000);
+                    localStorage.setItem('hasVisitedGrowthTree', 'true');
+                }, 500);
+            } else if (!hasVisitedTree && words.length === 0) {
+                setTimeout(() => {
+                    showToast('🌱 開始學習吧！種下你的第一棵小樹苗！', 3000);
+                    localStorage.setItem('hasVisitedGrowthTree', 'true');
+                }, 500);
+            }
+        }
+
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
             // Auto-hide header after 5 seconds
@@ -2481,6 +4129,12 @@
             
             // Load speech rate preference from localStorage
             loadSpeechRate();
+            
+            // Load points and lottery state
+            loadLotteryState();
+            
+            // Check daily task on page load
+            checkDailyTaskOnLogin();
             
             // Load words from localStorage
             loadWords();
@@ -2739,10 +4393,21 @@
             // Save to localStorage
             saveWords();
             
+            // Check for level unlock and trigger lottery
+            checkLevelUnlock(words.length);
+            
             // Re-render
             renderWordList();
             updateStats();
             updateCalendarEvents();
+            
+            // Update growth tree if it's visible
+            const growthTreeTab = document.getElementById('tab-growth-tree');
+            if (growthTreeTab && growthTreeTab.classList.contains('active')) {
+                drawGrowthTree();
+                updatePointsDisplay();
+                updateLotteryButton();
+            }
             
             // Clear form
             document.getElementById('englishWord').value = '';
@@ -2768,7 +4433,12 @@
             });
             
             // Add active class to selected button
-            const selectedBtn = document.querySelector(`.rate-btn[data-rate="${rate}"]`);
+            // Handle special case: convert 1.0 to 1 for matching
+            let rateStr = rate.toString();
+            if (rateStr === '1' || rateStr === '1.0') {
+                rateStr = '1';
+            }
+            const selectedBtn = document.querySelector(`.rate-btn[data-rate="${rateStr}"]`);
             if (selectedBtn) {
                 selectedBtn.classList.add('active');
             }
@@ -3982,6 +5652,93 @@
             const overlay = document.getElementById('calendarOverlay');
             popup.classList.remove('active');
             overlay.classList.remove('active');
+        }
+        
+        // Admin Panel Functions
+        function showAdminPanel() {
+            const popup = document.getElementById('adminPopup');
+            const overlay = document.getElementById('adminOverlay');
+            
+            // Update current points display
+            document.getElementById('adminCurrentPoints').textContent = userPoints;
+            
+            // Reset form
+            document.getElementById('adminOperation').value = 'add';
+            document.getElementById('adminPointType').value = 'bonus';
+            document.getElementById('adminPointsAmount').value = '1';
+            document.getElementById('adminReason').value = '';
+            
+            // Show popup
+            popup.style.display = 'block';
+            overlay.style.display = 'block';
+            setTimeout(() => {
+                popup.classList.add('active');
+                overlay.classList.add('active');
+            }, 10);
+        }
+        
+        function closeAdminPanel() {
+            const popup = document.getElementById('adminPopup');
+            const overlay = document.getElementById('adminOverlay');
+            popup.classList.remove('active');
+            overlay.classList.remove('active');
+            setTimeout(() => {
+                popup.style.display = 'none';
+                overlay.style.display = 'none';
+            }, 300);
+        }
+        
+        function saveAdminChanges() {
+            const operation = document.getElementById('adminOperation').value;
+            const pointType = document.getElementById('adminPointType').value;
+            const amount = parseInt(document.getElementById('adminPointsAmount').value);
+            const reason = document.getElementById('adminReason').value.trim();
+            
+            // Validation
+            if (!amount || amount <= 0) {
+                showToast('❌ 請輸入有效的積分數量', 2000);
+                return;
+            }
+            
+            if (!reason) {
+                showToast('❌ 請填寫理由', 2000);
+                return;
+            }
+            
+            // Calculate points change
+            let pointsChange = 0;
+            const operationText = operation === 'add' ? '增加' : '減少';
+            
+            if (operation === 'add') {
+                pointsChange = amount;
+            } else if (operation === 'subtract') {
+                // Check if enough points
+                if (userPoints < amount) {
+                    showToast('⚠️ 積分不足，無法減少', 2000);
+                    return;
+                }
+                pointsChange = -amount;
+            }
+            
+            // Update points
+            userPoints += pointsChange;
+            localStorage.setItem('userPoints', userPoints.toString());
+            
+            // Record history with type and admin prefix
+            const fullReason = `管理員：${reason}`;
+            recordPointsHistory(pointsChange, pointType, fullReason);
+            
+            // Update UI
+            updatePointsDisplay();
+            drawGrowthTree();
+            
+            // Show success message
+            showToast(`✅ 積分已${operationText} ${Math.abs(amount)}，當前積分：${userPoints}`, 3000);
+            
+            // Close panel after delay
+            setTimeout(() => {
+                closeAdminPanel();
+            }, 1500);
         }
     </script>
 </body>
