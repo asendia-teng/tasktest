@@ -1068,6 +1068,13 @@
         .empty-state p {
             font-size: 1.2em;
         }
+        
+        /* Date hover effect */
+        .date:hover {
+            background: #f0f4ff !important;
+            color: #667eea !important;
+            transform: scale(1.05);
+        }
 
         .stats {
             display: flex;
@@ -1517,7 +1524,26 @@
                         📖 單詞列表
                         <button id="showAllBtn" onclick="showAllWords()" style="display: none; padding: 8px 16px; font-size: 0.9em;">🔙 返回全部</button>
                     </h2>
-                    <div style="display: flex; gap: 10px;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <!-- English Search Box -->
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <input type="text" id="englishSearchInput" placeholder="搜索英文單詞..." 
+                                   oninput="filterWordsByEnglish(this.value)"
+                                   style="padding: 10px 45px 10px 15px; border: 2px solid #667eea; border-radius: 8px; font-size: 1em; width: 200px; outline: none; transition: all 0.2s;">
+                            <button type="button" id="englishSearchVoiceBtn"
+                                    onmousedown="startEnglishSearchVoiceInput(event)" 
+                                    onmouseup="stopEnglishSearchVoiceInput()" 
+                                    ontouchstart="startEnglishSearchVoiceInput(event)" 
+                                    ontouchend="stopEnglishSearchVoiceInput()"
+                                    onmouseleave="stopEnglishSearchVoiceInput()"
+                                    style="position: absolute; right: 8px; background: none; border: none; font-size: 1.3em; cursor: pointer; padding: 5px; border-radius: 50%; transition: all 0.2s;"
+                                    title="長按開始錄音，鬆開停止（英文）">
+                                🎤
+                            </button>
+                        </div>
+                        <button id="playListBtn" onclick="playWordList()" style="padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 8px; color: white; font-size: 1em; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);">
+                            🔊 播放列表
+                        </button>
                         <button class="calendar-btn" onclick="openCalendar()" style="margin: 0;">
                             📅 日曆
                         </button>
@@ -1959,6 +1985,55 @@
                     💾 保存
                 </button>
                 <button onclick="closeExamplePopup()" style="flex: 1; padding: 12px; background: #e0e0e0; color: #666; border: none; border-radius: 8px; font-size: 1em; cursor: pointer; transition: all 0.2s;"
+                        onmouseover="this.style.background='#d0d0d0'"
+                        onmouseout="this.style.background='#e0e0e0'">
+                    ❌ 取消
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Translation Edit Popup -->
+    <div class="modal-overlay" id="translationOverlay" onclick="closeTranslationPopup()" style="display: none;"></div>
+    <div class="calendar-popup" id="translationPopup" style="display: none; max-width: 600px;">
+        <div class="calendar-popup-header">
+            <h3>✏️ 編輯翻譯</h3>
+            <button class="close-calendar-btn" onclick="closeTranslationPopup()">&times;</button>
+        </div>
+        <div style="padding: 20px;">
+            <div style="margin-bottom: 15px; padding: 10px; background: #f0f4ff; border-radius: 8px;">
+                <div style="font-size: 1.1em; color: #667eea; font-weight: bold;">
+                    單詞: <span id="translationWordDisplay"></span>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; color: #666; font-weight: bold;">繁體中文翻譯：</label>
+                <div style="position: relative;">
+                    <textarea id="translationTextInput" rows="3" placeholder="請輸入繁體中文翻譯..." style="width: 100%; padding: 10px; padding-right: 50px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em; resize: vertical;"></textarea>
+                    <button type="button" id="translationVoiceInputBtn" 
+                            onmousedown="startTranslationVoiceInput(event)" 
+                            onmouseup="stopTranslationVoiceInput()" 
+                            ontouchstart="startTranslationVoiceInput(event)" 
+                            ontouchend="stopTranslationVoiceInput()"
+                            onmouseleave="stopTranslationVoiceInput()"
+                            style="position: absolute; right: 10px; top: 10px; background: none; border: 2px solid #FF9800; font-size: 1.5em; cursor: pointer; padding: 8px; border-radius: 50%; transition: all 0.2s; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;"
+                            title="長按開始錄音，鬆開停止（粵語）">
+                        🎤
+                    </button>
+                </div>
+                <div style="font-size: 0.85em; color: #999; margin-top: 5px;">
+                    💡 長按 🎤 按鈕錄音，鬆開停止（支持粵語語音輸入）
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button onclick="saveTranslationEdit()" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%); color: white; border: none; border-radius: 8px; font-size: 1em; font-weight: bold; cursor: pointer; transition: all 0.2s;"
+                        onmouseover="this.style.transform='scale(1.02)'"
+                        onmouseout="this.style.transform='scale(1)'">
+                    💾 保存
+                </button>
+                <button onclick="closeTranslationPopup()" style="flex: 1; padding: 12px; background: #e0e0e0; color: #666; border: none; border-radius: 8px; font-size: 1em; cursor: pointer; transition: all 0.2s;"
                         onmouseover="this.style.background='#d0d0d0'"
                         onmouseout="this.style.background='#e0e0e0'">
                     ❌ 取消
@@ -3229,7 +3304,15 @@
             const dictationBtn = document.getElementById('startDictationBtn');
             const completeEl = document.getElementById('reviewComplete');
             
-            completeEl.style.display = 'none';
+            // Safety check - elements might not exist if we're in dictation mode
+            if (!statsEl || !startBtn) {
+                console.warn('⚠️ Review tab elements not found, skipping init');
+                return;
+            }
+            
+            if (completeEl) {
+                completeEl.style.display = 'none';
+            }
             
             if (dueWords.length === 0) {
                 statsEl.innerHTML = '<div style="font-size: 2em; margin-bottom: 10px;">✨</div><p>沒有需要複習的單詞</p>';
@@ -3369,6 +3452,13 @@
                                 ✅ 簡單
                             </button>
                         </div>
+                        
+                        <!-- Stop Button -->
+                        <div style="margin-top: 20px;">
+                            <button onclick="stopReview()" style="padding: 12px 30px; background: #e0e0e0; color: #666; border: none; border-radius: 8px; font-size: 1em; cursor: pointer; transition: all 0.2s;">
+                                ⏹️ 停止複習
+                            </button>
+                        </div>
                     </div>
                 </div>
                 `;
@@ -3432,6 +3522,63 @@
             reviewSession.currentIndex++;
             reviewSession.showAnswer = false;
             showReviewCard();
+        }
+        
+        // Stop review session
+        function stopReview() {
+            // Show confirmation dialog
+            if (!confirm('⚠️ 確定要停止複習嗎？\n\n進度將不會保存，返回複習頁面。')) {
+                console.log('❌ User cancelled review stop');
+                return;
+            }
+            
+            console.log('⏹️ Stopping review...');
+            
+            // Reset review session
+            reviewSession = {
+                words: [],
+                currentIndex: 0,
+                showAnswer: false
+            };
+            
+            // Restore the original review interface HTML
+            const container = document.getElementById('reviewContainer');
+            if (container) {
+                console.log('🔧 Restoring review interface HTML...');
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px;">
+                        <h2 style="color: #667eea; margin-bottom: 20px;">📚 今日複習</h2>
+                        <div id="reviewStats" style="margin-bottom: 30px; font-size: 1.2em; color: #666;">
+                            載入中...
+                        </div>
+                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                            <button id="startReviewBtn" onclick="startReviewSession()" style="padding: 15px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 1.2em; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+                                開始複習
+                            </button>
+                            <button id="startDictationBtn" onclick="startDictationSession()" style="padding: 15px 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 10px; font-size: 1.2em; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);">
+                                🎧 開始聽寫
+                            </button>
+                        </div>
+                        <div id="reviewComplete" style="display: none; margin-top: 30px;">
+                            <div style="font-size: 3em; margin-bottom: 20px;">🎉</div>
+                            <h3 style="color: #51cf66; margin-bottom: 10px;">太棒了！</h3>
+                            <p style="color: #666; margin-bottom: 20px;">你已完成今日所有複習任務</p>
+                            <button onclick="initReviewTab()" style="padding: 10px 20px; background: #f0f4ff; border: none; border-radius: 8px; color: #667eea; cursor: pointer;">
+                                🔄 重新整理
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Then initialize the review tab
+            setTimeout(() => {
+                console.log('🔧 Initializing review tab...');
+                initReviewTab();
+            }, 50);
+            
+            showToast('⏹️ 已停止複習', 2000);
+            console.log('✅ Review stopped, returned to review tab');
         }
 
         // ==================== Dictation Functions ====================
@@ -3567,6 +3714,12 @@
                 // All words completed
                 showDictationComplete();
                 return;
+            }
+            
+            // Mark session as playing when first word starts
+            if (!dictationSession.isPlaying && currentIndex === 0) {
+                dictationSession.isPlaying = true;
+                console.log('✅ Dictation session started, isPlaying = true');
             }
             
             const word = words[currentIndex];
@@ -3803,10 +3956,21 @@
         
         // Start interval countdown from the beginning
         function startIntervalCountdown(totalSeconds) {
-            let remaining = totalSeconds;
+            startIntervalCountdownFromValue(totalSeconds);
+        }
+        
+        // Start countdown from a specific value (for resume after pause)
+        function startIntervalCountdownFromValue(startValue) {
+            let remaining = startValue;
             const timerEl = document.getElementById('dictationTimer');
             
             if (!timerEl) return;
+            
+            // Clear any existing countdown first
+            if (dictationSession.countdownTimer) {
+                console.log('⚠️ Clearing existing countdown before starting new one');
+                clearInterval(dictationSession.countdownTimer);
+            }
             
             // Show initial value
             timerEl.textContent = remaining;
@@ -3815,9 +3979,12 @@
             // Flag to track if countdown sound has been played
             let countdownSoundPlayed = false;
             
+            console.log('⏱️ Starting countdown from', remaining, 'seconds');
+            
             // Update every second
             dictationSession.countdownTimer = setInterval(() => {
                 remaining--;
+                console.log('⏱️ Countdown tick:', remaining);
                 
                 if (remaining > 3) {
                     // Normal countdown
@@ -3844,52 +4011,154 @@
                     timerEl.textContent = 'GO!';
                     timerEl.style.color = '#51cf66';
                     
+                    console.log('✅ Countdown finished');
+                    
                     // Clear interval
                     clearInterval(dictationSession.countdownTimer);
+                    dictationSession.countdownTimer = null;
                     
                     setTimeout(() => {
                         if (timerEl) timerEl.textContent = '';
                     }, 500);
                 }
             }, 1000);
+            
+            console.log('✅ Countdown timer started, ID:', dictationSession.countdownTimer);
         }
         
         // Pause dictation
         function pauseDictation() {
+            console.log('🔴 pauseDictation() called! isPlaying:', dictationSession.isPlaying);
+            
             if (dictationSession.isPlaying) {
                 // Pause
+                console.log('⏸️ Pausing... timer:', dictationSession.timer, 'countdownTimer:', dictationSession.countdownTimer);
+                
                 clearTimeout(dictationSession.timer);
                 clearInterval(dictationSession.countdownTimer);
+                
+                // Verify timers are cleared
+                console.log('✅ After clear - timer should be cancelled, countdownTimer should be stopped');
+                
                 dictationSession.isPlaying = false;
+                
+                // Record pause time and remaining countdown value
+                dictationSession.pauseTime = Date.now();
+                
+                // Get current countdown value from display
+                const timerEl = document.getElementById('dictationTimer');
+                if (timerEl && timerEl.textContent && !isNaN(parseInt(timerEl.textContent))) {
+                    dictationSession.pausedCountdownValue = parseInt(timerEl.textContent);
+                } else {
+                    dictationSession.pausedCountdownValue = dictationSession.intervalSeconds;
+                }
+                
+                console.log('💾 Saved pauseTime:', dictationSession.pauseTime, 'pausedCountdownValue:', dictationSession.pausedCountdownValue);
+                
                 document.getElementById('pauseBtn').innerHTML = '▶️ 繼續';
                 showToast('⏸️ 已暫停', 2000);
+                console.log('⏸️ Dictation paused successfully');
             } else {
                 // Resume
+                console.log('▶️ Resuming... pauseTime:', dictationSession.pauseTime, 'pausedCountdownValue:', dictationSession.pausedCountdownValue);
+                
                 dictationSession.isPlaying = true;
                 document.getElementById('pauseBtn').innerHTML = '⏸️ 暫停';
                 showToast('▶️ 繼續播放', 2000);
                 
-                // Resume from current position
-                const remainingTime = dictationSession.intervalSeconds * 1000 - (Date.now() % (dictationSession.intervalSeconds * 1000));
+                // Calculate elapsed time since pause
+                const pauseDuration = Date.now() - dictationSession.pauseTime;
+                console.log('⏱️ Pause duration:', pauseDuration, 'ms');
+                
+                // Restart countdown from paused value
+                const startValue = dictationSession.pausedCountdownValue || dictationSession.intervalSeconds;
+                console.log('🔄 Restarting countdown from:', startValue);
+                startIntervalCountdownFromValue(startValue);
+                
+                // Schedule next word with the full interval after resume
                 dictationSession.timer = setTimeout(() => {
+                    console.log('⏰ Timer triggered - moving to next word');
                     dictationSession.currentIndex++;
                     playDictationWord();
-                }, remainingTime);
+                }, dictationSession.intervalSeconds * 1000);
+                
+                console.log('▶️ Dictation resumed, new timer set for', dictationSession.intervalSeconds, 'seconds');
             }
         }
         
         // Stop dictation
         function stopDictation() {
+            // Show confirmation dialog
+            if (!confirm('⚠️ 確定要停止聽寫嗎？\n\n進度將不會保存，返回複習頁面。')) {
+                console.log('❌ User cancelled stop');
+                return;
+            }
+            
+            console.log('⏹️ Stopping dictation...');
+            
+            // Clear all timers first
             clearTimeout(dictationSession.timer);
             clearInterval(dictationSession.countdownTimer);
-            dictationSession.isPlaying = false;
             
             // Stop any ongoing speech
             window.speechSynthesis.cancel();
             
-            // Return to review tab without confirmation
-            initReviewTab();
+            // Reset session state
+            dictationSession = {
+                words: [],
+                currentIndex: 0,
+                intervalSeconds: 15,
+                timer: null,
+                countdownTimer: null,
+                isPlaying: false,
+                pauseTime: null,
+                pausedCountdownValue: null,
+                lastWordStartTime: null
+            };
+            
+            console.log('🔄 Switching to review tab...');
+            
+            // First switch to review tab
+            switchTab('review');
+            
+            // Restore the original review interface HTML
+            const container = document.getElementById('reviewContainer');
+            if (container) {
+                console.log('🔧 Restoring review interface HTML...');
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px;">
+                        <h2 style="color: #667eea; margin-bottom: 20px;">📚 今日複習</h2>
+                        <div id="reviewStats" style="margin-bottom: 30px; font-size: 1.2em; color: #666;">
+                            載入中...
+                        </div>
+                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                            <button id="startReviewBtn" onclick="startReviewSession()" style="padding: 15px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 1.2em; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+                                開始複習
+                            </button>
+                            <button id="startDictationBtn" onclick="startDictationSession()" style="padding: 15px 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 10px; font-size: 1.2em; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);">
+                                🎧 開始聽寫
+                            </button>
+                        </div>
+                        <div id="reviewComplete" style="display: none; margin-top: 30px;">
+                            <div style="font-size: 3em; margin-bottom: 20px;">🎉</div>
+                            <h3 style="color: #51cf66; margin-bottom: 10px;">太棒了！</h3>
+                            <p style="color: #666; margin-bottom: 20px;">你已完成今日所有複習任務</p>
+                            <button onclick="initReviewTab()" style="padding: 10px 20px; background: #f0f4ff; border: none; border-radius: 8px; color: #667eea; cursor: pointer;">
+                                🔄 重新整理
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Then initialize the review tab
+            setTimeout(() => {
+                console.log('🔧 Initializing review tab...');
+                initReviewTab();
+            }, 50);
+            
             showToast('⏹️ 已停止聽寫', 2000);
+            console.log('✅ Dictation stopped, switched to review tab');
         }
         
         // Skip to next word
@@ -5997,15 +6266,7 @@
 
         // Add custom translation to word
         function addCustomTranslation(wordId) {
-            const word = words.find(w => w.id === wordId);
-            if (!word || !word.english) return;
-            
-            const customTranslation = prompt('輸入自定義翻譯（繁體中文）：', word.customTranslation || '');
-            if (customTranslation !== null) {
-                word.customTranslation = customTranslation.trim();
-                saveWords();
-                renderWordList();
-            }
+            showTranslationPopup(wordId);
         }
         
         // Edit custom translation for a specific English word (used in example section)
@@ -6016,16 +6277,7 @@
                 return;
             }
             
-            const customTranslation = prompt('輸入自定義翻譯（繁體中文）：', word.customTranslation || '');
-            if (customTranslation !== null) {
-                word.customTranslation = customTranslation.trim();
-                saveWords();
-                renderWordList();
-                showToast('✅ 翻譯已更新', 2000);
-                
-                // Refresh the example section to show updated translation
-                displayExamples(englishWord);
-            }
+            showTranslationPopup(word.id);
         }
 
         // Add custom example sentence
@@ -6399,6 +6651,187 @@
                 micBtn.style.animation = 'none';
             }
         }
+        
+        // Translation edit voice input (Cantonese)
+        let translationVoiceRecognition = null;
+        let isTranslationRecording = false;
+        let currentTranslationWordId = null;  // Store current word ID being edited
+        
+        function startTranslationVoiceInput(event) {
+            event.preventDefault();
+            
+            if (isTranslationRecording) return;
+            
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                showToast('❌ 您的瀏覽器不支持語音識別', 3000);
+                return;
+            }
+            
+            translationVoiceRecognition = new SpeechRecognition();
+            
+            // Use Cantonese (zh-HK) - same as existing Chinese voice input
+            translationVoiceRecognition.lang = 'zh-HK';
+            translationVoiceRecognition.continuous = false;
+            translationVoiceRecognition.interimResults = true;
+            translationVoiceRecognition.maxAlternatives = 1;
+            
+            const textarea = document.getElementById('translationTextInput');
+            const micBtn = document.getElementById('translationVoiceInputBtn');
+            
+            translationVoiceRecognition.onstart = () => {
+                isTranslationRecording = true;
+                micBtn.style.background = '#ff6b6b';
+                micBtn.style.borderColor = '#ff6b6b';
+                micBtn.style.animation = 'pulse 1s infinite';
+                showToast('🎤 請說話...', 800);
+                console.log('🎤 Translation voice recognition started (zh-HK)');
+            };
+            
+            translationVoiceRecognition.onresult = (event) => {
+                let finalTranscript = '';
+                let interimTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    const isFinal = event.results[i].isFinal;
+                    
+                    if (isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                // Update textarea - REPLACE instead of APPEND (same as existing logic)
+                if (finalTranscript) {
+                    textarea.value = finalTranscript.trim();
+                    console.log('✅ Translation final result:', finalTranscript);
+                    showToast('識別成功', 1500);
+                } else if (interimTranscript) {
+                    const currentValue = textarea.value;
+                    if (!currentValue || currentValue.trim() === '' || isTranslationRecording) {
+                        textarea.value = interimTranscript.trim();
+                        console.log('⏳ Translation interim result:', interimTranscript);
+                    }
+                }
+            };
+            
+            translationVoiceRecognition.onerror = (event) => {
+                console.error('❌ Translation voice recognition error:', event.error);
+                showToast('❌ 語音識別錯誤: ' + event.error, 3000);
+                stopTranslationVoiceInput();
+            };
+            
+            translationVoiceRecognition.onend = () => {
+                stopTranslationVoiceInput();
+            };
+            
+            try {
+                translationVoiceRecognition.start();
+            } catch (error) {
+                console.error('Failed to start translation voice recognition:', error);
+                showToast('❌ 無法啟動語音識別', 2000);
+            }
+        }
+        
+        function stopTranslationVoiceInput() {
+            if (!isTranslationRecording) return;
+            
+            if (translationVoiceRecognition) {
+                try {
+                    translationVoiceRecognition.stop();
+                } catch (error) {
+                    console.error('Error stopping translation voice recognition:', error);
+                }
+                translationVoiceRecognition = null;
+            }
+            
+            isTranslationRecording = false;
+            
+            const micBtn = document.getElementById('translationVoiceInputBtn');
+            if (micBtn) {
+                micBtn.style.background = 'none';
+                micBtn.style.borderColor = '#FF9800';
+                micBtn.style.animation = 'none';
+            }
+        }
+        
+        // Show translation edit popup
+        function showTranslationPopup(wordId) {
+            const word = words.find(w => w.id === wordId);
+            if (!word) {
+                showToast('❌ 找不到單詞', 2000);
+                return;
+            }
+            
+            currentTranslationWordId = wordId;
+            
+            // Display word info
+            const wordDisplay = document.getElementById('translationWordDisplay');
+            wordDisplay.textContent = word.english || word.chinese;
+            
+            // Set current translation in textarea
+            const textarea = document.getElementById('translationTextInput');
+            textarea.value = word.customTranslation || word.chinese || '';
+            
+            // Show popup
+            const overlay = document.getElementById('translationOverlay');
+            const popup = document.getElementById('translationPopup');
+            overlay.style.display = 'block';
+            popup.style.display = 'block';
+        }
+        
+        // Close translation edit popup
+        function closeTranslationPopup() {
+            const overlay = document.getElementById('translationOverlay');
+            const popup = document.getElementById('translationPopup');
+            overlay.style.display = 'none';
+            popup.style.display = 'none';
+            
+            // Stop any ongoing recording
+            if (isTranslationRecording) {
+                stopTranslationVoiceInput();
+            }
+            
+            currentTranslationWordId = null;
+        }
+        
+        // Save translation edit
+        function saveTranslationEdit() {
+            if (!currentTranslationWordId) {
+                showToast('❌ 錯誤：未選擇單詞', 2000);
+                return;
+            }
+            
+            const word = words.find(w => w.id === currentTranslationWordId);
+            if (!word) {
+                showToast('❌ 找不到單詞', 2000);
+                return;
+            }
+            
+            const textarea = document.getElementById('translationTextInput');
+            const newTranslation = textarea.value.trim();
+            
+            if (!newTranslation) {
+                showToast('⚠️ 請輸入翻譯內容', 2000);
+                return;
+            }
+            
+            // Update custom translation
+            word.customTranslation = newTranslation;
+            saveWords();
+            renderWordList();
+            showToast('✅ 翻譯已更新', 2000);
+            
+            // Refresh the example section if it's visible
+            if (word.english) {
+                displayExamples(word.english);
+            }
+            
+            // Close popup
+            closeTranslationPopup();
+        }
 
         // Edit example translation
         function editExampleTranslation(wordId, exampleIndex) {
@@ -6711,12 +7144,19 @@
         };
 
         // Text-to-Speech for English
-        function speakEnglish(text) {
+        function speakEnglish(text, callback) {
             if ('speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'en-US';
                 utterance.rate = globalSpeechRate;
                 utterance.pitch = 1;
+                
+                if (callback) {
+                    utterance.onend = () => {
+                        callback();
+                    };
+                }
+                
                 speechSynthesis.speak(utterance);
             } else {
                 alert('抱歉，您的瀏覽器不支持語音播放功能');
@@ -6724,12 +7164,19 @@
         }
 
         // Text-to-Speech for Cantonese
-        function speakCantonese(text) {
+        function speakCantonese(text, callback) {
             if ('speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'zh-HK';
                 utterance.rate = globalSpeechRate;
                 utterance.pitch = 1;
+                
+                if (callback) {
+                    utterance.onend = () => {
+                        callback();
+                    };
+                }
+                
                 speechSynthesis.speak(utterance);
             } else {
                 alert('抱歉，您的瀏覽器不支持語音播放功能');
@@ -7157,8 +7604,14 @@
             }
         }
 
+        // Current filter state for word list
+        let currentWordListFilter = null;  // null = show all, date string = filtered
+        
         // Render word list
         function renderWordList(filterDate = null) {
+            // Save the current filter state
+            currentWordListFilter = filterDate;
+            
             const wordListEl = document.getElementById('wordList');
             
             let filteredWords = words;
@@ -7216,7 +7669,14 @@
                                 <span style="cursor: pointer;" onclick="speakCantonese('${escapeJs(displayText)}'); event.stopPropagation();">${escapeHtml(displayText)}</span>
                             </div>
                             <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-                                <div class="date" style="margin: 0;">📅 ${formatDate(word.date)}</div>
+                                <div class="date" 
+                                     style="margin: 0; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all 0.2s; background: #fff3cd;" 
+                                     onclick="console.log('🔴 Date clicked:', '${word.date}'); filterByDate('${word.date}'); event.stopPropagation();"
+                                     onmouseenter="this.style.background='#ffeaa7'"
+                                     onmouseleave="this.style.background='#fff3cd'"
+                                     title="點擊查看 ${formatDate(word.date)} 添加的所有單詞">
+                                    📅 ${formatDate(word.date)}
+                                </div>
                                 ${deleteMode ? `<button class="delete-btn" onclick="event.stopPropagation(); deleteWord(${word.id})">刪除</button>` : ''}
                             </div>
                         </div>
@@ -7947,6 +8407,381 @@
             setTimeout(() => {
                 closeAdminPanel();
             }, 1500);
+        }
+        
+        // Play word list sequentially
+        let isPlayingWordList = false;
+        let wordListPlaybackIndex = 0;
+        let wordListPlaybackWords = [];
+        
+        function playWordList() {
+            const playBtn = document.getElementById('playListBtn');
+            
+            if (isPlayingWordList) {
+                // Stop playback
+                window.speechSynthesis.cancel();
+                isPlayingWordList = false;
+                wordListPlaybackIndex = 0;
+                
+                // Update button text
+                if (playBtn) {
+                    playBtn.innerHTML = '🔊 播放列表';
+                    playBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                }
+                
+                showToast('⏹️ 已停止播放', 2000);
+                console.log('⏹️ Word list playback stopped');
+                return;
+            }
+            
+            // Get current words using the saved filter state
+            let wordsToPlay = currentWordListFilter 
+                ? words.filter(w => w.date === currentWordListFilter)
+                : [...words];
+            
+            // Sort by date (newest first) to match display order
+            wordsToPlay.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            if (wordsToPlay.length === 0) {
+                showToast('❌ 沒有可播放的單詞', 2000);
+                return;
+            }
+            
+            isPlayingWordList = true;
+            wordListPlaybackIndex = 0;
+            wordListPlaybackWords = wordsToPlay;  // Store for playback
+            
+            // Update button text to show stop option
+            if (playBtn) {
+                playBtn.innerHTML = '⏹️ 停止播放';
+                playBtn.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)';
+            }
+            
+            showToast(`🔊 開始播放 ${wordsToPlay.length} 個單詞`, 2000);
+            console.log(`▶️ Starting word list playback: ${wordsToPlay.length} words`, 
+                       currentWordListFilter ? `(filtered: ${currentWordListFilter})` : '(all words)');
+            
+            // Start playing from the first word
+            playNextWordInList();
+        }
+        
+        function playNextWordInList() {
+            if (!isPlayingWordList || wordListPlaybackIndex >= wordListPlaybackWords.length) {
+                // Playback complete or stopped
+                isPlayingWordList = false;
+                wordListPlaybackIndex = 0;
+                
+                // Reset button to play state
+                const playBtn = document.getElementById('playListBtn');
+                if (playBtn) {
+                    playBtn.innerHTML = '🔊 播放列表';
+                    playBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                }
+                
+                showToast('✅ 播放完成', 2000);
+                console.log('✅ Word list playback completed');
+                return;
+            }
+            
+            const word = wordListPlaybackWords[wordListPlaybackIndex];
+            const currentIndex = wordListPlaybackIndex + 1;
+            const total = wordListPlaybackWords.length;
+            
+            // Get the Chinese text (prefer customTranslation, fallback to chinese)
+            const chineseText = word.customTranslation || word.chinese;
+            
+            console.log(`🔊 Playing word ${currentIndex}/${total}:`, {
+                english: word.english,
+                chinese: chineseText,
+                hasCustomTranslation: !!word.customTranslation
+            });
+            
+            // Show toast with current progress
+            const wordText = word.english || chineseText;
+            showToast(`🔊 ${currentIndex}/${total}: ${wordText}`, 3000);
+            
+            // Build utterance queue
+            const utterances = [];
+            
+            if (word.english) {
+                const enUtterance = new SpeechSynthesisUtterance(word.english);
+                enUtterance.lang = 'en-US';
+                enUtterance.rate = globalSpeechRate;
+                utterances.push({ text: word.english, utterance: enUtterance, lang: 'English' });
+            }
+            
+            if (chineseText) {
+                const zhUtterance = new SpeechSynthesisUtterance(chineseText);
+                zhUtterance.lang = 'zh-HK';
+                zhUtterance.rate = globalSpeechRate;
+                utterances.push({ text: chineseText, utterance: zhUtterance, lang: 'Cantonese' });
+            }
+            
+            if (utterances.length === 0) {
+                // No content to play, move to next
+                setTimeout(() => {
+                    wordListPlaybackIndex++;
+                    playNextWordInList();
+                }, 500);
+                return;
+            }
+            
+            console.log(`  📋 Utterance queue: ${utterances.map(u => u.lang).join(' → ')}`);
+            
+            // Play utterances sequentially
+            let currentUtteranceIndex = 0;
+            
+            function playCurrentUtterance() {
+                if (!isPlayingWordList || currentUtteranceIndex >= utterances.length) {
+                    // All utterances for this word finished, move to next word
+                    setTimeout(() => {
+                        wordListPlaybackIndex++;
+                        playNextWordInList();
+                    }, 1000); // 1 second pause between words
+                    return;
+                }
+                
+                const item = utterances[currentUtteranceIndex];
+                console.log(`  → Playing ${item.lang}: ${item.text}`);
+                
+                item.utterance.onend = () => {
+                    console.log(`  ✓ Finished ${item.lang}`);
+                    currentUtteranceIndex++;
+                    // Small pause between languages
+                    setTimeout(playCurrentUtterance, 500);
+                };
+                
+                item.utterance.onerror = (event) => {
+                    console.error(`  ✗ Error playing ${item.lang}:`, event.error);
+                    currentUtteranceIndex++;
+                    setTimeout(playCurrentUtterance, 500);
+                };
+                
+                speechSynthesis.speak(item.utterance);
+            }
+            
+            // Start playing
+            playCurrentUtterance();
+        }
+        
+        // ==================== Word List Search Functions ====================
+        
+        // Global search state
+        let englishSearchTerm = '';
+        
+        // Filter words by English search term
+        function filterWordsByEnglish(searchTerm) {
+            englishSearchTerm = searchTerm.trim().toLowerCase();
+            const currentFilterDate = currentWordListFilter || null;
+            renderWordListWithFilters(currentFilterDate, englishSearchTerm);
+        }
+        
+        // Render word list with both date and search filters
+        function renderWordListWithFilters(filterDate = null, searchTerm = '') {
+            console.log('🔍 renderWordListWithFilters called:', { filterDate, searchTerm });
+            
+            const wordListEl = document.getElementById('wordList');
+            let filteredWords = words;
+            
+            console.log('📊 Before filtering - total words:', filteredWords.length);
+            
+            if (filterDate) {
+                console.log('📅 Applying date filter:', filterDate);
+                const beforeCount = filteredWords.length;
+                filteredWords = filteredWords.filter(w => {
+                    const match = w.date === filterDate;
+                    if (match) {
+                        console.log(`  ✓ Match found: ${w.english || w.chinese} (date: ${w.date})`);
+                    }
+                    return match;
+                });
+                console.log(`📅 After date filter: ${beforeCount} → ${filteredWords.length} words`);
+            }
+            
+            if (searchTerm) {
+                filteredWords = filteredWords.filter(w => {
+                    if (!w.english) return false;
+                    return w.english.toLowerCase().includes(searchTerm);
+                });
+            }
+            
+            filteredWords.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            if (filteredWords.length === 0) {
+                const message = searchTerm 
+                    ? `<div class="empty-state"><p>沒有找到包含 "${escapeHtml(searchTerm)}" 的單詞</p></div>`
+                    : '<div class="empty-state"><p>暫無單詞</p></div>';
+                wordListEl.innerHTML = message;
+                return;
+            }
+            
+            wordListEl.innerHTML = filteredWords.map(word => {
+                let html = '<div class="word-item">';
+                
+                if (word.english) {
+                    html += `
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                            <div class="english" onclick="speakEnglish('${escapeJs(word.english)}')" style="flex: 1; cursor: pointer;">
+                                <span class="speaker-icon">🔊</span>
+                                <span>${escapeHtml(word.english)}</span>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    html += `<div style="margin-bottom: 5px;"></div>`;
+                }
+                
+                const displayText = word.customTranslation || word.chinese;
+                if (displayText) {
+                    html += `
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px;">
+                            <div class="chinese" style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                                <span style="cursor: pointer; font-size: 1.2em;" onclick="speakCantonese('${escapeJs(displayText)}'); event.stopPropagation();">🔊</span>
+                                <span style="cursor: pointer;" onclick="speakCantonese('${escapeJs(displayText)}'); event.stopPropagation();">${escapeHtml(displayText)}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                                <div class="date" 
+                                     style="margin: 0; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all 0.2s; background: #fff3cd;" 
+                                     onclick="console.log('🔴 Date clicked:', '${word.date}'); filterByDate('${word.date}'); event.stopPropagation();"
+                                     onmouseenter="this.style.background='#ffeaa7'"
+                                     onmouseleave="this.style.background='#fff3cd'"
+                                     title="點擊查看 ${formatDate(word.date)} 添加的所有單詞">
+                                    📅 ${formatDate(word.date)}
+                                </div>
+                                ${deleteMode ? `<button class="delete-btn" onclick="event.stopPropagation(); deleteWord(${word.id})">刪除</button>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+                return html;
+            }).join('');
+        }
+        
+        // English voice input for search
+        let englishSearchRecognition = null;
+        let isEnglishSearchRecording = false;
+        
+        function startEnglishSearchVoiceInput(event) {
+            event.preventDefault();
+            if (isEnglishSearchRecording) return;
+            
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                showToast('❌ 您的瀏覽器不支持語音識別', 3000);
+                return;
+            }
+            
+            englishSearchRecognition = new SpeechRecognition();
+            englishSearchRecognition.lang = 'en-US';
+            englishSearchRecognition.continuous = false;
+            englishSearchRecognition.interimResults = true;
+            englishSearchRecognition.maxAlternatives = 1;
+            
+            const searchInput = document.getElementById('englishSearchInput');
+            const micBtn = document.getElementById('englishSearchVoiceBtn');
+            
+            englishSearchRecognition.onstart = () => {
+                isEnglishSearchRecording = true;
+                micBtn.style.background = '#ff6b6b';
+                micBtn.style.transform = 'scale(1.2)';
+                showToast('🎤 請說英文單詞...', 800);
+            };
+            
+            englishSearchRecognition.onresult = (event) => {
+                let finalTranscript = '';
+                let interimTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                if (finalTranscript) {
+                    const searchText = finalTranscript.trim().toLowerCase();
+                    searchInput.value = searchText;
+                    showToast('識別成功', 1500);
+                    filterWordsByEnglish(searchText);
+                } else if (interimTranscript) {
+                    searchInput.value = interimTranscript.trim().toLowerCase();
+                }
+            };
+            
+            englishSearchRecognition.onerror = (event) => {
+                console.error('Voice recognition error:', event.error);
+                showToast('❌ 語音識別錯誤', 3000);
+                stopEnglishSearchVoiceInput();
+            };
+            
+            englishSearchRecognition.onend = () => {
+                stopEnglishSearchVoiceInput();
+            };
+            
+            try {
+                englishSearchRecognition.start();
+            } catch (error) {
+                showToast('❌ 無法啟動語音識別', 2000);
+            }
+        }
+        
+        function stopEnglishSearchVoiceInput() {
+            if (!englishSearchRecognition || !isEnglishSearchRecording) return;
+            
+            try {
+                englishSearchRecognition.stop();
+            } catch (error) {
+                console.log('Stop error:', error.message);
+            }
+            
+            isEnglishSearchRecording = false;
+            const micBtn = document.getElementById('englishSearchVoiceBtn');
+            if (micBtn) {
+                micBtn.style.background = 'none';
+                micBtn.style.transform = 'scale(1)';
+            }
+        }
+        
+        // Filter words by clicking on date
+        function filterByDate(dateStr) {
+            console.log('📅 Filtering by date - Input:', dateStr);
+            console.log('📅 Current words count:', words.length);
+            
+            // Check what dates exist in words
+            const uniqueDates = [...new Set(words.map(w => w.date))];
+            console.log('📅 Available dates in words:', uniqueDates);
+            
+            // Update the current filter
+            currentWordListFilter = dateStr;
+            
+            // Clear search term when filtering by date
+            const searchInput = document.getElementById('englishSearchInput');
+            if (searchInput) {
+                searchInput.value = '';
+                englishSearchTerm = '';
+            }
+            
+            // Show "Show All" button
+            const showAllBtn = document.getElementById('showAllBtn');
+            if (showAllBtn) {
+                showAllBtn.style.display = 'inline-block';
+            }
+            
+            // Re-render with date filter
+            renderWordListWithFilters(dateStr, '');
+            
+            // Show toast
+            showToast(`📅 顯示 ${formatDate(dateStr)} 的單詞`, 2000);
+            
+            // Scroll to top of word list
+            const wordListEl = document.getElementById('wordList');
+            if (wordListEl) {
+                wordListEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
     </script>
 </body>
