@@ -47,6 +47,26 @@
             font-size: 1.2em;
             opacity: 0.9;
         }
+        
+        /* Admin mode indicator */
+        .admin-mode-indicator {
+            position: fixed;
+            top: 8px;
+            right: 8px;
+            width: 10px;
+            height: 10px;
+            background: #ff6b6b;
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 10000;
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+        }
+        
+        .admin-mode-indicator.active {
+            opacity: 0.4;
+        }
 
         .main-content {
             padding: 15px 30px 30px 30px;
@@ -1321,10 +1341,13 @@
             🐛
         </button>
 
-        <header id="appHeader" style="transition: all 0.5s ease; cursor: pointer;" onclick="toggleHeader()">
+        <header id="appHeader" style="transition: all 0.5s ease;">
             <h1>📚 小學生詞記憶</h1>
             <p>Dictation Learning - 每天記錄英文單詞和繁體中文</p>
         </header>
+        
+        <!-- Admin mode indicator -->
+        <div id="adminModeIndicator" class="admin-mode-indicator"></div>
 
         <div class="main-content">
             <!-- Tab Buttons -->
@@ -1425,7 +1448,7 @@
             </div>
 
             <!-- Tab 1: Add Word Form -->
-            <div id="tab-add-word" class="tab-content active">
+            <div id="tab-add-word" class="tab-content">
                 <div class="panel">
                     <h2 style="display: flex; align-items: center; gap: 10px;">
                         ➕ 添加新單詞
@@ -1590,20 +1613,38 @@
             <!-- Tab 4: Growth Tree -->
             <div id="tab-growth-tree" class="tab-content">
                 <div style="text-align: center; padding: 20px; position: relative;">
-                    <!-- Admin Button -->
-                    <button onclick="showAdminPanel()" style="position: absolute; top: 20px; right: 20px; padding: 8px 15px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s;"
-                            onmouseover="this.style.background='#5568d3'"
-                            onmouseout="this.style.background='#667eea'">
-                        ⚙️ 管理員
-                    </button>
+                    <!-- Admin Controls (only visible in admin mode) -->
+                    <div id="adminControls" style="position: absolute; top: 20px; right: 20px; display: none; flex-direction: column; gap: 10px; align-items: flex-end;">
+                        <button onclick="showAdminPanel()" style="padding: 8px 15px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s;"
+                                onmouseover="this.style.background='#5568d3'"
+                                onmouseout="this.style.background='#667eea'">
+                            ⚙️ 管理員
+                        </button>
+                        <button onclick="exportAppData()" style="padding: 8px 15px; background: #4caf50; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s;"
+                                onmouseover="this.style.background='#45a049'"
+                                onmouseout="this.style.background='#4caf50'">
+                            📥 匯出數據
+                        </button>
+                        <button onclick="importAppData()" style="padding: 8px 15px; background: #ff9800; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s;"
+                                onmouseover="this.style.background='#f57c00'"
+                                onmouseout="this.style.background='#ff9800'">
+                            📤 導入數據
+                        </button>
+                    </div>
                     
                     <h2 style="color: #667eea; margin-bottom: 10px;">🌳 我的成長樹</h2>
                     <p style="color: #666; margin-bottom: 20px; font-size: 0.9em;">每學會一個單詞，小樹就會長大一點！</p>
                     
                     <!-- Stats Display -->
-                    <div id="treeStats" style="background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%); padding: 15px; border-radius: 10px; margin-bottom: 20px; display: inline-block;">
+                    <div id="treeStats" style="background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%); padding: 15px; border-radius: 10px; margin-bottom: 20px; display: inline-block; cursor: pointer; transition: all 0.2s;"
+                         onclick="openMasteryModal()"
+                         onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.3)'"
+                         onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
                         <div style="font-size: 1.1em; color: #667eea; font-weight: bold; margin-bottom: 8px;">
-                            📊 已學會: <span id="totalWordsCount">0</span> 個單詞
+                            📊 已掌握: <span id="totalWordsCount">0</span> 個單詞
+                        </div>
+                        <div style="font-size: 0.85em; color: #888; margin-top: 5px;">
+                            (基於SRS複習狀態)
                         </div>
                         <div style="font-size: 0.9em; color: #888; margin-top: 5px;">
                             🌱 樹齡: <span id="treeAge">0</span> 天
@@ -4302,15 +4343,35 @@
             const svg = document.getElementById('growthTreeSVG');
             if (!svg) return;
 
-            const totalWords = words.length;
+            // Calculate mastered words based on SRS status
+            const totalWords = words.length;  // Total words added
+            
+            // Count truly mastered words (based on SRS)
+            const masteredWords = words.filter(w => {
+                if (!w.srs) return false;
+                // Consider a word "mastered" if:
+                // 1. Has been reviewed at least once (repetitions > 0 OR lastReviewDate exists)
+                // 2. AND has a reasonable ease factor (>= 2.3 means not too difficult)
+                // 3. AND interval > 0 (has progressed beyond initial state)
+                return (w.srs.repetitions > 0 || w.srs.lastReviewDate) && 
+                       w.srs.easeFactor >= 2.3 && 
+                       w.srs.interval > 0;
+            });
+            
+            const masteredCount = masteredWords.length;
+            
+            // Use mastered count for tree visualization (more meaningful)
+            const displayWordCount = masteredCount > 0 ? masteredCount : totalWords;
+            
+            console.log(`🌳 Tree Stats - Total: ${totalWords}, Mastered: ${masteredCount}, Display: ${displayWordCount}`);
             
             // Clear existing content
             svg.innerHTML = '';
             
-            // Calculate tree size based on word count
-            const treeHeight = Math.min(250, 80 + totalWords * 3); // Max height 250px
-            const trunkWidth = Math.min(30, 10 + totalWords * 0.3);
-            const canopySize = Math.min(120, 40 + totalWords * 1.5);
+            // Calculate tree size based on mastered word count (more accurate growth)
+            const treeHeight = Math.min(250, 80 + displayWordCount * 3); // Max height 250px
+            const trunkWidth = Math.min(30, 10 + displayWordCount * 0.3);
+            const canopySize = Math.min(120, 40 + displayWordCount * 1.5);
             
             const centerX = 200;
             const groundY = 340;
@@ -4422,8 +4483,14 @@
             
             svg.appendChild(gameGroup);
             
-            // Update stats
-            document.getElementById('totalWordsCount').textContent = totalWords;
+            // Update stats - show mastered words count
+            document.getElementById('totalWordsCount').textContent = masteredCount;
+            
+            // Add tooltip to show both counts
+            const statsDiv = document.getElementById('treeStats');
+            if (statsDiv) {
+                statsDiv.title = `总单詞: ${totalWords} 個\n已掌握: ${masteredCount} 個\n(基於SRS複習狀態)`;
+            }
             
             // Calculate tree age (days since first word)
             if (words.length > 0) {
@@ -4436,11 +4503,11 @@
                 document.getElementById('treeAge').textContent = '0';
             }
             
-            // Update motivational message
-            updateMotivationalMessage(totalWords);
+            // Update motivational message (use mastered count for more accurate encouragement)
+            updateMotivationalMessage(masteredCount);
             
-            // Render achievements
-            renderAchievements(totalWords);
+            // Render achievements (based on mastered words)
+            renderAchievements(masteredCount);
         }
         
         // ==================== Game Center ====================
@@ -6144,7 +6211,7 @@
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
-            // Auto-hide header after 5 seconds
+            // Auto-hide header after 8 seconds (extended for admin mode activation)
             setTimeout(() => {
                 const header = document.getElementById('appHeader');
                 const speechRateControl = document.querySelector('.speech-rate-control');
@@ -6164,7 +6231,7 @@
                     speechRateControl.style.marginBottom = '5px';
                     console.log('📚 Speech rate control margin reduced');
                 }
-            }, 5000);
+            }, 8000);
             
             // Load speech rate preference from localStorage
             loadSpeechRate();
@@ -8783,6 +8850,562 @@
                 wordListEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
+        
+        // ==================== Admin Mode ====================
+        
+        let logoClickCount = 0;
+        let logoClickTimer = null;
+        let isAdminModeEnabled = false;  // Session-only, resets on page refresh
+        
+        // Initialize admin mode on page load
+        function initAdminMode() {
+            const header = document.querySelector('header h1');
+            if (!header) return;
+            
+            header.addEventListener('click', handleLogoClick);
+            
+            // Admin mode always starts as disabled (no persistence)
+            isAdminModeEnabled = false;
+            console.log('%c🔒 Admin Mode: Initialized (disabled)', 'color: #888; font-size: 12px;');
+        }
+        
+        function handleLogoClick() {
+            logoClickCount++;
+            
+            // Reset timer
+            if (logoClickTimer) clearTimeout(logoClickTimer);
+            
+            // Reset count after 2 seconds
+            logoClickTimer = setTimeout(() => {
+                logoClickCount = 0;
+            }, 2000);
+            
+            // Check if clicked 5 times
+            if (logoClickCount === 5) {
+                logoClickCount = 0;
+                toggleAdminMode();
+            }
+        }
+        
+        function toggleAdminMode() {
+            isAdminModeEnabled = !isAdminModeEnabled;
+            
+            if (isAdminModeEnabled) {
+                showAdminIndicator();
+                showAdminControls();  // Show admin controls in growth tree
+                // No toast - only subtle indicator and console log
+                console.log('%c🔓 Admin Mode: ENABLED (session only)', 'color: #ff6b6b; font-size: 16px; font-weight: bold;');
+                console.log('%c💡 Tip: Click the logo 5 times again to disable, or refresh page', 'color: #888; font-size: 12px;');
+            } else {
+                hideAdminIndicator();
+                hideAdminControls();  // Hide admin controls in growth tree
+                // No toast - only remove indicator
+                console.log('%c🔒 Admin Mode: DISABLED', 'color: #888; font-size: 16px; font-weight: bold;');
+            }
+        }
+        
+        function showAdminIndicator() {
+            const indicator = document.getElementById('adminModeIndicator');
+            if (indicator) {
+                indicator.classList.add('active');
+            }
+        }
+        
+        function hideAdminIndicator() {
+            const indicator = document.getElementById('adminModeIndicator');
+            if (indicator) {
+                indicator.classList.remove('active');
+            }
+        }
+        
+        // Show admin controls in growth tree
+        function showAdminControls() {
+            const adminControls = document.getElementById('adminControls');
+            if (adminControls) {
+                adminControls.style.display = 'flex';
+            }
+        }
+        
+        // Hide admin controls in growth tree
+        function hideAdminControls() {
+            const adminControls = document.getElementById('adminControls');
+            if (adminControls) {
+                adminControls.style.display = 'none';
+            }
+        }
+        
+        // Export app data
+        function exportAppData() {
+            try {
+                console.log('📥 Starting data export...');
+                
+                // Try to get words from both possible keys (backward compatibility)
+                let wordsData = localStorage.getItem('dictationWords');
+                
+                // Fallback to 'words' key for very old versions
+                if (!wordsData) {
+                    wordsData = localStorage.getItem('words');
+                    if (wordsData) {
+                        console.log('⚠️ Found data in old "words" key, using it');
+                    }
+                }
+                
+                // Collect all data from localStorage with correct keys
+                const appData = {
+                    exportDate: new Date().toISOString(),
+                    version: '2.5.8',
+                    words: JSON.parse(wordsData || '[]'),
+                    userPoints: parseInt(localStorage.getItem('userPoints') || '0'),
+                    pointsHistory: JSON.parse(localStorage.getItem('pointsHistory') || '[]'),
+                    dailyTaskState: JSON.parse(localStorage.getItem('dailyTaskState') || '{}'),
+                    lotteryState: JSON.parse(localStorage.getItem('lotteryState') || '{}'),
+                    speechRate: parseFloat(localStorage.getItem('speechRate') || '1.0'),
+                    dictationSettings: JSON.parse(localStorage.getItem('dictationSettings') || '{}'),
+                    reviewSettings: JSON.parse(localStorage.getItem('reviewSettings') || '{}')
+                };
+                
+                // Convert to JSON string with formatting
+                const jsonData = JSON.stringify(appData, null, 2);
+                
+                // Create blob and download link
+                const blob = new Blob([jsonData], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                
+                // Generate filename with timestamp
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+                a.href = url;
+                a.download = `dictation-backup-${timestamp}.json`;
+                
+                // Trigger download
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                console.log('✅ Data exported successfully');
+                console.log(`📊 Words: ${appData.words.length}`);
+                console.log(`⭐ Points: ${appData.userPoints}`);
+                console.log(`📝 History records: ${appData.pointsHistory.length}`);
+                
+                showToast('✅ 數據已匯出', 2000);
+            } catch (error) {
+                console.error('❌ Export failed:', error);
+                showToast('❌ 匯出失敗', 3000);
+            }
+        }
+        
+        // Import app data
+        function importAppData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const importedData = JSON.parse(event.target.result);
+                        
+                        // Validate data structure
+                        if (!importedData.words || !Array.isArray(importedData.words)) {
+                            throw new Error('Invalid data format: missing words array');
+                        }
+                        
+                        // Confirm with user
+                        const confirmMsg = `確定要導入數據嗎？\n\n` +
+                            `單詞數量: ${importedData.words.length}\n` +
+                            `當前積分: ${importedData.userPoints || 0}\n` +
+                            `歷史記錄: ${(importedData.pointsHistory || []).length} 條\n\n` +
+                            `⚠️ 這將覆蓋現有數據！`;
+                        
+                        if (!confirm(confirmMsg)) {
+                            console.log('❌ Import cancelled by user');
+                            return;
+                        }
+                        
+                        // Import data to localStorage (use current key 'dictationWords')
+                        localStorage.setItem('dictationWords', JSON.stringify(importedData.words));
+                        localStorage.setItem('userPoints', importedData.userPoints || 0);
+                        localStorage.setItem('pointsHistory', JSON.stringify(importedData.pointsHistory || []));
+                        localStorage.setItem('dailyTaskState', JSON.stringify(importedData.dailyTaskState || {}));
+                        localStorage.setItem('lotteryState', JSON.stringify(importedData.lotteryState || {}));
+                        localStorage.setItem('speechRate', importedData.speechRate || 1.0);
+                        localStorage.setItem('dictationSettings', JSON.stringify(importedData.dictationSettings || {}));
+                        localStorage.setItem('reviewSettings', JSON.stringify(importedData.reviewSettings || {}));
+                        
+                        // Clean up old 'words' key if exists (migration)
+                        if (localStorage.getItem('words')) {
+                            localStorage.removeItem('words');
+                            console.log('🧹 Removed old "words" key (migrated to "dictationWords")');
+                        }
+                        
+                        console.log('✅ Data imported successfully');
+                        console.log(`📊 Words: ${importedData.words.length}`);
+                        console.log(`⭐ Points: ${importedData.userPoints || 0}`);
+                        
+                        showToast('✅ 數據已導入，請刷新頁面', 3000);
+                        
+                        // Reload page after 2 seconds
+                        setTimeout(() => {
+                            location.reload();
+                        }, 2000);
+                        
+                    } catch (error) {
+                        console.error('❌ Import failed:', error);
+                        showToast('❌ 導入失敗：文件格式錯誤', 3000);
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+        
+        // ==================== Mastery Details Modal ====================
+        
+        let currentMasteryFilter = 'all';
+        
+        function openMasteryModal() {
+            const modal = document.getElementById('masteryModal');
+            if (!modal) return;
+            
+            // Update stats
+            const totalWords = words.length;
+            const masteredWords = words.filter(w => {
+                if (!w.srs) return false;
+                return (w.srs.repetitions > 0 || w.srs.lastReviewDate) && 
+                       w.srs.easeFactor >= 2.3 && 
+                       w.srs.interval > 0;
+            });
+            const masteredCount = masteredWords.length;
+            const masteryRate = totalWords > 0 ? Math.round((masteredCount / totalWords) * 100) : 0;
+            
+            document.getElementById('modalTotalWords').textContent = totalWords;
+            document.getElementById('modalMasteredWords').textContent = masteredCount;
+            document.getElementById('modalMasteryRate').textContent = masteryRate + '%';
+            
+            // Render word list
+            renderMasteryWordList('all');
+            
+            // Show modal
+            modal.style.display = 'flex';
+            console.log('📊 Mastery modal opened');
+        }
+        
+        function closeMasteryModal() {
+            const modal = document.getElementById('masteryModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // Close modal when clicking outside
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('masteryModal');
+            if (e.target === modal) {
+                closeMasteryModal();
+            }
+        });
+        
+        function filterMasteryList(filter) {
+            currentMasteryFilter = filter;
+            
+            // Update button styles
+            const buttons = {
+                'all': document.getElementById('filterAll'),
+                'mastered': document.getElementById('filterMastered'),
+                'learning': document.getElementById('filterLearning'),
+                'new': document.getElementById('filterNew')
+            };
+            
+            // Reset all buttons
+            Object.values(buttons).forEach(btn => {
+                if (btn) {
+                    btn.style.background = 'white';
+                    btn.style.color = btn.id === 'filterAll' ? '#667eea' : 
+                                     btn.id === 'filterMastered' ? '#4caf50' :
+                                     btn.id === 'filterLearning' ? '#ff9800' : '#999';
+                }
+            });
+            
+            // Highlight active button
+            if (buttons[filter]) {
+                buttons[filter].style.background = buttons[filter].style.color;
+                buttons[filter].style.color = 'white';
+            }
+            
+            // Re-render list
+            renderMasteryWordList(filter);
+        }
+        
+        function renderMasteryWordList(filter) {
+            const container = document.getElementById('masteryWordList');
+            if (!container) return;
+            
+            let filteredWords = words;
+            
+            // Apply filter
+            if (filter === 'mastered') {
+                filteredWords = words.filter(w => {
+                    if (!w.srs) return false;
+                    return (w.srs.repetitions > 0 || w.srs.lastReviewDate) && 
+                           w.srs.easeFactor >= 2.3 && 
+                           w.srs.interval > 0;
+                });
+            } else if (filter === 'learning') {
+                filteredWords = words.filter(w => {
+                    if (!w.srs) return false;
+                    return (w.srs.repetitions > 0 || w.srs.lastReviewDate) && 
+                           (w.srs.easeFactor < 2.3 || w.srs.interval === 0);
+                });
+            } else if (filter === 'new') {
+                filteredWords = words.filter(w => {
+                    if (!w.srs) return true;
+                    return !w.srs.lastReviewDate && w.srs.repetitions === 0;
+                });
+            }
+            
+            // Sort by date (newest first)
+            filteredWords.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            if (filteredWords.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">沒有符合條件的單詞</div>';
+                return;
+            }
+            
+            // Render each word
+            container.innerHTML = filteredWords.map(word => {
+                const masteryInfo = getWordMasteryInfo(word);
+                const statusClass = masteryInfo.status === 'mastered' ? 'mastery-mastered' :
+                                   masteryInfo.status === 'learning' ? 'mastery-learning' : 'mastery-new';
+                const statusIcon = masteryInfo.status === 'mastered' ? '✅' :
+                                  masteryInfo.status === 'learning' ? '📚' : '🆕';
+                const statusText = masteryInfo.status === 'mastered' ? '已掌握' :
+                                  masteryInfo.status === 'learning' ? '學習中' : '新單詞';
+                
+                const wordDisplay = word.english || word.chinese || '(無內容)';
+                const translation = word.english ? (word.customTranslation || word.chinese || '待翻譯') : '';
+                
+                return `
+                    <div class="mastery-word-item ${statusClass}">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                            <div style="flex: 1;">
+                                <div style="font-size: 1.1em; font-weight: bold; color: #333; margin-bottom: 4px;">
+                                    ${statusIcon} ${escapeHtml(wordDisplay)}
+                                </div>
+                                ${translation ? `<div style="font-size: 0.9em; color: #666;">${escapeHtml(translation)}</div>` : ''}
+                                <div style="font-size: 0.8em; color: #999; margin-top: 4px;">
+                                    📅 ${formatDate(word.date)}
+                                </div>
+                            </div>
+                            <div style="text-align: right; margin-left: 15px;">
+                                <div style="font-size: 0.85em; font-weight: bold; color: ${masteryInfo.color};">
+                                    ${statusText}
+                                </div>
+                                <div style="font-size: 0.75em; color: #999; margin-top: 2px;">
+                                    ${masteryInfo.detail}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Progress Bar -->
+                        <div class="mastery-progress-bar">
+                            <div class="mastery-progress-fill" style="width: ${masteryInfo.progress}%; background: ${masteryInfo.color};"></div>
+                        </div>
+                        
+                        <!-- SRS Details -->
+                        <div style="margin-top: 8px; font-size: 0.8em; color: #666; display: flex; gap: 15px; flex-wrap: wrap;">
+                            <span>🔁 複習: ${word.srs?.repetitions || 0}次</span>
+                            <span>⏱️ 間隔: ${word.srs?.interval || 0}天</span>
+                            <span>📈 難度: ${word.srs?.easeFactor?.toFixed(2) || 'N/A'}</span>
+                            ${word.srs?.lastReviewDate ? `<span>📅 最後: ${formatDate(word.srs.lastReviewDate)}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function getWordMasteryInfo(word) {
+            if (!word.srs) {
+                return {
+                    status: 'new',
+                    color: '#999',
+                    progress: 0,
+                    detail: '未開始學習'
+                };
+            }
+            
+            const hasReviewed = word.srs.repetitions > 0 || word.srs.lastReviewDate;
+            const notTooHard = word.srs.easeFactor >= 2.3;
+            const hasProgress = word.srs.interval > 0;
+            
+            if (hasReviewed && notTooHard && hasProgress) {
+                // Mastered - calculate progress based on repetitions and interval
+                const progress = Math.min(100, (word.srs.repetitions * 20) + (word.srs.interval * 5));
+                return {
+                    status: 'mastered',
+                    color: '#4caf50',
+                    progress: progress,
+                    detail: `複習${word.srs.repetitions}次 · 間隔${word.srs.interval}天`
+                };
+            } else if (hasReviewed) {
+                // Learning - show progress based on ease factor
+                const progress = Math.max(10, Math.min(60, (word.srs.easeFactor / 3) * 60));
+                return {
+                    status: 'learning',
+                    color: '#ff9800',
+                    progress: progress,
+                    detail: `難度${word.srs.easeFactor.toFixed(2)} · 需加強`
+                };
+            } else {
+                // New
+                return {
+                    status: 'new',
+                    color: '#999',
+                    progress: 0,
+                    detail: '等待首次複習'
+                };
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Check if admin mode is active (session only)
+        function isAdminModeActive() {
+            return isAdminModeEnabled;
+        }
+        
+        // Initialize admin mode when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initAdminMode);
+        } else {
+            initAdminMode();
+        }
     </script>
+    
+    <!-- Mastery Details Modal -->
+    <div id="masteryModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 10000; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+        <div style="background: white; border-radius: 20px; max-width: 800px; width: 90%; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: modalSlideIn 0.3s ease;">
+            <!-- Modal Header -->
+            <div style="padding: 20px 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h3 style="margin: 0; font-size: 1.4em;">📊 單詞掌握詳情</h3>
+                    <p style="margin: 5px 0 0 0; font-size: 0.9em; opacity: 0.9;">基於SRS複習狀態的詳細分析</p>
+                </div>
+                <button onclick="closeMasteryModal()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 1.5em; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                        onmouseover="this.style.background='rgba(255,255,255,0.3)'; this.style.transform='rotate(90deg)'"
+                        onmouseout="this.style.background='rgba(255,255,255,0.2)'; this.style.transform='rotate(0deg)'">
+                    ×
+                </button>
+            </div>
+            
+            <!-- Stats Summary -->
+            <div style="padding: 15px 25px; background: #f8f9fa; border-bottom: 2px solid #e9ecef; display: flex; justify-content: space-around;">
+                <div style="text-align: center;">
+                    <div style="font-size: 0.85em; color: #666;">總單詞</div>
+                    <div id="modalTotalWords" style="font-size: 1.5em; font-weight: bold; color: #667eea;">0</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.85em; color: #666;">已掌握</div>
+                    <div id="modalMasteredWords" style="font-size: 1.5em; font-weight: bold; color: #4caf50;">0</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.85em; color: #666;">掌握率</div>
+                    <div id="modalMasteryRate" style="font-size: 1.5em; font-weight: bold; color: #ff9800;">0%</div>
+                </div>
+            </div>
+            
+            <!-- Filter Tabs -->
+            <div style="padding: 10px 25px; background: white; border-bottom: 1px solid #e9ecef; display: flex; gap: 10px;">
+                <button onclick="filterMasteryList('all')" id="filterAll" style="flex: 1; padding: 8px; border: 2px solid #667eea; background: #667eea; color: white; border-radius: 8px; cursor: pointer; font-size: 0.9em; font-weight: bold; transition: all 0.2s;">
+                    全部
+                </button>
+                <button onclick="filterMasteryList('mastered')" id="filterMastered" style="flex: 1; padding: 8px; border: 2px solid #4caf50; background: white; color: #4caf50; border-radius: 8px; cursor: pointer; font-size: 0.9em; font-weight: bold; transition: all 0.2s;">
+                    已掌握
+                </button>
+                <button onclick="filterMasteryList('learning')" id="filterLearning" style="flex: 1; padding: 8px; border: 2px solid #ff9800; background: white; color: #ff9800; border-radius: 8px; cursor: pointer; font-size: 0.9em; font-weight: bold; transition: all 0.2s;">
+                    學習中
+                </button>
+                <button onclick="filterMasteryList('new')" id="filterNew" style="flex: 1; padding: 8px; border: 2px solid #999; background: white; color: #999; border-radius: 8px; cursor: pointer; font-size: 0.9em; font-weight: bold; transition: all 0.2s;">
+                    新單詞
+                </button>
+            </div>
+            
+            <!-- Word List -->
+            <div id="masteryWordList" style="flex: 1; overflow-y: auto; padding: 15px 25px;">
+                <!-- Words will be rendered here -->
+            </div>
+            
+            <!-- Modal Footer -->
+            <div style="padding: 15px 25px; background: #f8f9fa; border-top: 2px solid #e9ecef; text-align: center; font-size: 0.85em; color: #666;">
+                💡 提示：點擊統計框可打開此詳情面板
+            </div>
+        </div>
+    </div>
+    
+    <style>
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .mastery-word-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            border-left: 4px solid #ddd;
+            transition: all 0.2s;
+            background: #fafafa;
+        }
+        
+        .mastery-word-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .mastery-mastered {
+            border-left-color: #4caf50;
+            background: linear-gradient(to right, #e8f5e9, #fafafa);
+        }
+        
+        .mastery-learning {
+            border-left-color: #ff9800;
+            background: linear-gradient(to right, #fff3e0, #fafafa);
+        }
+        
+        .mastery-new {
+            border-left-color: #999;
+            background: #fafafa;
+        }
+        
+        .mastery-progress-bar {
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .mastery-progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+    </style>
 </body>
 </html>
