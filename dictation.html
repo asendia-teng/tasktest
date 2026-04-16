@@ -2087,8 +2087,440 @@
         // Data storage
         let words = [];
         let calendar;
-        let exampleCache = {}; // Cache fetched examples
-        let translationCache = {}; // Cache translations
+        let exampleCache = {}; // Cache fetched examples (memory, temporary)
+        
+        // ==================== Example Sentence Persistent Cache (IndexedDB) ====================
+        
+        const EXAMPLE_CACHE_DB_NAME = 'ExampleSentencesCacheDB';
+        const EXAMPLE_CACHE_STORE_NAME = 'examples';
+        const EXAMPLE_CACHE_VERSION = 1;
+        const EXAMPLE_CACHE_EXPIRY = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+        
+        let exampleCacheDB = null;
+        
+        // Initialize IndexedDB for example cache
+        async function initExampleCacheDB() {
+            if (exampleCacheDB) return exampleCacheDB;
+            
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(EXAMPLE_CACHE_DB_NAME, EXAMPLE_CACHE_VERSION);
+                
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    console.log('📦 Initializing example cache database...');
+                    
+                    if (!db.objectStoreNames.contains(EXAMPLE_CACHE_STORE_NAME)) {
+                        const store = db.createObjectStore(EXAMPLE_CACHE_STORE_NAME, { keyPath: 'word' });
+                        store.createIndex('timestamp', 'timestamp', { unique: false });
+                        console.log('✅ Example cache store created');
+                    }
+                };
+                
+                request.onsuccess = (event) => {
+                    exampleCacheDB = event.target.result;
+                    console.log('✅ Example cache database initialized');
+                    resolve(exampleCacheDB);
+                };
+                
+                request.onerror = (event) => {
+                    console.error('❌ Failed to initialize example cache DB:', event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+        
+        // Get cached examples from IndexedDB
+        async function getCachedExamples(word) {
+            try {
+                // Validate input parameter
+                if (!word || typeof word !== 'string') {
+                    console.warn('⚠️ Invalid word parameter for getCachedExamples:', word, '(type:', typeof word, ')');
+                    return null;
+                }
+                
+                const db = await initExampleCacheDB();
+                const lowerWord = word.toLowerCase().trim();
+                
+                // Additional validation after conversion
+                if (!lowerWord || lowerWord.length === 0) {
+                    console.warn('⚠️ Empty word after processing');
+                    return null;
+                }
+                
+                return new Promise((resolve) => {
+                    const transaction = db.transaction([EXAMPLE_CACHE_STORE_NAME], 'readonly');
+                    const store = transaction.objectStore(EXAMPLE_CACHE_STORE_NAME);
+                    
+                    try {
+                        const request = store.get(lowerWord);
+                        
+                        request.onsuccess = () => {
+                            const result = request.result;
+                            
+                            if (!result) {
+                                resolve(null);
+                                return;
+                            }
+                            
+                            // Check if cache is expired
+                            const now = Date.now();
+                            if (now - result.timestamp > EXAMPLE_CACHE_EXPIRY) {
+                                console.log('⏰ Cache expired for:', lowerWord);
+                                // Delete expired cache
+                                deleteCachedExample(lowerWord);
+                                resolve(null);
+                                return;
+                            }
+                            
+                            console.log('💾 getCachedExamples Using persistent cache for:', lowerWord);
+                            resolve(result.examples);
+                        };
+                        
+                        request.onerror = (event) => {
+                            console.error('❌ IndexedDB get error:', event.target.error);
+                            console.error('   Key attempted:', lowerWord, '(type:', typeof lowerWord, ')');
+                            resolve(null);
+                        };
+                    } catch (dbError) {
+                        console.error('❌ Database operation error:', dbError);
+                        console.error('   Word parameter:', word, '(type:', typeof word, ')');
+                        resolve(null);
+                    }
+                });
+            } catch (error) {
+                console.error('Error reading cache:', error);
+                console.error('   Failed word:', word, '(type:', typeof word, ')');
+                return null;
+            }
+        }
+        
+        // Save examples to IndexedDB cache
+        async function saveToExampleCache(word, examples) {
+            try {
+                const db = await initExampleCacheDB();
+                const lowerWord = word.toLowerCase();
+                
+                // Remove duplicate examples before saving
+                const uniqueExamples = [...new Set(examples)];
+                
+                if (uniqueExamples.length < examples.length) {
+                    console.log(`🧹 Removed ${examples.length - uniqueExamples.length} duplicates before caching`);
+                }
+                
+                return new Promise((resolve) => {
+                    const transaction = db.transaction([EXAMPLE_CACHE_STORE_NAME], 'readwrite');
+                    const store = transaction.objectStore(EXAMPLE_CACHE_STORE_NAME);
+                    
+                    const data = {
+                        word: lowerWord,
+                        examples: uniqueExamples,
+                        timestamp: Date.now(),
+                        count: uniqueExamples.length
+                    };
+                    
+                    const request = store.put(data);
+                    
+                    request.onsuccess = () => {
+                        console.log('💾 Cached examples for:', lowerWord, `(${uniqueExamples.length} unique examples)`);
+                        resolve();
+                    };
+                    
+                    request.onerror = () => {
+                        console.warn('Failed to cache examples');
+                        resolve(); // Don't fail the operation
+                    };
+                });
+            } catch (error) {
+                console.error('Error saving to cache:', error);
+            }
+        }
+        
+        // Delete cached example
+        async function deleteCachedExample(word) {
+            try {
+                const db = await initExampleCacheDB();
+                const lowerWord = word.toLowerCase();
+                
+                return new Promise((resolve) => {
+                    const transaction = db.transaction([EXAMPLE_CACHE_STORE_NAME], 'readwrite');
+                    const store = transaction.objectStore(EXAMPLE_CACHE_STORE_NAME);
+                    const request = store.delete(lowerWord);
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => resolve();
+                });
+            } catch (error) {
+                console.error('Error deleting cache:', error);
+            }
+        }
+        
+        // Clear all expired caches
+        async function clearExpiredExampleCache() {
+            try {
+                const db = await initExampleCacheDB();
+                const now = Date.now();
+                
+                return new Promise((resolve) => {
+                    const transaction = db.transaction([EXAMPLE_CACHE_STORE_NAME], 'readwrite');
+                    const store = transaction.objectStore(EXAMPLE_CACHE_STORE_NAME);
+                    const index = store.index('timestamp');
+                    const request = index.getAll();
+                    
+                    request.onsuccess = () => {
+                        const items = request.result;
+                        let deletedCount = 0;
+                        
+                        items.forEach(item => {
+                            if (now - item.timestamp > EXAMPLE_CACHE_EXPIRY) {
+                                store.delete(item.word);
+                                deletedCount++;
+                            }
+                        });
+                        
+                        if (deletedCount > 0) {
+                            console.log(`🧹 Cleaned up ${deletedCount} expired example caches`);
+                        }
+                        resolve();
+                    };
+                    
+                    request.onerror = () => resolve();
+                });
+            } catch (error) {
+                console.error('Error clearing expired cache:', error);
+            }
+        }
+        
+        // Get cache statistics
+        async function getExampleCacheStats() {
+            try {
+                const db = await initExampleCacheDB();
+                
+                return new Promise((resolve) => {
+                    const transaction = db.transaction([EXAMPLE_CACHE_STORE_NAME], 'readonly');
+                    const store = transaction.objectStore(EXAMPLE_CACHE_STORE_NAME);
+                    const request = store.count();
+                    
+                    request.onsuccess = () => {
+                        const count = request.result;
+                        console.log(`📊 Example cache stats: ${count} words cached`);
+                        resolve(count);
+                    };
+                    
+                    request.onerror = () => resolve(0);
+                });
+            } catch (error) {
+                console.error('Error getting cache stats:', error);
+                return 0;
+            }
+        }
+        
+        // Initialize example cache on app load
+        async function initExampleCache() {
+            try {
+                await initExampleCacheDB();
+                await clearExpiredExampleCache();
+                await getExampleCacheStats();
+                console.log('✅ Example cache system ready');
+            } catch (error) {
+                console.error('Failed to initialize example cache:', error);
+            }
+        }
+        let translationCache = {}; // Cache translations (memory, temporary)
+        let translationInProgress = new Set(); // Track ongoing translations to prevent duplicates
+        
+        // ==================== Translation Persistent Cache (IndexedDB) ====================
+        
+        const TRANSLATION_CACHE_DB_NAME = 'TranslationCacheDB';
+        const TRANSLATION_CACHE_STORE_NAME = 'translations';
+        const TRANSLATION_CACHE_VERSION = 1;
+        const TRANSLATION_CACHE_EXPIRY = 60 * 24 * 60 * 60 * 1000; // 60 days in milliseconds
+        
+        let translationCacheDB = null;
+        
+        // Initialize IndexedDB for translation cache
+        async function initTranslationCacheDB() {
+            if (translationCacheDB) return translationCacheDB;
+            
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(TRANSLATION_CACHE_DB_NAME, TRANSLATION_CACHE_VERSION);
+                
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    console.log('📦 Initializing translation cache database...');
+                    
+                    if (!db.objectStoreNames.contains(TRANSLATION_CACHE_STORE_NAME)) {
+                        const store = db.createObjectStore(TRANSLATION_CACHE_STORE_NAME, { keyPath: 'text' });
+                        store.createIndex('timestamp', 'timestamp', { unique: false });
+                        console.log('✅ Translation cache store created');
+                    }
+                };
+                
+                request.onsuccess = (event) => {
+                    translationCacheDB = event.target.result;
+                    console.log('✅ Translation cache database initialized');
+                    resolve(translationCacheDB);
+                };
+                
+                request.onerror = (event) => {
+                    console.error('❌ Failed to initialize translation cache DB:', event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+        
+        // Get cached translation from IndexedDB
+        async function getCachedTranslation(text) {
+            try {
+                // Validate input parameter
+                if (!text || typeof text !== 'string') {
+                    console.warn('⚠️ Invalid text parameter for getCachedTranslation:', text, '(type:', typeof text, ')');
+                    return null;
+                }
+                
+                const db = await initTranslationCacheDB();
+                
+                return new Promise((resolve) => {
+                    const transaction = db.transaction([TRANSLATION_CACHE_STORE_NAME], 'readonly');
+                    const store = transaction.objectStore(TRANSLATION_CACHE_STORE_NAME);
+                    
+                    try {
+                        const request = store.get(text);
+                        
+                        request.onsuccess = () => {
+                            const result = request.result;
+                            
+                            if (!result) {
+                                resolve(null);
+                                return;
+                            }
+                            
+                            // Check if cache is expired
+                            const now = Date.now();
+                            if (now - result.timestamp > TRANSLATION_CACHE_EXPIRY) {
+                                console.log('⏰ Translation cache expired for:', text.substring(0, 30));
+                                deleteCachedTranslation(text);
+                                resolve(null);
+                                return;
+                            }
+                            
+                            console.log('💾 translateToChinese Using persistent translation cache for:', text.substring(0, 30));
+                            resolve(result.translation);
+                        };
+                        
+                        request.onerror = (event) => {
+                            console.error('❌ IndexedDB translation get error:', event.target.error);
+                            console.error('   Key attempted:', text.substring(0, 50), '(type:', typeof text, ')');
+                            resolve(null);
+                        };
+                    } catch (dbError) {
+                        console.error('❌ Translation database operation error:', dbError);
+                        console.error('   Text parameter:', text.substring(0, 50), '(type:', typeof text, ')');
+                        resolve(null);
+                    }
+                });
+            } catch (error) {
+                console.error('Error reading translation cache:', error);
+                console.error('   Failed text:', text, '(type:', typeof text, ')');
+                return null;
+            }
+        }
+        
+        // Save translation to IndexedDB cache
+        async function saveToTranslationCache(text, translation) {
+            try {
+                const db = await initTranslationCacheDB();
+                
+                return new Promise((resolve) => {
+                    const transaction = db.transaction([TRANSLATION_CACHE_STORE_NAME], 'readwrite');
+                    const store = transaction.objectStore(TRANSLATION_CACHE_STORE_NAME);
+                    
+                    const data = {
+                        text: text,
+                        translation: translation,
+                        timestamp: Date.now()
+                    };
+                    
+                    const request = store.put(data);
+                    
+                    request.onsuccess = () => {
+                        console.log('💾 Cached translation for:', text.substring(0, 30));
+                        resolve();
+                    };
+                    
+                    request.onerror = () => {
+                        console.warn('Failed to cache translation');
+                        resolve();
+                    };
+                });
+            } catch (error) {
+                console.error('Error saving translation cache:', error);
+            }
+        }
+        
+        // Delete cached translation
+        async function deleteCachedTranslation(text) {
+            try {
+                const db = await initTranslationCacheDB();
+                
+                return new Promise((resolve) => {
+                    const transaction = db.transaction([TRANSLATION_CACHE_STORE_NAME], 'readwrite');
+                    const store = transaction.objectStore(TRANSLATION_CACHE_STORE_NAME);
+                    const request = store.delete(text);
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => resolve();
+                });
+            } catch (error) {
+                console.error('Error deleting translation cache:', error);
+            }
+        }
+        
+        // Clear expired translation caches
+        async function clearExpiredTranslationCache() {
+            try {
+                const db = await initTranslationCacheDB();
+                const now = Date.now();
+                
+                return new Promise((resolve) => {
+                    const transaction = db.transaction([TRANSLATION_CACHE_STORE_NAME], 'readwrite');
+                    const store = transaction.objectStore(TRANSLATION_CACHE_STORE_NAME);
+                    const index = store.index('timestamp');
+                    const request = index.getAll();
+                    
+                    request.onsuccess = () => {
+                        const items = request.result;
+                        let deletedCount = 0;
+                        
+                        items.forEach(item => {
+                            if (now - item.timestamp > TRANSLATION_CACHE_EXPIRY) {
+                                store.delete(item.text);
+                                deletedCount++;
+                            }
+                        });
+                        
+                        if (deletedCount > 0) {
+                            console.log(`🧹 Cleaned up ${deletedCount} expired translation caches`);
+                        }
+                        resolve();
+                    };
+                    
+                    request.onerror = () => resolve();
+                });
+            } catch (error) {
+                console.error('Error clearing expired translation cache:', error);
+            }
+        }
+        
+        // Initialize translation cache on app load
+        async function initTranslationCache() {
+            try {
+                await initTranslationCacheDB();
+                await clearExpiredTranslationCache();
+                console.log('✅ Translation cache system ready');
+            } catch (error) {
+                console.error('Failed to initialize translation cache:', error);
+            }
+        }
         let wordDetailsCache = {}; // Cache word details (phonetic, meaning, etc.)
 
         // Offline Dictionary Service Class
@@ -2676,14 +3108,23 @@
             
             const lowerWord = word.toLowerCase();
             
-            // Check cache first
+            // Check memory cache first (fastest)
             if (exampleCache[lowerWord]) {
-                console.log('Using cached examples for:', lowerWord);
+                console.log('⚡ Using memory cache for:', lowerWord);
                 return exampleCache[lowerWord];
             }
             
+            // Check persistent cache (IndexedDB)
+            const cached = await getCachedExamples(lowerWord);
+            if (cached && cached.length > 0) {
+                console.log('💾 fetchExampleSentences Using persistent cache for:', lowerWord);
+                // Also save to memory cache for faster access
+                exampleCache[lowerWord] = cached;
+                return cached;
+            }
+            
             try {
-                console.log('Fetching examples for:', lowerWord);
+                console.log('🌐 Fetching examples from API for:', lowerWord);
                 
                 // Only use Dictionary API for better quality examples
                 const examples = await fetchFromDictionaryAPI(lowerWord);
@@ -2691,16 +3132,25 @@
                 // If no examples found, try to generate simple ones
                 if (examples.length === 0) {
                     console.log('No examples from API, generating simple ones');
-                    return generateSimpleExamples(lowerWord);
+                    const simpleExamples = generateSimpleExamples(lowerWord);
+                    // Cache the generated examples too
+                    exampleCache[lowerWord] = simpleExamples;
+                    await saveToExampleCache(lowerWord, simpleExamples);
+                    return simpleExamples;
                 }
                 
-                // Cache the results
+                // Cache the results in both memory and IndexedDB
                 exampleCache[lowerWord] = examples;
+                await saveToExampleCache(lowerWord, examples);
                 return examples;
                 
             } catch (error) {
                 console.error('Failed to fetch examples:', error);
-                return generateSimpleExamples(lowerWord);
+                const fallback = generateSimpleExamples(lowerWord);
+                // Cache fallback examples too
+                exampleCache[lowerWord] = fallback;
+                await saveToExampleCache(lowerWord, fallback);
+                return fallback;
             }
         }
 
@@ -2710,14 +3160,23 @@
             
             const lowerWord = word.toLowerCase();
             
-            // Check cache first
+            // Check memory cache first (fastest)
             if (exampleCache[lowerWord]) {
-                console.log('Using cached examples for:', lowerWord);
+                console.log('⚡ Using memory cache for:', lowerWord);
                 return exampleCache[lowerWord];
             }
             
+            // Check persistent cache (IndexedDB)
+            const cached = await getCachedExamples(lowerWord);
+            if (cached && cached.length > 0) {
+                console.log('💾 fetchExampleSentencesWithTranslations Using persistent cache for:', lowerWord);
+                // Also save to memory cache for faster access
+                exampleCache[lowerWord] = cached;
+                return cached;
+            }
+            
             try {
-                console.log('Fetching examples with translations for:', lowerWord);
+                console.log('🌐 Fetching examples with translations for:', lowerWord);
                 
                 // Only use Dictionary API for better quality examples
                 const rawExamples = await fetchFromDictionaryAPI(lowerWord);
@@ -2725,8 +3184,11 @@
                 // If no examples found, try to generate simple ones
                 if (rawExamples.length === 0) {
                     console.log('No examples from API, generating simple ones');
-                    const simpleExamples = generateSimpleExamples(lowerWord);
-                    return simpleExamples.map(en => ({ en, zh: '' }));
+                    const simpleExamples = generateSimpleExamples(lowerWord).map(en => ({ en, zh: '' }));
+                    // Cache the generated examples
+                    exampleCache[lowerWord] = simpleExamples;
+                    await saveToExampleCache(lowerWord, simpleExamples);
+                    return simpleExamples;
                 }
                 
                 // Translate all examples to Traditional Chinese
@@ -2740,27 +3202,58 @@
                     })
                 );
                 
-                // Cache the results
+                // Cache the results in both memory and IndexedDB
                 exampleCache[lowerWord] = examplesWithTranslations;
+                await saveToExampleCache(lowerWord, examplesWithTranslations);
                 return examplesWithTranslations;
                 
             } catch (error) {
                 console.error('Failed to fetch examples with translations:', error);
-                const simpleExamples = generateSimpleExamples(lowerWord);
-                return simpleExamples.map(en => ({ en, zh: '' }));
+                const simpleExamples = generateSimpleExamples(lowerWord).map(en => ({ en, zh: '' }));
+                // Cache fallback examples
+                exampleCache[lowerWord] = simpleExamples;
+                await saveToExampleCache(lowerWord, simpleExamples);
+                return simpleExamples;
             }
         }
 
         // Translate English text to Chinese using MyMemory API
         async function translateToChinese(text) {
-            // Check cache first
+            // Check memory cache first (fastest)
             if (translationCache[text]) {
-                console.log('Using cached translation for:', text);
+                console.log('⚡ Using memory translation cache for:', text.substring(0, 30));
                 return translationCache[text];
             }
             
+            // Check persistent cache (IndexedDB)
+            const cached = await getCachedTranslation(text);
+            if (cached) {
+                console.log('💾 translateToChinese Using persistent translation cache for:', text.substring(0, 30));
+                // Also save to memory cache for faster access
+                translationCache[text] = cached;
+                return cached;
+            }
+            
+            // Prevent duplicate concurrent translations
+            if (translationInProgress.has(text)) {
+                console.log('⏳ Translation already in progress for:', text.substring(0, 30));
+                // Wait for the ongoing translation to complete
+                return new Promise((resolve) => {
+                    const checkInterval = setInterval(() => {
+                        if (!translationInProgress.has(text)) {
+                            clearInterval(checkInterval);
+                            // Return cached result
+                            resolve(translationCache[text] || null);
+                        }
+                    }, 100);
+                });
+            }
+            
+            // Mark as in progress
+            translationInProgress.add(text);
+            
             try {
-                console.log('Translating:', text);
+                console.log('🌐 Translating via API:', text.substring(0, 30));
                 
                 // Use MyMemory Translation API (free, no API key required)
                 // langpair=en|zh-TW for Traditional Chinese (for Hong Kong)
@@ -2773,14 +3266,18 @@
                 const data = await response.json();
                 const translation = data.responseData.translatedText;
                 
-                // Cache the translation
+                // Cache in both memory and IndexedDB
                 translationCache[text] = translation;
+                await saveToTranslationCache(text, translation);
                 
                 return translation;
                 
             } catch (error) {
                 console.error('Translation failed:', error);
                 return null; // Return null if translation fails
+            } finally {
+                // Remove from in-progress set
+                translationInProgress.delete(text);
             }
         }
 
@@ -2838,39 +3335,6 @@
                 `Look at the ${word}.`
             ];
             return templates;
-        }
-
-        // Translate English text to Chinese using MyMemory API
-        async function translateToChinese(text) {
-            // Check cache first
-            if (translationCache[text]) {
-                console.log('Using cached translation for:', text);
-                return translationCache[text];
-            }
-            
-            try {
-                console.log('Translating:', text);
-                
-                // Use MyMemory Translation API (free, no API key required)
-                // langpair=en|zh-TW for Traditional Chinese (for Hong Kong)
-                const response = await fetch(
-                    `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|zh-TW`
-                );
-                
-                if (!response.ok) throw new Error('Translation API error');
-                
-                const data = await response.json();
-                const translation = data.responseData.translatedText;
-                
-                // Cache the translation
-                translationCache[text] = translation;
-                
-                return translation;
-                
-            } catch (error) {
-                console.error('Translation failed:', error);
-                return null; // Return null if translation fails
-            }
         }
 
 
@@ -6211,6 +6675,12 @@
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize example cache system
+            initExampleCache();
+            
+            // Initialize translation cache system
+            initTranslationCache();
+            
             // Auto-hide header after 8 seconds (extended for admin mode activation)
             setTimeout(() => {
                 const header = document.getElementById('appHeader');
@@ -8183,7 +8653,7 @@
             const isHidden = container.style.display === 'none';
             
             if (isHidden) {
-                // Show examples
+                // Show examples - display basic info immediately
                 container.style.display = 'block';
                 button.textContent = '📖 隱藏例句';
                 
@@ -8191,22 +8661,222 @@
                 const savedWord = words.find(w => w.english === word);
                 const customExamples = savedWord?.customExamples || [];
                 
+                // Display basic word info immediately (without waiting for API)
+                displayBasicWordInfo(container, savedWord);
+                
                 // If word has custom examples, show them directly without fetching API
                 if (customExamples.length > 0) {
-                    displaySavedExamples(container, savedWord, customExamples);
+                    displaySavedExamples(container, savedWord, customExamples, false); // false = don't refetch basic info
                 } else {
-                    // No custom examples, fetch from API
-                    container.innerHTML = '<div class="loading-examples">🔄 正在加載例句和翻譯...</div>';
+                    // No custom examples, fetch from API asynchronously
+                    // Show loading indicator only in the examples section
+                    const examplesSection = document.getElementById(`examples-list-${savedWord?.id || 'unknown'}`);
+                    if (examplesSection) {
+                        examplesSection.innerHTML = '<div class="loading-examples">🔄 正在加載例句...</div>';
+                    }
                     
-                    // Fetch and display examples with translations
-                    const examples = await fetchExampleSentences(word);
-                    displaySavedExamples(container, savedWord, customExamples, examples);
+                    // Fetch and display examples with translations (async, won't block UI)
+                    fetchAndDisplayExamplesAsync(savedWord, container);
                 }
             } else {
                 // Hide examples
                 container.style.display = 'none';
                 button.textContent = '📖 查看例句';
             }
+        }
+        
+        // Display basic word info immediately (English + Chinese)
+        function displayBasicWordInfo(container, savedWord) {
+            if (!savedWord) return;
+            
+            const basicInfoHtml = `
+                <div class="example-sentence-container">
+                    ${savedWord?.english ? `
+                        <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #eee;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                <strong style="font-size: 1.1em; color: #667eea;">${escapeHtml(savedWord.english)}</strong>
+                                <button type="button" onclick="addCustomTranslation(${savedWord.id})" 
+                                        style="padding: 4px 10px; background: #f0f4ff; border: none; border-radius: 4px; cursor: pointer; color: #667eea; font-size: 0.85em;">
+                                    ✏️ 編輯翻譯
+                                </button>
+                            </div>
+                            ${savedWord.customTranslation ? `
+                                <div style="color: #666; font-size: 0.95em;">
+                                    🔊 ${escapeHtml(savedWord.customTranslation)}
+                                </div>
+                            ` : `
+                                <div style="color: #999; font-size: 0.9em; font-style: italic;">
+                                    點擊「編輯翻譯」添加自定義翻譯
+                                </div>
+                            `}
+                        </div>
+                    ` : ''}
+                    
+                    <div id="examples-list-${savedWord?.id || 'unknown'}" style="min-height: 50px;">
+                        <!-- Examples will be loaded here -->
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = basicInfoHtml;
+        }
+        
+        // Fetch and display examples asynchronously
+        async function fetchAndDisplayExamplesAsync(savedWord, container) {
+            if (!savedWord || !savedWord.english) return;
+            
+            try {
+                // Fetch examples from API
+                const apiExamples = await fetchExampleSentences(savedWord.english);
+                
+                if (apiExamples && apiExamples.length > 0) {
+                    // Ensure all examples are strings (handle cached objects)
+                    const stringExamples = apiExamples.map(example => {
+                        if (typeof example === 'string') {
+                            return example;
+                        } else if (example && typeof example === 'object') {
+                            // If it's an object with 'en' property, use that
+                            if (example.en) {
+                                console.warn('⚠️ Converting object example to string:', example.en);
+                                return example.en;
+                            }
+                            // Otherwise convert to string
+                            console.warn('⚠️ Converting non-string example to string:', example);
+                            return String(example);
+                        }
+                        return '';
+                    }).filter(ex => ex && ex.length > 0); // Remove empty strings
+                    
+                    // Remove duplicate sentences before translation
+                    const uniqueExamples = [...new Set(stringExamples)];
+                    
+                    if (uniqueExamples.length < stringExamples.length) {
+                        console.log(`🧹 Removed ${stringExamples.length - uniqueExamples.length} duplicate examples`);
+                    }
+                    
+                    if (uniqueExamples.length === 0) {
+                        console.warn('⚠️ No valid examples after processing');
+                        showNoExamplesMessage(container, savedWord);
+                        return;
+                    }
+                    
+                    // Translate examples
+                    const examplesWithTranslations = await Promise.all(
+                        uniqueExamples.map(async (sentence) => {
+                            const translation = await translateToChinese(sentence);
+                            return { en: sentence, zh: translation, isCustom: false };
+                        })
+                    );
+                    
+                    // Display examples
+                    displayExamplesList(container, savedWord, examplesWithTranslations);
+                } else {
+                    // No examples found
+                    const examplesSection = document.getElementById(`examples-list-${savedWord.id}`);
+                    if (examplesSection) {
+                        examplesSection.innerHTML = `
+                            <div style="text-align: center; padding: 20px; color: #999;">
+                                <div style="font-size: 2em; margin-bottom: 10px;">📝</div>
+                                <div>暫無例句</div>
+                                <button type="button" onclick="addCustomExample(${savedWord.id})" 
+                                        style="margin-top: 10px; padding: 8px 16px; background: #667eea; border: none; border-radius: 4px; cursor: pointer; color: white; font-size: 0.9em;">
+                                    ➕ 添加造句
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch examples:', error);
+                const examplesSection = document.getElementById(`examples-list-${savedWord.id}`);
+                if (examplesSection) {
+                    examplesSection.innerHTML = `
+                        <div style="text-align: center; padding: 20px; color: #ff6b6b;">
+                            <div style="font-size: 2em; margin-bottom: 10px;">❌</div>
+                            <div>加載失敗，請重試</div>
+                            <button type="button" onclick="fetchAndDisplayExamplesAsync(words.find(w => w.id === ${savedWord.id}), document.getElementById('example-container-${savedWord.id}'))" 
+                                    style="margin-top: 10px; padding: 8px 16px; background: #ff6b6b; border: none; border-radius: 4px; cursor: pointer; color: white; font-size: 0.9em;">
+                                🔄 重試
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        // Display examples list (used by async fetch)
+        function displayExamplesList(container, savedWord, examples) {
+            const examplesSection = document.getElementById(`examples-list-${savedWord?.id || 'unknown'}`);
+            if (!examplesSection) return;
+            
+            if (!examples || examples.length === 0) {
+                examplesSection.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: #999;">
+                        <div style="font-size: 2em; margin-bottom: 10px;">📝</div>
+                        <div>暫無例句</div>
+                        <button type="button" onclick="addCustomExample(${savedWord.id})" 
+                                style="margin-top: 10px; padding: 8px 16px; background: #667eea; border: none; border-radius: 4px; cursor: pointer; color: white; font-size: 0.9em;">
+                            ➕ 添加造句
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <strong style="color: #667eea;">例句：</strong>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" onclick="fetchAndShowAPIExamples('${savedWord.english}', '${container.id}')" 
+                                style="padding: 6px 12px; background: #f0f4ff; border: 1px solid #667eea; border-radius: 4px; cursor: pointer; color: #667eea; font-size: 0.85em;">
+                            🌐 聯網獲取例句
+                        </button>
+                        <button type="button" onclick="addCustomExample(${savedWord.id})" 
+                                style="padding: 6px 12px; background: #667eea; border: none; border-radius: 4px; cursor: pointer; color: white; font-size: 0.85em;">
+                            ➕ 添加例句
+                        </button>
+                    </div>
+                </div>
+                
+                <ul class="example-sentence-list">
+            `;
+            
+            examples.forEach((item, index) => {
+                html += `
+                    <li class="example-sentence-item" style="flex-direction: column; align-items: flex-start;">
+                        <div style="display: flex; align-items: center; gap: 8px; width: 100%; margin-bottom: 4px;">
+                            <span class="example-icon" style="cursor: pointer;" onclick="speakEnglish('${escapeJs(item.en)}')">🔊</span>
+                            <span class="example-sentence-text" style="flex: 1; font-weight: 500;">${escapeHtml(item.en)}</span>
+                        </div>
+                        ${item.zh ? `
+                            <div style="display: flex; align-items: center; gap: 8px; width: 100%; padding-left: 28px; color: #666; font-size: 0.95em;">
+                                <span style="cursor: pointer;" onclick="speakCantonese('${escapeJs(item.zh)}')">🔊</span>
+                                <span>${escapeHtml(item.zh)}</span>
+                            </div>
+                        ` : ''}
+                    </li>
+                `;
+            });
+            
+            html += '</ul></div>';
+            examplesSection.innerHTML = html;
+        }
+        
+        // Show no examples message
+        function showNoExamplesMessage(container, savedWord) {
+            const examplesSection = document.getElementById(`examples-list-${savedWord?.id || 'unknown'}`);
+            if (!examplesSection) return;
+            
+            examplesSection.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: #999;">
+                    <div style="font-size: 2em; margin-bottom: 10px;">📝</div>
+                    <div>暫無例句</div>
+                    <button type="button" onclick="addCustomExample(${savedWord.id})" 
+                            style="margin-top: 10px; padding: 8px 16px; background: #667eea; border: none; border-radius: 4px; cursor: pointer; color: white; font-size: 0.9em;">
+                        ➕ 添加造句
+                    </button>
+                </div>
+            `;
         }
 
         // Display saved/custom examples
@@ -8226,14 +8896,42 @@
             
             // Add API examples only if requested or no custom examples
             if (apiExamples.length > 0 && customExamples.length === 0) {
-                const examplesWithTranslations = await Promise.all(
-                    apiExamples.map(async (sentence) => {
-                        const translation = await translateToChinese(sentence);
-                        return { en: sentence, zh: translation, isCustom: false };
-                    })
-                );
+                // Ensure all examples are strings (handle cached objects)
+                const stringApiExamples = apiExamples.map(example => {
+                    if (typeof example === 'string') {
+                        return example;
+                    } else if (example && typeof example === 'object') {
+                        // If it's an object with 'en' property, use that
+                        if (example.en) {
+                            console.warn('⚠️ Converting object example to string:', example.en);
+                            return example.en;
+                        }
+                        // Otherwise convert to string
+                        console.warn('⚠️ Converting non-string example to string:', example);
+                        return String(example);
+                    }
+                    return '';
+                }).filter(ex => ex && ex.length > 0); // Remove empty strings
                 
-                allExamples = [...allExamples, ...examplesWithTranslations];
+                // Remove duplicate sentences before translation
+                const uniqueApiExamples = [...new Set(stringApiExamples)];
+                
+                if (uniqueApiExamples.length < stringApiExamples.length) {
+                    console.log(`🧹 Removed ${stringApiExamples.length - uniqueApiExamples.length} duplicate API examples`);
+                }
+                
+                if (uniqueApiExamples.length === 0) {
+                    console.warn('⚠️ No valid API examples after processing');
+                } else {
+                    const examplesWithTranslations = await Promise.all(
+                        uniqueApiExamples.map(async (sentence) => {
+                            const translation = await translateToChinese(sentence);
+                            return { en: sentence, zh: translation, isCustom: false };
+                        })
+                    );
+                    
+                    allExamples = [...allExamples, ...examplesWithTranslations];
+                }
             }
             
             if (allExamples.length > 0) {
