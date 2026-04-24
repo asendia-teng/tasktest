@@ -1667,20 +1667,23 @@
                     <p style="color: #666; margin-bottom: 20px; font-size: 0.9em;">每學會一個單詞，小樹就會長大一點！</p>
                     
                     <!-- Stats Display -->
-                    <div id="treeStats" style="background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%); padding: 15px; border-radius: 10px; margin-bottom: 20px; display: inline-block; cursor: pointer; transition: all 0.2s;"
-                         onclick="openMasteryModal()"
-                         onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.3)'"
-                         onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
-                        <div style="font-size: 1.1em; color: #667eea; font-weight: bold; margin-bottom: 8px;">
-                            📊 已掌握: <span id="totalWordsCount">0</span> 個單詞
+                    <div id="treeStats" style="background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%); padding: 15px; border-radius: 10px; margin-bottom: 20px; display: inline-block; transition: all 0.2s;">
+                        <div onclick="openMasteryModal()" style="cursor: pointer; transition: all 0.2s;"
+                             onmouseover="this.style.transform='scale(1.02)'"
+                             onmouseout="this.style.transform='scale(1)'">
+                            <div style="font-size: 1.1em; color: #667eea; font-weight: bold; margin-bottom: 8px;">
+                                📊 已掌握: <span id="totalWordsCount">0</span> 個單詞
+                            </div>
+                            <div style="font-size: 0.85em; color: #888; margin-top: 5px;">
+                                (基於SRS複習狀態)
+                            </div>
+                            <div style="font-size: 0.9em; color: #888; margin-top: 5px;">
+                                🌱 樹齡: <span id="treeAge">0</span> 天
+                            </div>
                         </div>
-                        <div style="font-size: 0.85em; color: #888; margin-top: 5px;">
-                            (基於SRS複習狀態)
-                        </div>
-                        <div style="font-size: 0.9em; color: #888; margin-top: 5px;">
-                            🌱 樹齡: <span id="treeAge">0</span> 天
-                        </div>
-                        <div style="font-size: 1.2em; color: #ff6b6b; font-weight: bold; margin-top: 10px; padding-top: 10px; border-top: 2px solid #ddd;">
+                        <div onclick="showPointsHistory()" style="font-size: 1.2em; color: #ff6b6b; font-weight: bold; margin-top: 10px; padding-top: 10px; border-top: 2px solid #ddd; cursor: pointer; transition: all 0.2s;"
+                             onmouseover="this.style.transform='scale(1.02)'; this.style.color='#ff5252'"
+                             onmouseout="this.style.transform='scale(1)'; this.style.color='#ff6b6b'">
                             ⭐ 積分: <span id="userPointsDisplay">0</span>
                         </div>
                     </div>
@@ -1876,6 +1879,11 @@
                         <h2 style="color: #f5576c; margin-bottom: 10px;">🏆 單詞闖關</h2>
                         <p style="color: #666; font-size: 0.9em;">挑戰多個關卡，複習所學單詞！</p>
                         <p style="color: #999; font-size: 0.8em; margin-top: 5px;">💡 每關隨機抽取新舊單詞混合練習</p>
+                        <button onclick="showQuizRules()" style="margin-top: 15px; padding: 8px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 20px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);"
+                                onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.5)'"
+                                onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 8px rgba(102, 126, 234, 0.3)'">
+                            📖 查看遊戲規則
+                        </button>
                     </div>
                     
                     <!-- Level Map -->
@@ -1885,11 +1893,14 @@
                     
                     <!-- Game Area (hidden initially) -->
                     <div id="quizGameArea" style="display: none;">
-                        <!-- Progress Bar -->
+                        <!-- Progress Bar and Timer -->
                         <div style="margin-bottom: 20px;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                                 <span style="font-size: 0.9em; color: #666;">關卡進度</span>
-                                <span id="quizProgress" style="font-size: 0.9em; color: #667eea; font-weight: bold;">1/10</span>
+                                <div style="display: flex; gap: 15px; align-items: center;">
+                                    <span id="quizTimer" style="font-size: 0.95em; color: #f5576c; font-weight: bold; padding: 4px 10px; background: #fff5f5; border-radius: 6px; border: 1px solid #f5576c;">⏱️ 30秒</span>
+                                    <span id="quizProgress" style="font-size: 0.9em; color: #667eea; font-weight: bold;">1/10</span>
+                                </div>
                             </div>
                             <div style="width: 100%; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden;">
                                 <div id="quizProgressBar" style="height: 100%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); transition: width 0.3s ease; width: 10%;"></div>
@@ -1937,6 +1948,91 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quiz Rules Modal -->
+    <div class="modal-overlay" id="quizRulesOverlay" onclick="closeQuizRules()" style="display: none;"></div>
+    <div class="calendar-popup" id="quizRulesPopup" style="display: none; max-width: 600px;">
+        <div class="calendar-popup-header">
+            <h3>📖 單詞闖關遊戲規則</h3>
+            <button class="close-calendar-btn" onclick="closeQuizRules()">&times;</button>
+        </div>
+        <div style="padding: 25px; max-height: 70vh; overflow-y: auto;">
+            <div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%); border-radius: 10px; border-left: 4px solid #ffc107;">
+                <div style="font-size: 0.95em; color: #856404; line-height: 1.8;">
+                    <strong>🎯 遊戲目標：</strong><br>
+                    挑戰 20 個關卡，通過答對題目來獲得星星和積分！
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: #667eea; margin-bottom: 10px; font-size: 1.1em;">📋 基本規則</h4>
+                <ul style="line-height: 2; color: #555; padding-left: 20px;">
+                    <li>每關有 <strong>10 道題目</strong></li>
+                    <li>需要達到 <strong>60% 正確率</strong>（答對 6 題）才能通關</li>
+                    <li>通關後可解鎖下一關</li>
+                    <li>必須按順序通關，不能跳關</li>
+                </ul>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: #667eea; margin-bottom: 10px; font-size: 1.1em;">⏱️ 時間限制</h4>
+                <ul style="line-height: 2; color: #555; padding-left: 20px;">
+                    <li><strong>選擇題：</strong>30 秒作答時間</li>
+                    <li><strong>填空題：</strong>40 秒作答時間（因為需要打字）</li>
+                    <li>超時未作答視為錯誤，會顯示正確答案</li>
+                    <li>答錯或超時後，會顯示 8 秒讓您學習正確答案</li>
+                </ul>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: #667eea; margin-bottom: 10px; font-size: 1.1em;">📝 題目類型</h4>
+                <ul style="line-height: 2; color: #555; padding-left: 20px;">
+                    <li><strong>🎧 聽力選擇：</strong>聽英文發音，選擇正確的中文意思</li>
+                    <li><strong>📖 閱讀翻譯：</strong>看英文單詞，選擇正確的中文意思</li>
+                    <li><strong>✏️ 填空題：</strong>根據中文提示，拼寫出英文單詞</li>
+                </ul>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: #667eea; margin-bottom: 10px; font-size: 1.1em;">⭐ 評分系統</h4>
+                <ul style="line-height: 2; color: #555; padding-left: 20px;">
+                    <li><strong>⭐⭐⭐ (3星)：</strong>正確率 ≥ 90%</li>
+                    <li><strong>⭐⭐ (2星)：</strong>正確率 ≥ 70%</li>
+                    <li><strong>⭐ (1星)：</strong>正確率 ≥ 60%</li>
+                    <li>可以重複挑戰已通關的關卡來提高星星數</li>
+                </ul>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: #667eea; margin-bottom: 10px; font-size: 1.1em;">🎁 積分獎勵</h4>
+                <ul style="line-height: 2; color: #555; padding-left: 20px;">
+                    <li><strong>完美通關：</strong>必須答對全部 10 題（100% 正確率）才能獲得積分</li>
+                    <li>每天完成闖關可獲得 <strong>最多 2 積分</strong></li>
+                    <li>每完美通關一關即可獲得 1 積分</li>
+                    <li>積分會計入您的總積分和成長樹</li>
+                    <li style="color: #f5576c;"><strong>注意：</strong>如果有答錯題目，即使通關也不會獲得積分</li>
+                </ul>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: #667eea; margin-bottom: 10px; font-size: 1.1em;">💡 小提示</h4>
+                <ul style="line-height: 2; color: #555; padding-left: 20px;">
+                    <li>題目中的單詞可以點擊 🔊 按鈕聽發音</li>
+                    <li>選項也有 🔊 按鈕，可以聽粵語或英語發音</li>
+                    <li>填空題提供中文提示和英文發音提示</li>
+                    <li>答對後會隨機顯示粵語表揚語句鼓勵您！</li>
+                </ul>
+            </div>
+            
+            <div style="text-align: center; margin-top: 25px;">
+                <button onclick="closeQuizRules()" style="padding: 12px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 25px; cursor: pointer; font-size: 1em; font-weight: bold; transition: all 0.2s;"
+                        onmouseover="this.style.transform='scale(1.05)'"
+                        onmouseout="this.style.transform='scale(1)'">
+                    ✅ 我知道了，開始遊戲！
+                </button>
             </div>
         </div>
     </div>
@@ -5498,7 +5594,10 @@
             currentQuestion: 0,
             correctAnswers: 0,
             totalQuestions: 10,
-            isAnswering: false
+            isAnswering: false,
+            questionTimer: null,
+            timeRemaining: 30,
+            defaultTimeLimit: 30 // Default 30 seconds per question
         };
         
         const TOTAL_LEVELS = 20; // Total levels in the game
@@ -5506,6 +5605,32 @@
         // Initialize quiz adventure
         function initQuizAdventure() {
             showLevelMap();
+        }
+        
+        // Show quiz rules modal
+        function showQuizRules() {
+            const popup = document.getElementById('quizRulesPopup');
+            const overlay = document.getElementById('quizRulesOverlay');
+            
+            popup.style.display = 'block';
+            overlay.style.display = 'block';
+            setTimeout(() => {
+                popup.classList.add('active');
+                overlay.classList.add('active');
+            }, 10);
+        }
+        
+        // Close quiz rules modal
+        function closeQuizRules() {
+            const popup = document.getElementById('quizRulesPopup');
+            const overlay = document.getElementById('quizRulesOverlay');
+            
+            popup.classList.remove('active');
+            overlay.classList.remove('active');
+            setTimeout(() => {
+                popup.style.display = 'none';
+                overlay.style.display = 'none';
+            }, 300);
         }
         
         // Show level map
@@ -5707,6 +5832,9 @@
             // Hide feedback
             feedback.style.display = 'none';
             
+            // Reset and start timer
+            startQuestionTimer();
+            
             // Show question
             if (question.type === 'listen_choose') {
                 questionCard.innerHTML = `
@@ -5791,7 +5919,7 @@
                            style="padding: 15px; border: 2px solid #e0e7ff; border-radius: 10px; font-size: 1.1em; text-align: center;"
                            onkeypress="if(event.key==='Enter') checkFillBlankAnswer()">
                     <button onclick="checkFillBlankAnswer()" style="padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; font-weight: bold; margin-top: 10px;">
-                        ✅ 提交答案
+                        提交答案
                     </button>
                 `;
                 setTimeout(() => document.getElementById('fillBlankInput').focus(), 100);
@@ -5874,6 +6002,91 @@
             speechSynthesis.speak(utterance);
         }
         
+        // Start question timer
+        function startQuestionTimer() {
+            // Clear existing timer
+            if (quizGameState.questionTimer) {
+                clearInterval(quizGameState.questionTimer);
+            }
+            
+            // Get current question to determine time limit
+            const question = quizGameState.questions[quizGameState.currentQuestion];
+            
+            // Set time limit based on question type
+            // Fill-in-blank needs more time for typing (40s), multiple choice is faster (30s)
+            if (question.answerType === 'input') {
+                quizGameState.timeRemaining = 40; // 40 seconds for typing
+            } else {
+                quizGameState.timeRemaining = quizGameState.defaultTimeLimit; // 30 seconds for multiple choice
+            }
+            
+            updateTimerDisplay();
+            
+            // Start countdown
+            quizGameState.questionTimer = setInterval(() => {
+                quizGameState.timeRemaining--;
+                updateTimerDisplay();
+                
+                // Time's up!
+                if (quizGameState.timeRemaining <= 0) {
+                    clearInterval(quizGameState.questionTimer);
+                    handleTimeUp();
+                }
+            }, 1000);
+        }
+        
+        // Update timer display
+        function updateTimerDisplay() {
+            const timerEl = document.getElementById('quizTimer');
+            if (timerEl) {
+                const seconds = quizGameState.timeRemaining;
+                timerEl.textContent = `⏱️ ${seconds}秒`;
+                
+                // Change color based on time remaining
+                if (seconds <= 5) {
+                    timerEl.style.color = '#dc3545';
+                    timerEl.style.background = '#f8d7da';
+                    timerEl.style.borderColor = '#dc3545';
+                } else if (seconds <= 10) {
+                    timerEl.style.color = '#fd7e14';
+                    timerEl.style.background = '#fff3cd';
+                    timerEl.style.borderColor = '#fd7e14';
+                } else {
+                    timerEl.style.color = '#f5576c';
+                    timerEl.style.background = '#fff5f5';
+                    timerEl.style.borderColor = '#f5576c';
+                }
+            }
+        }
+        
+        // Handle time up
+        function handleTimeUp() {
+            if (quizGameState.isAnswering) return;
+            quizGameState.isAnswering = true;
+            
+            const question = quizGameState.questions[quizGameState.currentQuestion];
+            
+            // Show timeout feedback
+            const feedback = document.getElementById('quizFeedback');
+            feedback.style.display = 'block';
+            feedback.style.background = '#fff3cd';
+            feedback.style.color = '#856404';
+            feedback.innerHTML = `⏰ 時間到！正確答案是：${question.correct}`;
+            
+            // Wait 8 seconds then move to next question
+            setTimeout(() => {
+                quizGameState.currentQuestion++;
+                quizGameState.isAnswering = false;
+                selectedOption = null;
+                
+                if (quizGameState.currentQuestion >= quizGameState.totalQuestions) {
+                    levelComplete();
+                } else {
+                    showQuestion();
+                }
+            }, 8000);
+        }
+        
         // Selected option for multiple choice (before submission)
         let selectedOption = null;
         
@@ -5948,6 +6161,11 @@
             if (quizGameState.isAnswering) return;
             quizGameState.isAnswering = true;
             
+            // Clear the timer
+            if (quizGameState.questionTimer) {
+                clearInterval(quizGameState.questionTimer);
+            }
+            
             const question = quizGameState.questions[quizGameState.currentQuestion];
             const isCorrect = selectedOption === question.correct;
             
@@ -5984,6 +6202,11 @@
             
             quizGameState.isAnswering = true;
             
+            // Clear the timer
+            if (quizGameState.questionTimer) {
+                clearInterval(quizGameState.questionTimer);
+            }
+            
             const question = quizGameState.questions[quizGameState.currentQuestion];
             const userAnswer = input.value.trim().toLowerCase(); // Trim whitespace
             const isCorrect = userAnswer === question.correct;
@@ -6016,7 +6239,19 @@
             if (isCorrect) {
                 feedback.style.background = '#d4edda';
                 feedback.style.color = '#155724';
-                feedback.innerHTML = '✅ 正確！太棒了！';
+                
+                // Cantonese praise phrases
+                const praisePhrases = [
+                    '✅ 正確！好叻呀！',
+                    '✅ 啱晒！你真係好醒！',
+                    '✅ 答啱咗！勁呀！',
+                    '✅ 好棒！繼續保持！',
+                    '✅ 犀利！你識好多字呀！',
+                    '✅ 完美！真係好聰明！',
+                    '✅ 答得好！我哋一齊加油！'
+                ];
+                const randomPraise = praisePhrases[Math.floor(Math.random() * praisePhrases.length)];
+                feedback.innerHTML = randomPraise;
             } else {
                 feedback.style.background = '#f8d7da';
                 feedback.style.color = '#721c24';
@@ -6051,8 +6286,8 @@
                 localStorage.setItem('quizAdventureProgress', JSON.stringify(progress));
             }
             
-            // Award points for completing levels (any level, not just hard ones)
-            if (passed) {
+            // Award points for completing levels with perfect score (100% accuracy)
+            if (passed && correct === total) {
                 // Track daily task: level completed
                 trackDailyTask('levelsCompleted', 1);
                 
@@ -6062,14 +6297,17 @@
                 const todayPoints = dailyPoints[today] || 0;
                 
                 if (todayPoints < 2) {
-                    addPoints(1, 'game_bonus', `單詞闖關 (第${levelNum}關)`);
+                    addPoints(1, 'game_bonus', `單詞闖關 (第${levelNum}關 - 全對)`);
                     dailyPoints[today] = todayPoints + 1;
                     gameStats.dailyPoints = dailyPoints;
                     localStorage.setItem('quizAdventureStats', JSON.stringify(gameStats));
-                    console.log(`✅ Awarded 1 point for completing level ${levelNum}. Daily: ${todayPoints + 1}/2`);
+                    console.log(`✅ Awarded 1 point for PERFECT score on level ${levelNum}. Daily: ${todayPoints + 1}/2`);
                 } else {
                     console.log('⚠️ Daily quiz points limit reached (2/2)');
                 }
+            } else if (passed) {
+                // Level passed but not perfect score - no points
+                console.log(`ℹ️ Level ${levelNum} passed with ${correct}/${total} correct. Points only awarded for perfect scores.`);
             }
             
             // Show modal
