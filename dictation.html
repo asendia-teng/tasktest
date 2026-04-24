@@ -521,6 +521,15 @@
             }
         }
         
+        @keyframes special-glow {
+            0%, 100% {
+                box-shadow: 0 4px 15px rgba(255, 215, 0, 0.5);
+            }
+            50% {
+                box-shadow: 0 4px 30px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 165, 0, 0.6);
+            }
+        }
+        
         /* Game card hover effect */
         .game-card:hover {
             transform: translateY(-5px);
@@ -1544,8 +1553,7 @@
             <div id="tab-word-list" class="tab-content">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h2 style="color: #667eea; margin: 0; font-size: 1.8em; display: flex; align-items: center; gap: 10px;">
-                        📖 單詞列表
-                        <button id="showAllBtn" onclick="showAllWords()" style="display: none; padding: 8px 16px; font-size: 0.9em;">🔙 返回全部</button>
+                        <button id="showAllBtn" onclick="showAllWords()" style="display: none; padding: 5px 10px; font-size: 0.8em; border-radius: 4px;">🔙 返回</button>
                     </h2>
                     <div style="display: flex; gap: 10px; align-items: center;">
                         <!-- English Search Box -->
@@ -1564,14 +1572,37 @@
                                 🎤
                             </button>
                         </div>
-                        <button id="playListBtn" onclick="playWordList()" style="padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 8px; color: white; font-size: 1em; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);">
-                            🔊 播放列表
+                        <!-- Playback Controls -->
+                        <div style="display: flex; gap: 8px; align-items: center; background: #f8f9fa; padding: 6px 10px; border-radius: 6px; border: 1px solid #e0e0e0;">
+                            <label style="font-size: 0.8em; color: #666; white-space: nowrap;">⏱️:</label>
+                            <select id="playbackInterval" style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.85em; cursor: pointer;">
+                                <option value="5000" selected>5秒</option>
+                                <option value="10000">10秒</option>
+                                <option value="20000">20秒</option>
+                                <option value="30000">30秒</option>
+                                <option value="40000">40秒</option>
+                            </select>
+                            <label style="display: flex; align-items: center; gap: 3px; font-size: 0.8em; color: #666; cursor: pointer; white-space: nowrap;">
+                                <input type="checkbox" id="playTranslation" checked style="cursor: pointer;">
+                                翻譯
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 3px; font-size: 0.8em; color: #666; cursor: pointer; white-space: nowrap;">
+                                <input type="checkbox" id="playExamples" style="cursor: pointer;">
+                                例句
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 3px; font-size: 0.8em; color: #666; cursor: pointer; white-space: nowrap;">
+                                <input type="checkbox" id="playSpelling" style="cursor: pointer;">
+                                串读
+                            </label>
+                        </div>
+                        <button id="playListBtn" onclick="playWordList()" style="padding: 6px 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 6px; color: white; font-size: 0.9em; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3); white-space: nowrap;">
+                            🔊 播放
                         </button>
-                        <button class="calendar-btn" onclick="openCalendar()" style="margin: 0;">
+                        <button class="calendar-btn" onclick="openCalendar()" style="margin: 0; padding: 6px 12px; font-size: 0.9em;">
                             📅 日曆
                         </button>
-                        <button id="toggleDeleteBtn" onclick="toggleDeleteMode()" style="padding: 10px 20px; background: #ff6b6b; border: none; border-radius: 8px; color: white; font-size: 1em; cursor: pointer; transition: all 0.2s;">
-                            🗑️ 刪除模式
+                        <button id="toggleDeleteBtn" onclick="toggleDeleteMode()" style="padding: 6px 12px; background: #ff6b6b; border: none; border-radius: 6px; color: white; font-size: 0.9em; cursor: pointer; transition: all 0.2s; white-space: nowrap;">
+                            🗑️ 刪除
                         </button>
                     </div>
                 </div>
@@ -1654,12 +1685,17 @@
                         </div>
                     </div>
 
-                    <!-- Lottery Button -->
+                    <!-- Lottery Buttons -->
                     <div style="margin: 20px 0;">
-                        <button id="lotteryBtn" onclick="performLottery()" style="padding: 15px 30px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 25px; font-size: 1.2em; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4); transition: all 0.3s ease; opacity: 0.5; cursor: not-allowed;" disabled>
-                            🎰 暫無機會
-                        </button>
-                        <div style="font-size: 0.85em; color: #888; margin-top: 8px;">
+                        <div style="display: flex; gap: 15px; align-items: center; justify-content: center; flex-wrap: wrap;">
+                            <button id="lotteryBtn" onclick="performLottery()" style="padding: 15px 30px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 25px; font-size: 1.2em; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4); transition: all 0.3s ease; opacity: 0.5; cursor: not-allowed;" disabled>
+                                🎰 暫無機會
+                            </button>
+                            <button id="specialLotteryBtn" onclick="performSpecialLottery()" style="display: none; padding: 15px 30px; background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); color: white; border: none; border-radius: 25px; font-size: 1.2em; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.5); transition: all 0.3s ease; animation: special-glow 2s ease-in-out infinite;">
+                                ✨ 特別抽獎
+                            </button>
+                        </div>
+                        <div style="font-size: 0.85em; color: #888; margin-top: 8px; text-align: center;">
                             每提升一個等級獲得一次抽獎機會（1-20隨機積分）
                         </div>
                     </div>
@@ -1971,7 +2007,56 @@
                         onmouseout="this.style.transform='scale(1)'">
                     💾 保存
                 </button>
+                <button onclick="openSpecialLotteryConfig()" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 8px; font-size: 1em; font-weight: bold; cursor: pointer; transition: all 0.2s;"
+                        onmouseover="this.style.transform='scale(1.02)'"
+                        onmouseout="this.style.transform='scale(1)'">
+                    🎁 設置特別抽獎
+                </button>
                 <button onclick="closeAdminPanel()" style="flex: 1; padding: 12px; background: #e0e0e0; color: #666; border: none; border-radius: 8px; font-size: 1em; cursor: pointer; transition: all 0.2s;"
+                        onmouseover="this.style.background='#d0d0d0'"
+                        onmouseout="this.style.background='#e0e0e0'">
+                    ❌ 取消
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Special Lottery Configuration Modal -->
+    <div class="modal-overlay" id="specialLotteryOverlay" onclick="closeSpecialLotteryConfig()" style="display: none;"></div>
+    <div class="calendar-popup" id="specialLotteryPopup" style="display: none; max-width: 500px;">
+        <div class="calendar-popup-header">
+            <h3>🎁 設置特別抽獎</h3>
+            <button class="close-calendar-btn" onclick="closeSpecialLotteryConfig()">&times;</button>
+        </div>
+        <div style="padding: 20px;">
+            <div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%); border-radius: 8px; border-left: 4px solid #FFD700;">
+                <div style="font-size: 0.9em; color: #856404; line-height: 1.6;">
+                    💡 <strong>說明：</strong><br>
+                    • 固定積分：每次抽獎獲得設定的固定積分值<br>
+                    • 概率積分：抽獎獲得 1 到設定值之間的隨機積分
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 8px; color: #666; font-weight: bold;">獎勵類型：</label>
+                <select id="specialLotteryType" onchange="updateSpecialLotteryLabel()" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+                    <option value="fixed">🎯 固定積分</option>
+                    <option value="probability">🎲 概率積分</option>
+                </select>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label id="specialLotteryPointsLabel" style="display: block; margin-bottom: 8px; color: #666; font-weight: bold;">固定積分值：</label>
+                <input type="number" id="specialLotteryPoints" min="1" value="10" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button onclick="saveSpecialLotteryConfig()" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); color: white; border: none; border-radius: 8px; font-size: 1em; font-weight: bold; cursor: pointer; transition: all 0.2s;"
+                        onmouseover="this.style.transform='scale(1.02)'"
+                        onmouseout="this.style.transform='scale(1)'">
+                    ✅ 確認設置
+                </button>
+                <button onclick="closeSpecialLotteryConfig()" style="flex: 1; padding: 12px; background: #e0e0e0; color: #666; border: none; border-radius: 8px; font-size: 1em; cursor: pointer; transition: all 0.2s;"
                         onmouseover="this.style.background='#d0d0d0'"
                         onmouseout="this.style.background='#e0e0e0'">
                     ❌ 取消
@@ -5587,7 +5672,7 @@
                 
             } else if (type === 'read_translate') {
                 // Read English and choose Chinese
-                question.text = `📖 "${word.english}" 的中文意思是？`;
+                question.text = '📖 這個英文單詞的中文意思是？';
                 question.correct = word.chinese || word.customTranslation;
                 
                 // Generate wrong options
@@ -5598,9 +5683,11 @@
             } else if (type === 'fill_blank') {
                 // Fill in the blank (English word)
                 const blank = '_'.repeat(word.english.length);
-                question.text = `✏️ 補全單詞：${blank} (${word.chinese || word.customTranslation})`;
+                question.text = `✏️ 補全單詞：${blank}`;
+                question.hint = word.chinese || word.customTranslation; // Store Chinese hint separately
                 question.correct = word.english.toLowerCase();
                 question.answerType = 'input';
+                question.word = word; // Store full word object for audio
             }
             
             return question;
@@ -5625,7 +5712,7 @@
                 questionCard.innerHTML = `
                     <div style="text-align: center;">
                         <div style="font-size: 1.1em; color: #666; margin-bottom: 15px;">${question.text}</div>
-                        <button onclick="playQuestionAudio('${escapeJs(question.audio)}')" style="padding: 15px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 1.2em; transition: all 0.2s;"
+                        <button onclick="playQuestionAudio('${escapeJs(question.audio)}', 'en-US')" style="padding: 15px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 1.2em; transition: all 0.2s;"
                                 onmouseover="this.style.transform='scale(1.05)'"
                                 onmouseout="this.style.transform='scale(1)'">
                             🔊 播放發音
@@ -5634,14 +5721,63 @@
                 `;
                 
                 // Auto play audio
-                setTimeout(() => playQuestionAudio(question.audio), 500);
+                setTimeout(() => playQuestionAudio(question.audio, 'en-US'), 500);
                 
-            } else {
+            } else if (question.type === 'read_translate') {
+                // For read_translate, show ONLY English word with play button (no Chinese translation)
+                const englishWord = question.word.english;
                 questionCard.innerHTML = `
-                    <div style="text-align: center; font-size: 1.2em; color: #333; line-height: 1.6;">
-                        ${question.text}
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.1em; color: #666; margin-bottom: 15px;">${question.text}</div>
+                        <div style="display: inline-flex; align-items: center; gap: 10px; padding: 15px 25px; background: #f0f4ff; border-radius: 12px; border: 2px solid #667eea;">
+                            <span style="font-size: 1.8em; font-weight: bold; color: #667eea;">${englishWord}</span>
+                            <button onclick="playQuestionAudio('${escapeJs(englishWord)}', 'en-US')" style="padding: 10px 15px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1em; transition: all 0.2s;"
+                                    onmouseover="this.style.background='#5568d3'; this.style.transform='scale(1.1)'"
+                                    onmouseout="this.style.background='#667eea'; this.style.transform='scale(1)'">
+                                🔊
+                            </button>
+                        </div>
                     </div>
                 `;
+                
+            } else {
+                // For fill_blank and other types
+                if (question.answerType === 'input') {
+                    // Fill-in-blank with Chinese hint and audio buttons
+                    const chineseHint = question.hint || '';
+                    const englishWord = question.word ? question.word.english : '';
+                    
+                    questionCard.innerHTML = `
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.2em; color: #666; margin-bottom: 15px;">${question.text}</div>
+                            ${chineseHint ? `
+                                <div style="display: inline-flex; align-items: center; gap: 10px; padding: 12px 20px; background: #fff9e6; border-radius: 10px; border: 2px solid #ffc107; margin-bottom: 10px;">
+                                    <span style="font-size: 1.3em; color: #856404;">${chineseHint}</span>
+                                    <button onclick="playQuestionAudio('${escapeJs(chineseHint)}', 'zh-HK')" style="padding: 8px 12px; background: #4caf50; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1em; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#45a049'; this.style.transform='scale(1.1)'"
+                                            onmouseout="this.style.background='#4caf50'; this.style.transform='scale(1)'">
+                                        🔊 粵語
+                                    </button>
+                                </div>
+                            ` : ''}
+                            ${englishWord ? `
+                                <div style="margin-top: 10px;">
+                                    <button onclick="playQuestionAudio('${escapeJs(englishWord)}', 'en-US')" style="padding: 10px 20px; background: #f0f4ff; color: #667eea; border: 2px solid #667eea; border-radius: 8px; cursor: pointer; font-size: 0.95em; transition: all 0.2s;"
+                                            onmouseover="this.style.background='#667eea'; this.style.color='white'; this.style.transform='scale(1.05)'"
+                                            onmouseout="this.style.background='#f0f4ff'; this.style.color='#667eea'; this.style.transform='scale(1)'">
+                                        🔊 聽英文發音（提示）
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                } else {
+                    questionCard.innerHTML = `
+                        <div style="text-align: center; font-size: 1.2em; color: #333; line-height: 1.6;">
+                            ${question.text}
+                        </div>
+                    `;
+                }
             }
             
             // Show answer options
@@ -5664,9 +5800,18 @@
                 // Multiple choice
                 answerOptions.style.gridTemplateColumns = '1fr 1fr';
                 question.options.forEach((option, index) => {
+                    const optionContainer = document.createElement('div');
+                    optionContainer.style.cssText = `
+                        display: flex;
+                        gap: 8px;
+                        align-items: center;
+                    `;
+                    
                     const btn = document.createElement('button');
                     btn.textContent = option;
+                    btn.dataset.option = option; // Store option in data attribute
                     btn.style.cssText = `
+                        flex: 1;
                         padding: 15px;
                         background: white;
                         border: 2px solid #e0e7ff;
@@ -5677,26 +5822,125 @@
                         color: #333;
                     `;
                     btn.onmouseenter = () => {
-                        if (!quizGameState.isAnswering) {
+                        if (!quizGameState.isAnswering && btn.dataset.selected !== 'true') {
                             btn.style.background = '#f0f4ff';
                             btn.style.borderColor = '#667eea';
                         }
                     };
                     btn.onmouseleave = () => {
-                        if (!quizGameState.isAnswering) {
+                        if (!quizGameState.isAnswering && btn.dataset.selected !== 'true') {
                             btn.style.background = 'white';
                             btn.style.borderColor = '#e0e7ff';
                         }
                     };
-                    btn.onclick = () => checkMultipleChoiceAnswer(option);
-                    answerOptions.appendChild(btn);
+                    btn.onclick = () => selectMultipleChoiceOption(option, btn);
+                    
+                    // Add audio button for each option
+                    const audioBtn = document.createElement('button');
+                    audioBtn.innerHTML = '🔊';
+                    audioBtn.style.cssText = `
+                        padding: 10px;
+                        background: #f0f4ff;
+                        border: 2px solid #667eea;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-size: 1em;
+                        transition: all 0.2s;
+                        min-width: 40px;
+                    `;
+                    audioBtn.onmouseenter = () => audioBtn.style.background = '#e0e7ff';
+                    audioBtn.onmouseleave = () => audioBtn.style.background = '#f0f4ff';
+                    
+                    // Determine language based on option content
+                    const isChinese = /[\u4e00-\u9fa5]/.test(option);
+                    const lang = isChinese ? 'zh-HK' : 'en-US';
+                    audioBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        playQuestionAudio(option, lang);
+                    };
+                    
+                    optionContainer.appendChild(btn);
+                    optionContainer.appendChild(audioBtn);
+                    answerOptions.appendChild(optionContainer);
                 });
             }
         }
         
         // Play question audio
-        function playQuestionAudio(text) {
-            speakEnglish(text);
+        function playQuestionAudio(text, lang = 'en-US') {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang;
+            utterance.rate = globalSpeechRate;
+            speechSynthesis.speak(utterance);
+        }
+        
+        // Selected option for multiple choice (before submission)
+        let selectedOption = null;
+        
+        // Select multiple choice option (without submitting)
+        function selectMultipleChoiceOption(option, selectedBtn) {
+            if (quizGameState.isAnswering) return;
+            
+            selectedOption = option;
+            
+            // Reset all buttons
+            const buttons = document.querySelectorAll('#answerOptions > div > button:first-child');
+            buttons.forEach(btn => {
+                btn.dataset.selected = 'false';
+                btn.style.background = 'white';
+                btn.style.color = '#333';
+                btn.style.borderColor = '#e0e7ff';
+            });
+            
+            // Highlight selected button
+            if (selectedBtn) {
+                selectedBtn.dataset.selected = 'true';
+                selectedBtn.style.background = '#667eea';
+                selectedBtn.style.color = 'white';
+                selectedBtn.style.borderColor = '#667eea';
+            }
+            
+            // Show submit button
+            showSubmitButton();
+        }
+        
+        // Show submit button
+        function showSubmitButton() {
+            const answerOptions = document.getElementById('answerOptions');
+            let submitBtn = document.getElementById('quizSubmitBtn');
+            
+            if (!submitBtn) {
+                submitBtn = document.createElement('button');
+                submitBtn.id = 'quizSubmitBtn';
+                submitBtn.textContent = '提交答案';
+                submitBtn.style.cssText = `
+                    grid-column: 1 / -1;
+                    padding: 12px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 1em;
+                    font-weight: bold;
+                    margin-top: 10px;
+                    transition: all 0.2s;
+                `;
+                submitBtn.onmouseover = () => submitBtn.style.transform = 'scale(1.02)';
+                submitBtn.onmouseout = () => submitBtn.style.transform = 'scale(1)';
+                submitBtn.onclick = () => submitMultipleChoiceAnswer();
+                answerOptions.appendChild(submitBtn);
+            }
+        }
+        
+        // Submit multiple choice answer
+        function submitMultipleChoiceAnswer() {
+            if (!selectedOption || quizGameState.isAnswering) {
+                showToast('❌ 請先選擇一個答案', 2000);
+                return;
+            }
+            
+            checkMultipleChoiceAnswer(selectedOption);
         }
         
         // Check multiple choice answer
@@ -5713,17 +5957,19 @@
                 quizGameState.correctAnswers++;
             }
             
-            // Next question after delay
+            // Next question after delay (8 seconds for wrong answers, 2 seconds for correct)
+            const delay = isCorrect ? 2000 : 8000;
             setTimeout(() => {
                 quizGameState.currentQuestion++;
                 quizGameState.isAnswering = false;
+                selectedOption = null; // Reset selected option
                 
                 if (quizGameState.currentQuestion >= quizGameState.totalQuestions) {
                     levelComplete();
                 } else {
                     showQuestion();
                 }
-            }, 2000);
+            }, delay);
         }
         
         // Check fill blank answer
@@ -5739,7 +5985,7 @@
             quizGameState.isAnswering = true;
             
             const question = quizGameState.questions[quizGameState.currentQuestion];
-            const userAnswer = input.value.trim().toLowerCase();
+            const userAnswer = input.value.trim().toLowerCase(); // Trim whitespace
             const isCorrect = userAnswer === question.correct;
             
             showFeedback(isCorrect, question.correct);
@@ -5748,7 +5994,8 @@
                 quizGameState.correctAnswers++;
             }
             
-            // Next question after delay
+            // Next question after delay (8 seconds for wrong answers, 2 seconds for correct)
+            const delay = isCorrect ? 2000 : 8000;
             setTimeout(() => {
                 quizGameState.currentQuestion++;
                 quizGameState.isAnswering = false;
@@ -5758,7 +6005,7 @@
                 } else {
                     showQuestion();
                 }
-            }, 2000);
+            }, delay);
         }
         
         // Show feedback
@@ -6297,6 +6544,128 @@
             updateLotteryButton();
         }
         
+        // Special Lottery functions
+        function openSpecialLotteryConfig() {
+            closeAdminPanel();
+            
+            const popup = document.getElementById('specialLotteryPopup');
+            const overlay = document.getElementById('specialLotteryOverlay');
+            
+            // Load existing configuration if available
+            const specialLotteryConfig = JSON.parse(localStorage.getItem('specialLotteryConfig') || '{}');
+            if (specialLotteryConfig.type) {
+                document.getElementById('specialLotteryType').value = specialLotteryConfig.type;
+                document.getElementById('specialLotteryPoints').value = specialLotteryConfig.points || 10;
+                updateSpecialLotteryLabel();
+            }
+            
+            // Show popup
+            popup.style.display = 'block';
+            overlay.style.display = 'block';
+            setTimeout(() => {
+                popup.classList.add('active');
+                overlay.classList.add('active');
+            }, 10);
+        }
+        
+        function closeSpecialLotteryConfig() {
+            const popup = document.getElementById('specialLotteryPopup');
+            const overlay = document.getElementById('specialLotteryOverlay');
+            popup.classList.remove('active');
+            overlay.classList.remove('active');
+            setTimeout(() => {
+                popup.style.display = 'none';
+                overlay.style.display = 'none';
+            }, 300);
+        }
+        
+        function updateSpecialLotteryLabel() {
+            const type = document.getElementById('specialLotteryType').value;
+            const label = document.getElementById('specialLotteryPointsLabel');
+            
+            if (type === 'fixed') {
+                label.textContent = '固定積分值：';
+            } else {
+                label.textContent = '最大積分值：';
+            }
+        }
+        
+        function saveSpecialLotteryConfig() {
+            const type = document.getElementById('specialLotteryType').value;
+            const points = parseInt(document.getElementById('specialLotteryPoints').value);
+            
+            if (!points || points <= 0) {
+                showToast('❌ 請輸入有效的積分數量', 2000);
+                return;
+            }
+            
+            // Save configuration
+            const config = {
+                type: type,
+                points: points,
+                timestamp: new Date().toISOString()
+            };
+            localStorage.setItem('specialLotteryConfig', JSON.stringify(config));
+            
+            // Show special lottery button
+            showSpecialLotteryButton();
+            
+            showToast('✅ 特別抽獎設置完成！', 2000);
+            closeSpecialLotteryConfig();
+        }
+        
+        function showSpecialLotteryButton() {
+            const specialBtn = document.getElementById('specialLotteryBtn');
+            if (specialBtn) {
+                specialBtn.style.display = 'inline-block';
+            }
+        }
+        
+        function performSpecialLottery() {
+            const config = JSON.parse(localStorage.getItem('specialLotteryConfig') || '{}');
+            if (!config || !config.type || !config.points) {
+                showToast('❌ 沒有有效的特別抽獎設置', 2000);
+                return;
+            }
+            
+            let earnedPoints = 0;
+            if (config.type === 'fixed') {
+                earnedPoints = config.points;
+            } else if (config.type === 'probability') {
+                earnedPoints = Math.floor(Math.random() * config.points) + 1;
+            }
+            
+            addPoints(earnedPoints, 'special_lottery');
+            
+            // Remove special lottery button after use
+            hideSpecialLotteryButton();
+            
+            // Clear the special lottery config so it doesn't reappear
+            localStorage.removeItem('specialLotteryConfig');
+            
+            // Show celebration
+            showToast(`✨ 恭喜！獲得 ${earnedPoints} 積分！`, 3000);
+            
+            // Confetti effect
+            createConfetti();
+        }
+        
+        function hideSpecialLotteryButton() {
+            const specialBtn = document.getElementById('specialLotteryBtn');
+            if (specialBtn) {
+                specialBtn.style.display = 'none';
+            }
+        }
+        
+        // Check for special lottery on page load
+        function checkSpecialLotteryOnLoad() {
+            const config = JSON.parse(localStorage.getItem('specialLotteryConfig') || '{}');
+            if (config && config.type && config.points) {
+                // Show the button if there's an active special lottery config
+                setTimeout(showSpecialLotteryButton, 500);
+            }
+        }
+        
         // Create simple confetti effect
         function createConfetti() {
             const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
@@ -6708,6 +7077,9 @@
             
             // Load points and lottery state
             loadLotteryState();
+            
+            // Check for special lottery configuration
+            checkSpecialLotteryOnLoad();
             
             // Check daily task on page load
             checkDailyTaskOnLogin();
@@ -8145,11 +8517,151 @@
         let currentWordListFilter = null;  // null = show all, date string = filtered
         
         // Render word list
+        // Render a single word item HTML
+        function renderWordItem(word) {
+            let html = '<div class="word-item">';
+            
+            if (word.english) {
+                const exampleContainerId = `example-container-${word.id}`;
+                const toggleBtnId = `toggle-btn-${word.id}`;
+                
+                html += `
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                        <div class="english" onclick="speakEnglish('${escapeJs(word.english)}')" style="flex: 1; cursor: pointer;">
+                            <span class="speaker-icon">🔊</span>
+                            <span>${escapeHtml(word.english)}</span>
+                        </div>
+                        <button type="button" id="${toggleBtnId}" 
+                                onclick="event.stopPropagation(); toggleWordExamples('${exampleContainerId}', '${toggleBtnId}', '${escapeJs(word.english)}')" 
+                                style="padding: 6px 12px; background: #f0f4ff; border: none; border-radius: 4px; cursor: pointer; color: #667eea; font-size: 0.85em;">
+                            📖 查看例句
+                        </button>
+                    </div>
+                    <div id="${exampleContainerId}" style="display: none; margin-top: 10px;"></div>
+                `;
+            } else {
+                // No English word, just add empty div for alignment
+                html += `<div style="margin-bottom: 5px;"></div>`;
+            }
+            
+            // Display translation if available (either customTranslation or chinese)
+            const displayText = word.customTranslation || word.chinese;
+            if (displayText) {
+                const showStrokeOrder = !word.english && word.chinese;
+                const chineseId = `chinese-${word.id}`;
+                const containerId = `stroke-${word.id}`;
+                
+                console.log(`Word ${word.id}: english="${word.english}", displayText="${displayText}", showStrokeOrder=${showStrokeOrder}`);
+                
+                html += `
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px;">
+                        <div class="chinese" style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                            <span style="cursor: pointer; font-size: 1.2em;" onclick="speakCantonese('${escapeJs(displayText)}'); event.stopPropagation();">🔊</span>
+                            <span style="cursor: pointer;" onclick="speakCantonese('${escapeJs(displayText)}'); event.stopPropagation();">${escapeHtml(displayText)}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+                            <div class="date" 
+                                 style="margin: 0; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all 0.2s; background: #fff3cd;" 
+                                 onclick="console.log('🔴 Date clicked:', '${word.date}'); filterByDate('${word.date}'); event.stopPropagation();"
+                                 onmouseenter="this.style.background='#ffeaa7'"
+                                 onmouseleave="this.style.background='#fff3cd'"
+                                 title="點擊查看 ${formatDate(word.date)} 添加的所有單詞">
+                                📅 ${formatDate(word.date)}
+                            </div>
+                            ${deleteMode ? `<button class="delete-btn" onclick="event.stopPropagation(); deleteWord(${word.id})">刪除</button>` : ''}
+                        </div>
+                    </div>
+                `;
+                
+                if (showStrokeOrder) {
+                    const hasChineseExamples = word.chineseExamples && word.chineseExamples.length > 0;
+                    html += `
+                        <div style="display: flex; gap: 8px; margin-top: 8px;">
+                            <button type="button" 
+                                    onclick="showAndPlayStrokeOrder('${containerId}', '${chineseId}', '${escapeJs(word.chinese.charAt(0))}')" 
+                                    style="padding: 6px 12px; background: #f0f4ff; border: none; border-radius: 4px; cursor: pointer; color: #667eea; font-size: 0.85em; display: flex; align-items: center; gap: 5px;">
+                                📝 筆順
+                            </button>
+                            <button type="button" 
+                                    onclick="editChineseSentence(${word.id})" 
+                                    style="padding: 6px 12px; background: #e8f5e9; border: none; border-radius: 4px; cursor: pointer; color: #4caf50; font-size: 0.85em; display: flex; align-items: center; gap: 5px;">
+                                ✏️ 編輯例句${hasChineseExamples ? ` (${word.chineseExamples.length})` : ''}
+                            </button>
+                        </div>
+                    `;
+                    
+                    // Display Chinese examples if any
+                    if (hasChineseExamples) {
+                        html += `
+                            <div style="margin-top: 10px; padding: 10px; background: #f9f9f9; border-radius: 6px; border-left: 3px solid #4caf50;">
+                                <div style="font-size: 0.85em; color: #666; margin-bottom: 6px; font-weight: bold;">📝 造句：</div>
+                                <ul style="margin: 0; padding-left: 20px; list-style-type: disc;">
+                                    ${word.chineseExamples.map(ex => `
+                                        <li style="margin-bottom: 4px; color: #333; line-height: 1.5; cursor: pointer;" onclick="speakCantonese('${escapeJs(ex)}')">
+                                            ${escapeHtml(ex)}
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                        `;
+                    }
+                    
+                    html += `
+                        <div id="${containerId}" class="stroke-order-container" style="display: none;">
+                            <div class="stroke-order-title">筆畫順序：</div>
+                            <div id="${chineseId}" class="hanzi-writer-target"></div>
+                            <div id="${containerId}-loading" class="stroke-loading">正在加載筆畫數據...</div>
+                        </div>
+                    `;
+                } else {
+                    // For words without stroke order, still show edit button if there are examples
+                    const hasChineseExamples = word.chineseExamples && word.chineseExamples.length > 0;
+                    if (hasChineseExamples) {
+                        html += `
+                            <button type="button" 
+                                    onclick="editChineseSentence(${word.id})" 
+                                    style="margin-top: 8px; padding: 6px 12px; background: #e8f5e9; border: none; border-radius: 4px; cursor: pointer; color: #4caf50; font-size: 0.85em; display: flex; align-items: center; gap: 5px;">
+                                ✏️ 編輯例句 (${word.chineseExamples.length})
+                            </button>
+                        `;
+                    }
+                }
+            }
+            
+            html += `</div>`;
+            return html;
+        }
+        
+        // Display a list of words with optional search term for empty state message
+        function displayWordList(wordsToDisplay, searchTerm = '') {
+            const wordListEl = document.getElementById('wordList');
+            
+            if (wordsToDisplay.length === 0) {
+                const message = searchTerm 
+                    ? `<div class="empty-state"><p>沒有找到包含 "${escapeHtml(searchTerm)}" 的單詞</p></div>`
+                    : '<div class="empty-state"><p>暫無單詞</p></div>';
+                wordListEl.innerHTML = message;
+                return;
+            }
+            
+            wordListEl.innerHTML = wordsToDisplay.map(word => renderWordItem(word)).join('');
+            
+            // Initialize HanziWriter after DOM is fully rendered
+            setTimeout(() => {
+                wordsToDisplay.forEach(word => {
+                    if (!word.english && word.chinese) {
+                        const chineseId = `chinese-${word.id}`;
+                        const containerId = `stroke-${word.id}`;
+                        console.log(`Initializing HanziWriter for ${word.chinese.charAt(0)} (element: ${chineseId})`);
+                        initHanziWriter(chineseId, word.chinese.charAt(0), containerId);
+                    }
+                });
+            }, 300);
+        }
+        
         function renderWordList(filterDate = null) {
             // Save the current filter state
             currentWordListFilter = filterDate;
-            
-            const wordListEl = document.getElementById('wordList');
             
             let filteredWords = words;
             if (filterDate) {
@@ -8159,137 +8671,7 @@
             // Sort by date (newest first)
             filteredWords.sort((a, b) => new Date(b.date) - new Date(a.date));
             
-            if (filteredWords.length === 0) {
-                wordListEl.innerHTML = '<div class="empty-state"><p>暫無單詞</p></div>';
-                return;
-            }
-            
-            wordListEl.innerHTML = filteredWords.map((word, index) => {
-                let html = '<div class="word-item">';
-                
-                if (word.english) {
-                    const exampleContainerId = `example-container-${word.id}`;
-                    const toggleBtnId = `toggle-btn-${word.id}`;
-                    
-                    html += `
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                            <div class="english" onclick="speakEnglish('${escapeJs(word.english)}')" style="flex: 1; cursor: pointer;">
-                                <span class="speaker-icon">🔊</span>
-                                <span>${escapeHtml(word.english)}</span>
-                            </div>
-                            <button type="button" id="${toggleBtnId}" 
-                                    onclick="event.stopPropagation(); toggleWordExamples('${exampleContainerId}', '${toggleBtnId}', '${escapeJs(word.english)}')" 
-                                    style="padding: 6px 12px; background: #f0f4ff; border: none; border-radius: 4px; cursor: pointer; color: #667eea; font-size: 0.85em;">
-                                📖 查看例句
-                            </button>
-                        </div>
-                        <div id="${exampleContainerId}" style="display: none; margin-top: 10px;"></div>
-                    `;
-                } else {
-                    // No English word, just add empty div for alignment
-                    html += `<div style="margin-bottom: 5px;"></div>`;
-                }
-                
-                // Display translation if available (either customTranslation or chinese)
-                const displayText = word.customTranslation || word.chinese;
-                if (displayText) {
-                    const showStrokeOrder = !word.english && word.chinese;
-                    const chineseId = `chinese-${word.id}`;
-                    const containerId = `stroke-${word.id}`;
-                    
-                    console.log(`Word ${word.id}: english="${word.english}", displayText="${displayText}", showStrokeOrder=${showStrokeOrder}`);
-                    
-                    html += `
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px;">
-                            <div class="chinese" style="display: flex; align-items: center; gap: 8px; flex: 1;">
-                                <span style="cursor: pointer; font-size: 1.2em;" onclick="speakCantonese('${escapeJs(displayText)}'); event.stopPropagation();">🔊</span>
-                                <span style="cursor: pointer;" onclick="speakCantonese('${escapeJs(displayText)}'); event.stopPropagation();">${escapeHtml(displayText)}</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-                                <div class="date" 
-                                     style="margin: 0; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all 0.2s; background: #fff3cd;" 
-                                     onclick="console.log('🔴 Date clicked:', '${word.date}'); filterByDate('${word.date}'); event.stopPropagation();"
-                                     onmouseenter="this.style.background='#ffeaa7'"
-                                     onmouseleave="this.style.background='#fff3cd'"
-                                     title="點擊查看 ${formatDate(word.date)} 添加的所有單詞">
-                                    📅 ${formatDate(word.date)}
-                                </div>
-                                ${deleteMode ? `<button class="delete-btn" onclick="event.stopPropagation(); deleteWord(${word.id})">刪除</button>` : ''}
-                            </div>
-                        </div>
-                    `;
-                    
-                    if (showStrokeOrder) {
-                        const hasChineseExamples = word.chineseExamples && word.chineseExamples.length > 0;
-                        html += `
-                            <div style="display: flex; gap: 8px; margin-top: 8px;">
-                                <button type="button" 
-                                        onclick="showAndPlayStrokeOrder('${containerId}', '${chineseId}', '${escapeJs(word.chinese.charAt(0))}')" 
-                                        style="padding: 6px 12px; background: #f0f4ff; border: none; border-radius: 4px; cursor: pointer; color: #667eea; font-size: 0.85em; display: flex; align-items: center; gap: 5px;">
-                                    📝 筆順
-                                </button>
-                                <button type="button" 
-                                        onclick="editChineseSentence(${word.id})" 
-                                        style="padding: 6px 12px; background: #e8f5e9; border: none; border-radius: 4px; cursor: pointer; color: #4caf50; font-size: 0.85em; display: flex; align-items: center; gap: 5px;">
-                                    ✏️ 編輯例句${hasChineseExamples ? ` (${word.chineseExamples.length})` : ''}
-                                </button>
-                            </div>
-                        `;
-                        
-                        // Display Chinese examples if any
-                        if (hasChineseExamples) {
-                            html += `
-                                <div style="margin-top: 10px; padding: 10px; background: #f9f9f9; border-radius: 6px; border-left: 3px solid #4caf50;">
-                                    <div style="font-size: 0.85em; color: #666; margin-bottom: 6px; font-weight: bold;">📝 造句：</div>
-                                    <ul style="margin: 0; padding-left: 20px; list-style-type: disc;">
-                                        ${word.chineseExamples.map(ex => `
-                                            <li style="margin-bottom: 4px; color: #333; line-height: 1.5; cursor: pointer;" onclick="speakCantonese('${escapeJs(ex)}')">
-                                                ${escapeHtml(ex)}
-                                            </li>
-                                        `).join('')}
-                                    </ul>
-                                </div>
-                            `;
-                        }
-                        
-                        html += `
-                            <div id="${containerId}" class="stroke-order-container" style="display: none;">
-                                <div class="stroke-order-title">筆畫順序：</div>
-                                <div id="${chineseId}" class="hanzi-writer-target"></div>
-                                <div id="${containerId}-loading" class="stroke-loading">正在加載筆畫數據...</div>
-                            </div>
-                        `;
-                    } else {
-                        // For words without stroke order, still show edit button if there are examples
-                        const hasChineseExamples = word.chineseExamples && word.chineseExamples.length > 0;
-                        if (hasChineseExamples) {
-                            html += `
-                                <button type="button" 
-                                        onclick="editChineseSentence(${word.id})" 
-                                        style="margin-top: 8px; padding: 6px 12px; background: #e8f5e9; border: none; border-radius: 4px; cursor: pointer; color: #4caf50; font-size: 0.85em; display: flex; align-items: center; gap: 5px;">
-                                    ✏️ 編輯例句 (${word.chineseExamples.length})
-                                </button>
-                            `;
-                        }
-                    }
-                }
-                
-                html += `</div>`;
-                
-                return html;
-            }).join('');
-            
-            // Initialize HanziWriter after DOM is fully rendered
-            setTimeout(() => {
-                filteredWords.forEach(word => {
-                    if (!word.english && word.chinese) {
-                        const chineseId = `chinese-${word.id}`;
-                        const containerId = `stroke-${word.id}`;
-                        console.log(`Initializing HanziWriter for ${word.chinese.charAt(0)} (element: ${chineseId})`);
-                        initHanziWriter(chineseId, word.chinese.charAt(0), containerId);
-                    }
-                });
-            }, 300);
+            displayWordList(filteredWords);
         }
 
         // Initialize calendar
@@ -9252,13 +9634,30 @@
             const currentIndex = wordListPlaybackIndex + 1;
             const total = wordListPlaybackWords.length;
             
+            // Get playback settings
+            const intervalSelect = document.getElementById('playbackInterval');
+            const playTranslationCheckbox = document.getElementById('playTranslation');
+            const playExamplesCheckbox = document.getElementById('playExamples');
+            const playSpellingCheckbox = document.getElementById('playSpelling');
+            
+            const pauseInterval = intervalSelect ? parseInt(intervalSelect.value) : 5000;
+            const shouldPlayTranslation = playTranslationCheckbox ? playTranslationCheckbox.checked : true;
+            const shouldPlayExamples = playExamplesCheckbox ? playExamplesCheckbox.checked : false;
+            const shouldSpellWord = playSpellingCheckbox ? playSpellingCheckbox.checked : false;
+            
             // Get the Chinese text (prefer customTranslation, fallback to chinese)
             const chineseText = word.customTranslation || word.chinese;
             
             console.log(`🔊 Playing word ${currentIndex}/${total}:`, {
                 english: word.english,
                 chinese: chineseText,
-                hasCustomTranslation: !!word.customTranslation
+                hasCustomTranslation: !!word.customTranslation,
+                customExamplesCount: word.customExamples?.length || 0,
+                apiExamplesCount: word.examples?.length || 0,
+                pauseInterval: pauseInterval,
+                playTranslation: shouldPlayTranslation,
+                playExamples: shouldPlayExamples,
+                spellWord: shouldSpellWord
             });
             
             // Show toast with current progress
@@ -9268,18 +9667,76 @@
             // Build utterance queue
             const utterances = [];
             
+            // Add English word
             if (word.english) {
                 const enUtterance = new SpeechSynthesisUtterance(word.english);
                 enUtterance.lang = 'en-US';
                 enUtterance.rate = globalSpeechRate;
                 utterances.push({ text: word.english, utterance: enUtterance, lang: 'English' });
+                
+                // Add spelling if enabled
+                if (shouldSpellWord) {
+                    const letters = word.english.toUpperCase().split('').join(' ');
+                    const spellUtterance = new SpeechSynthesisUtterance(letters);
+                    spellUtterance.lang = 'en-US';
+                    spellUtterance.rate = globalSpeechRate * 0.8; // Slightly slower for clarity
+                    utterances.push({ 
+                        text: letters, 
+                        utterance: spellUtterance, 
+                        lang: 'Spelling' 
+                    });
+                    
+                    // Play the word again after spelling for reinforcement
+                    const repeatUtterance = new SpeechSynthesisUtterance(word.english);
+                    repeatUtterance.lang = 'en-US';
+                    repeatUtterance.rate = globalSpeechRate;
+                    utterances.push({ 
+                        text: word.english, 
+                        utterance: repeatUtterance, 
+                        lang: 'English (repeat)' 
+                    });
+                }
             }
             
-            if (chineseText) {
+            // Add Chinese translation if enabled
+            if (shouldPlayTranslation && chineseText) {
                 const zhUtterance = new SpeechSynthesisUtterance(chineseText);
                 zhUtterance.lang = 'zh-HK';
                 zhUtterance.rate = globalSpeechRate;
                 utterances.push({ text: chineseText, utterance: zhUtterance, lang: 'Cantonese' });
+            }
+            
+            // Add example sentences if enabled and available
+            if (shouldPlayExamples && word.customExamples && word.customExamples.length > 0) {
+                console.log(`  📝 Adding ${word.customExamples.length} custom example(s) for playback`);
+                word.customExamples.forEach((example, idx) => {
+                    if (example.en) {
+                        const exUtterance = new SpeechSynthesisUtterance(example.en);
+                        exUtterance.lang = 'en-US';
+                        exUtterance.rate = globalSpeechRate;
+                        utterances.push({ 
+                            text: example.en, 
+                            utterance: exUtterance, 
+                            lang: `Example ${idx + 1}` 
+                        });
+                    }
+                });
+            } else if (shouldPlayExamples && word.examples && word.examples.length > 0) {
+                // Fallback to API examples if no custom examples
+                console.log(`  📝 Adding ${word.examples.length} API example(s) for playback`);
+                word.examples.forEach((example, idx) => {
+                    const sentenceText = typeof example === 'string' ? example : (example.sentence || example.en || '');
+                    if (sentenceText) {
+                        const exUtterance = new SpeechSynthesisUtterance(sentenceText);
+                        exUtterance.lang = 'en-US';
+                        exUtterance.rate = globalSpeechRate;
+                        utterances.push({ 
+                            text: sentenceText, 
+                            utterance: exUtterance, 
+                            lang: `Example ${idx + 1}` 
+                        });
+                    }
+                });
             }
             
             if (utterances.length === 0) {
@@ -9287,7 +9744,7 @@
                 setTimeout(() => {
                     wordListPlaybackIndex++;
                     playNextWordInList();
-                }, 500);
+                }, pauseInterval);
                 return;
             }
             
@@ -9302,7 +9759,7 @@
                     setTimeout(() => {
                         wordListPlaybackIndex++;
                         playNextWordInList();
-                    }, 1000); // 1 second pause between words
+                    }, pauseInterval); // Use configured pause interval between words
                     return;
                 }
                 
@@ -9312,7 +9769,7 @@
                 item.utterance.onend = () => {
                     console.log(`  ✓ Finished ${item.lang}`);
                     currentUtteranceIndex++;
-                    // Small pause between languages
+                    // Small pause between languages/examples
                     setTimeout(playCurrentUtterance, 500);
                 };
                 
@@ -9336,16 +9793,22 @@
         
         // Filter words by English search term
         function filterWordsByEnglish(searchTerm) {
-            englishSearchTerm = searchTerm.trim().toLowerCase();
-            const currentFilterDate = currentWordListFilter || null;
-            renderWordListWithFilters(currentFilterDate, englishSearchTerm);
+            const trimmedSearchTerm = searchTerm.trim().toLowerCase();
+            englishSearchTerm = trimmedSearchTerm;
+            
+            // If search is empty and there's an active date filter, restore the date-filtered view
+            if (!trimmedSearchTerm && currentWordListFilter) {
+                renderWordListWithFilters(currentWordListFilter, '');
+            } else {
+                // When searching (or clearing with no date filter), always search from ALL words
+                renderWordListWithFilters(null, trimmedSearchTerm);
+            }
         }
         
         // Render word list with both date and search filters
         function renderWordListWithFilters(filterDate = null, searchTerm = '') {
             console.log('🔍 renderWordListWithFilters called:', { filterDate, searchTerm });
             
-            const wordListEl = document.getElementById('wordList');
             let filteredWords = words;
             
             console.log('📊 Before filtering - total words:', filteredWords.length);
@@ -9372,56 +9835,8 @@
             
             filteredWords.sort((a, b) => new Date(b.date) - new Date(a.date));
             
-            if (filteredWords.length === 0) {
-                const message = searchTerm 
-                    ? `<div class="empty-state"><p>沒有找到包含 "${escapeHtml(searchTerm)}" 的單詞</p></div>`
-                    : '<div class="empty-state"><p>暫無單詞</p></div>';
-                wordListEl.innerHTML = message;
-                return;
-            }
-            
-            wordListEl.innerHTML = filteredWords.map(word => {
-                let html = '<div class="word-item">';
-                
-                if (word.english) {
-                    html += `
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                            <div class="english" onclick="speakEnglish('${escapeJs(word.english)}')" style="flex: 1; cursor: pointer;">
-                                <span class="speaker-icon">🔊</span>
-                                <span>${escapeHtml(word.english)}</span>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    html += `<div style="margin-bottom: 5px;"></div>`;
-                }
-                
-                const displayText = word.customTranslation || word.chinese;
-                if (displayText) {
-                    html += `
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px;">
-                            <div class="chinese" style="display: flex; align-items: center; gap: 8px; flex: 1;">
-                                <span style="cursor: pointer; font-size: 1.2em;" onclick="speakCantonese('${escapeJs(displayText)}'); event.stopPropagation();">🔊</span>
-                                <span style="cursor: pointer;" onclick="speakCantonese('${escapeJs(displayText)}'); event.stopPropagation();">${escapeHtml(displayText)}</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-                                <div class="date" 
-                                     style="margin: 0; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: all 0.2s; background: #fff3cd;" 
-                                     onclick="console.log('🔴 Date clicked:', '${word.date}'); filterByDate('${word.date}'); event.stopPropagation();"
-                                     onmouseenter="this.style.background='#ffeaa7'"
-                                     onmouseleave="this.style.background='#fff3cd'"
-                                     title="點擊查看 ${formatDate(word.date)} 添加的所有單詞">
-                                    📅 ${formatDate(word.date)}
-                                </div>
-                                ${deleteMode ? `<button class="delete-btn" onclick="event.stopPropagation(); deleteWord(${word.id})">刪除</button>` : ''}
-                            </div>
-                        </div>
-                    `;
-                }
-                
-                html += '</div>';
-                return html;
-            }).join('');
+            // Use the shared display function
+            displayWordList(filteredWords, searchTerm);
         }
         
         // English voice input for search
