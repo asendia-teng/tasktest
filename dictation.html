@@ -1068,6 +1068,68 @@
             font-size: 1.2em;
         }
 
+        /* Tablet and mobile optimizations for word list toolbar */
+        @media (max-width: 768px) {
+            /* Make toolbar wrap on tablets */
+            #tab-word-list > div > div[style*="display: flex"][style*="gap: 10px"] {
+                flex-wrap: wrap !important;
+                justify-content: center !important;
+            }
+            
+            /* Compact search box */
+            #englishSearchInput {
+                width: 150px !important;
+                font-size: 0.9em !important;
+                padding: 8px 35px 8px 10px !important;
+            }
+            
+            /* Smaller playback controls */
+            #tab-word-list > div > div[style*="gap: 8px"][style*="background: #f8f9fa"] {
+                padding: 4px 8px !important;
+            }
+            
+            #playbackInterval {
+                font-size: 0.8em !important;
+                padding: 3px 6px !important;
+            }
+            
+            /* Compact action buttons group */
+            #tab-word-list > div > div[style*="Action Buttons Group"] {
+                padding: 3px 6px !important;
+            }
+            
+            /* Reduce gap between items */
+            #tab-word-list > div > div[style*="gap: 10px"] {
+                gap: 6px !important;
+            }
+        }
+        
+        /* Small mobile optimization */
+        @media (max-width: 480px) {
+            /* Stack toolbar vertically on small screens */
+            #tab-word-list > div > div[style*="display: flex"][style*="gap: 10px"] {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+            
+            /* Full width search box */
+            #englishSearchInput {
+                width: 100% !important;
+            }
+            
+            /* Center playback controls */
+            #tab-word-list > div > div[style*="gap: 8px"][style*="background: #f8f9fa"] {
+                justify-content: center !important;
+                flex-wrap: wrap !important;
+            }
+            
+            /* Keep action buttons in one row, but allow wrapping if needed */
+            #tab-word-list > div > div[style*="Action Buttons Group"] {
+                flex-wrap: wrap !important;
+                justify-content: center !important;
+            }
+        }
+
         #calendar {
             background: white;
             border-radius: 10px;
@@ -1595,15 +1657,18 @@
                                 串读
                             </label>
                         </div>
-                        <button id="playListBtn" onclick="playWordList()" style="padding: 6px 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 6px; color: white; font-size: 0.9em; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3); white-space: nowrap;">
-                            🔊 播放
-                        </button>
-                        <button class="calendar-btn" onclick="openCalendar()" style="margin: 0; padding: 6px 12px; font-size: 0.9em;">
-                            📅 日曆
-                        </button>
-                        <button id="toggleDeleteBtn" onclick="toggleDeleteMode()" style="padding: 6px 12px; background: #ff6b6b; border: none; border-radius: 6px; color: white; font-size: 0.9em; cursor: pointer; transition: all 0.2s; white-space: nowrap;">
-                            🗑️ 刪除
-                        </button>
+                        <!-- Action Buttons Group -->
+                        <div style="display: flex; gap: 6px; align-items: center; background: #f8f9fa; padding: 4px 8px; border-radius: 6px; border: 1px solid #e0e0e0;">
+                            <button id="playListBtn" onclick="playWordList()" style="padding: 5px 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 6px; color: white; font-size: 0.85em; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3); white-space: nowrap;">
+                                🔊 播放
+                            </button>
+                            <button class="calendar-btn" onclick="openCalendar()" style="margin: 0; padding: 5px 10px; font-size: 0.85em; border-radius: 6px;">
+                                📅 日曆
+                            </button>
+                            <button id="toggleDeleteBtn" onclick="toggleDeleteMode()" style="padding: 5px 10px; background: #ff6b6b; border: none; border-radius: 6px; color: white; font-size: 0.85em; cursor: pointer; transition: all 0.2s; white-space: nowrap;">
+                                🗑️ 刪除
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="word-list" id="wordList">
@@ -9917,7 +9982,7 @@
                     const letters = word.english.toUpperCase().split('').join(' ');
                     const spellUtterance = new SpeechSynthesisUtterance(letters);
                     spellUtterance.lang = 'en-US';
-                    spellUtterance.rate = globalSpeechRate * 0.8; // Slightly slower for clarity
+                    spellUtterance.rate = globalSpeechRate * 0.6; // Slower for better clarity, especially on iOS
                     utterances.push({ 
                         text: letters, 
                         utterance: spellUtterance, 
