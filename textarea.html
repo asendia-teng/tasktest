@@ -291,6 +291,12 @@
     </svg>
     Share document
   </a>
+  <a class="item" id="copy-content" href="" role="menuitem">
+    <svg aria-hidden="true" focusable="false" width="22" height="22">
+      <use xlink:href="#icon-copy"></use>
+    </svg>
+    Copy content
+  </a>
   <a class="item" id="save-as-html" href="" role="menuitem">
     <svg aria-hidden="true" focusable="false" width="22" height="22">
       <use xlink:href="#icon-empty"></use>
@@ -552,6 +558,7 @@
     const button = document.querySelector('#button')
     const qr = document.querySelector('#qr')
     const shareLink = document.querySelector('#share-link')
+    const copyContent = document.querySelector('#copy-content')
     const saveAsHTML = document.querySelector('#save-as-html')
     const saveAsText = document.querySelector('#save-as-text')
 
@@ -589,6 +596,16 @@
       }
       navigator.clipboard.writeText(location.href)
       notify('Link copied')
+      hideMenu()
+    })
+    copyContent.addEventListener('click', event => {
+      event.preventDefault()
+      if (!navigator.clipboard) {
+        alert('Your browser does not support clipboard API')
+        return
+      }
+      navigator.clipboard.writeText(article.textContent)
+      notify('Content copied')
       hideMenu()
     })
     saveAsHTML.addEventListener('click', event => {
@@ -910,6 +927,12 @@
     <path d="M8 9h-1a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-8a2 2 0 0 0 -2 -2h-1"/>
     <path d="M12 14v-11"/>
     <path d="M9 6l3 -3l3 3"/>
+  </symbol>
+  <symbol id="icon-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25"
+          stroke-linecap="round" stroke-linejoin="round">
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+    <path d="M8 8m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2z"/>
+    <path d="M16 8v-2a2 2 0 0 0 -2 -2h-8a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h2"/>
   </symbol>
   <symbol id="icon-qrcode" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
