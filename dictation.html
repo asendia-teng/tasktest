@@ -4304,13 +4304,13 @@
                                 ❌ 忘記
                             </button>
                             <button onclick="rateWord(1)" style="padding: 15px; background: #ffa94d; color: white; border: none; border-radius: 10px; font-size: 1.1em; cursor: pointer; transition: transform 0.2s;">
-                                😕 困難
+                                😕 需提示才記起
                             </button>
                             <button onclick="rateWord(2)" style="padding: 15px; background: #51cf66; color: white; border: none; border-radius: 10px; font-size: 1.1em; cursor: pointer; transition: transform 0.2s;">
-                                👍 良好
+                                👍 勉強記起
                             </button>
                             <button onclick="rateWord(3)" style="padding: 15px; background: #339af0; color: white; border: none; border-radius: 10px; font-size: 1.1em; cursor: pointer; transition: transform 0.2s;">
-                                ✅ 簡單
+                                ✅ 非常熟悉
                             </button>
                         </div>
                         
@@ -4364,14 +4364,8 @@
                 }
             }
             
-            // Award points only for Easy (3) rating, and only if not already earned or was revoked
-            if (quality === 3 && (!word.srs.reviewPointsEarned || word.srs.pointsRevoked)) {
-                addPoints(1, 'review', `複習單詞: ${word.english || word.chinese}`);
-                word.srs.reviewPointsEarned = true;
-                word.srs.pointsAwardedDate = new Date().toISOString();
-                word.srs.pointsRevoked = false; // Reset revocation flag
-                showToast('🎉 複習優秀！獲得 1 積分', 2000);
-            }
+            // Note: Points are no longer awarded for review ratings to prevent easy point farming
+            // Points can only be earned through dictation exercises and daily tasks
             
             // Record the quality rating
             word.srs.lastQualityRating = quality;
