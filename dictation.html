@@ -10320,8 +10320,9 @@
                     console.log(`  🔤 Spelling enabled for "${word.english}": ${letters.join(', ')}`);
                     
                     // Play each letter individually with pre-queuing for minimal delay
+                    // Use lowercase to avoid iOS reading "capital X" instead of just the letter
                     letters.forEach((letter, index) => {
-                        const letterUtterance = new SpeechSynthesisUtterance(letter);
+                        const letterUtterance = new SpeechSynthesisUtterance(letter.toLowerCase());
                         letterUtterance.lang = 'en-US';
                         letterUtterance.rate = globalSpeechRate * 0.7;  // Balanced speed
                         letterUtterance.pitch = 1.0;                     // Fixed pitch
