@@ -1462,6 +1462,11 @@
                             <div class="card-label">添加單詞</div>
                         </div>
                         
+                        <div class="function-card learning" onclick="openQuickAddModal()" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                            <div class="card-icon">⚡</div>
+                            <div class="card-label">快捷添加</div>
+                        </div>
+                        
                         <div class="function-card learning" onclick="switchTab('review')">
                             <div class="card-icon">🎧</div>
                             <div class="card-label">複習聽寫</div>
@@ -2097,6 +2102,100 @@
                         onmouseover="this.style.transform='scale(1.05)'"
                         onmouseout="this.style.transform='scale(1)'">
                     ✅ 我知道了，開始遊戲！
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Add Modal -->
+    <div class="modal-overlay" id="quickAddOverlay" onclick="closeQuickAddModal()" style="display: none;"></div>
+    <div class="calendar-popup" id="quickAddPopup" style="display: none; max-width: 700px;">
+        <div class="calendar-popup-header">
+            <h3>⚡ 快捷添加單詞</h3>
+            <button class="close-calendar-btn" onclick="closeQuickAddModal()">&times;</button>
+        </div>
+        <div style="padding: 25px; max-height: 70vh; overflow-y: auto;">
+            <div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-radius: 10px; border-left: 4px solid #2196f3;">
+                <div style="font-size: 0.9em; color: #1565c0; line-height: 1.8;">
+                    <strong>📋 使用說明：</strong><br>
+                    • 粘貼 JSON 陣列格式的單詞數據<br>
+                    • 支援批量添加多個單詞<br>
+                    • 格式示例見下方說明<br><br>
+                    
+                    <strong>🤖 AI 生成提示詞：</strong><br>
+                    <div style="background: white; padding: 10px; border-radius: 6px; margin-top: 8px; font-size: 0.85em; border: 1px dashed #2196f3; position: relative;">
+                        <button onclick="copyAIPrompt(this)" style="position: absolute; top: 8px; right: 8px; padding: 4px 10px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8em; transition: all 0.2s;"
+                                onmouseover="this.style.background='#1976d2'"
+                                onmouseout="this.style.background='#2196f3'">
+                            📋 複製
+                        </button>
+                        <div id="aiPromptText" style="padding-right: 70px;">
+                            "請幫我將以下生詞轉換為 JSON 格式，用於單詞學習應用：<br>
+                            要求：每個單詞必須包含english和customTranslation(粵語翻譯)。<br>
+                            如果有常用例句，可以添加 examples 陣列，每個例句包含 en（英文例句）和 zh（中文粵語翻譯）。例句要求簡單點，並且是香港小學生可以理解的"。<br>
+                            輸出格式必須是 JSON 陣列，不要其他文字。"<br><br>
+                            
+                            JSON 格式示例：<br>
+                            [<br>
+                            &nbsp;&nbsp;{<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;"english": "apple",<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;"customTranslation": "蘋果",<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;"examples": [<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{"en": "I eat an apple.", "zh": "我食蘋果。"}<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;]<br>
+                            &nbsp;&nbsp;}<br>
+                            ]
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; color: #666; font-weight: bold;">JSON 數據：</label>
+                <textarea id="quickAddJsonInput" placeholder='[
+  {
+    "english": "apple",
+    "chinese": "蘋果"
+  },
+  {
+    "english": "banana",
+    "chinese": "香蕉"
+  }
+]' style="width: 100%; min-height: 200px; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 0.9em; resize: vertical;"></textarea>
+            </div>
+            
+            <div style="margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px; border: 1px solid #e0e0e0;">
+                <h4 style="margin: 0 0 10px 0; color: #667eea; font-size: 1em;">📝 支援的格式：</h4>
+                <div style="font-size: 0.85em; color: #666; line-height: 1.8; font-family: 'Courier New', monospace;">
+                    <strong>基本格式（需要 english + chinese）：</strong><br>
+                    {"english": "apple", "chinese": "蘋果"}<br><br>
+                    
+                    <strong>使用自定義翻譯（需要 english + customTranslation）：</strong><br>
+                    {"english": "run", "customTranslation": "跑步；經營"}<br><br>
+                    
+                    <strong>完整格式（可選字段）：</strong><br>
+                    {<br>
+                    &nbsp;&nbsp;"english": "apple",<br>
+                    &nbsp;&nbsp;"chinese": "蘋果",<br>
+                    &nbsp;&nbsp;"customTranslation": "自定義翻譯",<br>
+                    &nbsp;&nbsp;"examples": [{"en": "I eat an apple.", "zh": "我吃蘋果。"}]<br>
+                    }
+                </div>
+            </div>
+            
+            <div id="quickAddError" style="display: none; margin-bottom: 15px; padding: 12px; background: #ffebee; border-left: 4px solid #f44336; border-radius: 4px; color: #c62828; font-size: 0.9em;"></div>
+            <div id="quickAddSuccess" style="display: none; margin-bottom: 15px; padding: 12px; background: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 4px; color: #2e7d32; font-size: 0.9em;"></div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button onclick="processQuickAdd()" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; border-radius: 8px; font-size: 1em; font-weight: bold; cursor: pointer; transition: all 0.2s;"
+                        onmouseover="this.style.transform='scale(1.02)'"
+                        onmouseout="this.style.transform='scale(1)'">
+                    ✅ 確認添加
+                </button>
+                <button onclick="closeQuickAddModal()" style="flex: 1; padding: 12px; background: #e0e0e0; color: #666; border: none; border-radius: 8px; font-size: 1em; cursor: pointer; transition: all 0.2s;"
+                        onmouseover="this.style.background='#d0d0d0'"
+                        onmouseout="this.style.background='#e0e0e0'">
+                    ❌ 取消
                 </button>
             </div>
         </div>
@@ -9770,6 +9869,236 @@
             const overlay = document.getElementById('calendarOverlay');
             popup.classList.remove('active');
             overlay.classList.remove('active');
+        }
+        
+        // ==================== Quick Add Feature ====================
+        
+        // Open quick add modal
+        function openQuickAddModal() {
+            const popup = document.getElementById('quickAddPopup');
+            const overlay = document.getElementById('quickAddOverlay');
+            const errorDiv = document.getElementById('quickAddError');
+            const successDiv = document.getElementById('quickAddSuccess');
+            const input = document.getElementById('quickAddJsonInput');
+            
+            // Clear previous messages and input
+            if (errorDiv) errorDiv.style.display = 'none';
+            if (successDiv) successDiv.style.display = 'none';
+            if (input) input.value = '';
+            
+            popup.style.display = 'block';
+            overlay.style.display = 'block';
+            setTimeout(() => {
+                popup.classList.add('active');
+                overlay.classList.add('active');
+            }, 10);
+            
+            // Focus on textarea
+            setTimeout(() => {
+                if (input) input.focus();
+            }, 300);
+        }
+        
+        // Close quick add modal
+        function closeQuickAddModal() {
+            const popup = document.getElementById('quickAddPopup');
+            const overlay = document.getElementById('quickAddOverlay');
+            
+            popup.classList.remove('active');
+            overlay.classList.remove('active');
+            setTimeout(() => {
+                popup.style.display = 'none';
+                overlay.style.display = 'none';
+            }, 300);
+        }
+        
+        // Process quick add JSON
+        function processQuickAdd() {
+            const input = document.getElementById('quickAddJsonInput');
+            const errorDiv = document.getElementById('quickAddError');
+            const successDiv = document.getElementById('quickAddSuccess');
+            
+            if (!input || !input.value.trim()) {
+                showQuickAddError('❌ 請輸入 JSON 數據');
+                return;
+            }
+            
+            try {
+                // Parse JSON
+                const jsonData = JSON.parse(input.value.trim());
+                
+                // Validate it's an array
+                if (!Array.isArray(jsonData)) {
+                    showQuickAddError('❌ JSON 格式錯誤：必須是陣列格式 [...]');
+                    return;
+                }
+                
+                if (jsonData.length === 0) {
+                    showQuickAddError('❌ 陣列為空，請至少添加一個單詞');
+                    return;
+                }
+                
+                // Validate each word object
+                const errors = [];
+                const validWords = [];
+                
+                jsonData.forEach((item, index) => {
+                    // Check if it's an object
+                    if (typeof item !== 'object' || item === null) {
+                        errors.push(`第 ${index + 1} 項：不是有效的物件`);
+                        return;
+                    }
+                    
+                    // Must have EITHER english OR chinese (but not both required)
+                    const hasEnglish = item.english && typeof item.english === 'string';
+                    const hasChinese = item.chinese && typeof item.chinese === 'string';
+                    
+                    if (!hasEnglish && !hasChinese) {
+                        errors.push(`第 ${index + 1} 項：缺少主詞，需要提供 "english"（英文單詞）或 "chinese"（中文字符）其中之一`);
+                        return;
+                    }
+                    
+                    // customTranslation is optional (alternative translation)
+                    const hasCustomTranslation = item.customTranslation && typeof item.customTranslation === 'string';
+                    
+                    // Create word object
+                    const word = {
+                        id: Date.now() + index,
+                        date: new Date().toISOString().split('T')[0],
+                        srs: {
+                            interval: 0,
+                            repetitions: 0,
+                            easeFactor: 2.5,
+                            lastReviewDate: null
+                        }
+                    };
+                    
+                    // Add main word field (english or chinese)
+                    if (hasEnglish) {
+                        word.english = item.english.trim();
+                    }
+                    if (hasChinese) {
+                        word.chinese = item.chinese.trim();
+                    }
+                    
+                    // Add translation fields (optional)
+                    if (item.chinese && typeof item.chinese === 'string' && hasEnglish) {
+                        // If english is main word, chinese is translation
+                        word.chinese = item.chinese.trim();
+                    }
+                    
+                    if (item.english && typeof item.english === 'string' && hasChinese) {
+                        // If chinese is main word, english can be stored too
+                        word.english = item.english.trim();
+                    }
+                    
+                    if (item.customTranslation && typeof item.customTranslation === 'string') {
+                        word.customTranslation = item.customTranslation.trim();
+                    }
+                    
+                    if (item.examples && Array.isArray(item.examples)) {
+                        // Save imported examples to customExamples field
+                        word.customExamples = item.examples.filter(ex => 
+                            ex && typeof ex === 'object' && ex.en && typeof ex.en === 'string'
+                        ).map(ex => ({
+                            en: ex.en,
+                            zh: ex.zh || '',
+                            isCustom: true,
+                            fromAPI: false
+                        }));
+                    }
+                    
+                    validWords.push(word);
+                });
+                
+                // Show errors if any
+                if (errors.length > 0) {
+                    showQuickAddError('❌ 發現以下錯誤：<br>' + errors.join('<br>'));
+                    return;
+                }
+                
+                // Add words to the database
+                let addedCount = 0;
+                validWords.forEach(word => {
+                    words.push(word);
+                    addedCount++;
+                });
+                
+                // Save to localStorage
+                saveWords();
+                
+                // Update UI
+                updateStats();
+                drawGrowthTree();
+                renderWordList();
+                
+                // Show success message
+                showQuickAddSuccess(`✅ 成功添加 ${addedCount} 個單詞！`);
+                
+                // Clear input after successful add
+                setTimeout(() => {
+                    input.value = '';
+                }, 1000);
+                
+                console.log(`✅ Quick added ${addedCount} words`);
+                
+            } catch (e) {
+                showQuickAddError('❌ JSON 解析失敗：' + e.message);
+                console.error('Quick add error:', e);
+            }
+        }
+        
+        // Show error message
+        function showQuickAddError(message) {
+            const errorDiv = document.getElementById('quickAddError');
+            const successDiv = document.getElementById('quickAddSuccess');
+            
+            if (errorDiv) {
+                errorDiv.innerHTML = message;
+                errorDiv.style.display = 'block';
+            }
+            if (successDiv) {
+                successDiv.style.display = 'none';
+            }
+        }
+        
+        // Show success message
+        function showQuickAddSuccess(message) {
+            const errorDiv = document.getElementById('quickAddError');
+            const successDiv = document.getElementById('quickAddSuccess');
+            
+            if (successDiv) {
+                successDiv.innerHTML = message;
+                successDiv.style.display = 'block';
+            }
+            if (errorDiv) {
+                errorDiv.style.display = 'none';
+            }
+        }
+        
+        // Copy AI prompt to clipboard
+        function copyAIPrompt(button) {
+            const promptText = document.getElementById('aiPromptText');
+            if (!promptText) return;
+            
+            // Get text content, remove HTML tags
+            const text = promptText.innerText || promptText.textContent;
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(text).then(() => {
+                // Show temporary success feedback
+                const originalText = button.innerHTML;
+                button.innerHTML = '✅ 已複製';
+                button.style.background = '#4caf50';
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.style.background = '#2196f3';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('複製失敗，請手動選取並複製');
+            });
         }
         
         // Admin Panel Functions
