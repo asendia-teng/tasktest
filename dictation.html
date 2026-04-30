@@ -1639,6 +1639,14 @@
                                 🎤
                             </button>
                         </div>
+                        <!-- Mastery Level Filter -->
+                        <select id="masteryFilter" onchange="filterByMastery(this.value)" 
+                                style="padding: 10px 15px; border: 2px solid #667eea; border-radius: 8px; font-size: 1em; outline: none; cursor: pointer; background: white; min-width: 120px;">
+                            <option value="all">全部</option>
+                            <option value="new">🆕 新單詞</option>
+                            <option value="learning">📚 學習中</option>
+                            <option value="mastered">✅ 已掌握</option>
+                        </select>
                         <!-- Playback Controls -->
                         <div style="display: flex; gap: 8px; align-items: center; background: #f8f9fa; padding: 6px 10px; border-radius: 6px; border: 1px solid #e0e0e0;">
                             <label style="font-size: 0.8em; color: #666; white-space: nowrap;">⏱️:</label>
@@ -1832,8 +1840,9 @@
                             <div style="font-size: 3em; margin-bottom: 15px; text-align: center;">🎴</div>
                             <h3 style="margin: 0 0 10px 0; text-align: center; font-size: 1.3em;">單詞配對</h3>
                             <p style="margin: 0; text-align: center; opacity: 0.9; font-size: 0.9em;">翻轉卡片，找到英文和中文的配對</p>
-                            <div style="margin-top: 15px; text-align: center;">
+                            <div style="margin-top: 15px; text-align: center; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
                                 <span style="background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px; font-size: 0.85em;">✅ 已解鎖</span>
+                                <span id="memoryMatchPlaysBadge" style="background: rgba(255,255,255,0.3); padding: 5px 15px; border-radius: 20px; font-size: 0.85em; font-weight: bold;">🎮 剩餘 5 次</span>
                             </div>
                         </div>
                         
@@ -1842,8 +1851,9 @@
                             <div style="font-size: 3em; margin-bottom: 15px; text-align: center;">🏆</div>
                             <h3 style="margin: 0 0 10px 0; text-align: center; font-size: 1.3em;">單詞闖關</h3>
                             <p style="margin: 0; text-align: center; opacity: 0.9; font-size: 0.9em;">挑戰多個關卡，成為單詞大師</p>
-                            <div style="margin-top: 15px; text-align: center;">
+                            <div style="margin-top: 15px; text-align: center; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
                                 <span style="background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px; font-size: 0.85em;">✅ 已解鎖</span>
+                                <span id="quizAdventurePlaysBadge" style="background: rgba(255,255,255,0.3); padding: 5px 15px; border-radius: 20px; font-size: 0.85em; font-weight: bold;">🎮 剩餘 5 次</span>
                             </div>
                         </div>
                         
@@ -5332,6 +5342,8 @@
         // Initialize game center
         function initGameCenter() {
             console.log('🎮 Game Center initialized');
+            // Update game play badges
+            updateGamePlayBadges();
             // Future: Load game stats, unlock status, etc.
         }
         
@@ -5347,6 +5359,69 @@
         function startQuizAdventureGame() {
             console.log('🏆 Starting Quiz Adventure Game...');
             showToast('🚀 單詞闖關遊戲開發中！', 2000);
+        }
+        
+        // ==================== Daily Game Play Limit ====================
+        
+        const MAX_DAILY_PLAYS = 5; // Maximum plays per day per game
+        
+        // Check if user can play a specific game today
+        function canPlayGame(gameType) {
+            const today = new Date().toISOString().split('T')[0];
+            const key = `gamePlays_${gameType}_${today}`;
+            const plays = parseInt(localStorage.getItem(key) || '0');
+            
+            console.log(`🎮 Checking ${gameType} plays: ${plays}/${MAX_DAILY_PLAYS}`);
+            return plays < MAX_DAILY_PLAYS;
+        }
+        
+        // Record a game play
+        function recordGamePlay(gameType) {
+            const today = new Date().toISOString().split('T')[0];
+            const key = `gamePlays_${gameType}_${today}`;
+            const plays = parseInt(localStorage.getItem(key) || '0');
+            localStorage.setItem(key, (plays + 1).toString());
+            
+            console.log(`🎮 Recorded ${gameType} play: ${plays + 1}/${MAX_DAILY_PLAYS}`);
+        }
+        
+        // Get remaining plays for a game today
+        function getRemainingPlays(gameType) {
+            const today = new Date().toISOString().split('T')[0];
+            const key = `gamePlays_${gameType}_${today}`;
+            const plays = parseInt(localStorage.getItem(key) || '0');
+            return Math.max(0, MAX_DAILY_PLAYS - plays);
+        }
+        
+        // Check and handle game play limit
+        function checkGameLimit(gameType, gameName) {
+            if (!canPlayGame(gameType)) {
+                showToast(`⚠️ ${gameName} 今日已達到 ${MAX_DAILY_PLAYS} 次限制，明天再來吧！`, 3000);
+                return false;
+            }
+            return true;
+        }
+        
+        // Update game play badges in game center
+        function updateGamePlayBadges() {
+            const memoryBadge = document.getElementById('memoryMatchPlaysBadge');
+            const quizBadge = document.getElementById('quizAdventurePlaysBadge');
+            
+            if (memoryBadge) {
+                const remaining = getRemainingPlays('memoryMatch');
+                memoryBadge.textContent = `🎮 剩餘 ${remaining} 次`;
+                if (remaining === 0) {
+                    memoryBadge.style.background = 'rgba(255,100,100,0.4)';
+                }
+            }
+            
+            if (quizBadge) {
+                const remaining = getRemainingPlays('quizAdventure');
+                quizBadge.textContent = `🎮 剩餘 ${remaining} 次`;
+                if (remaining === 0) {
+                    quizBadge.style.background = 'rgba(255,100,100,0.4)';
+                }
+            }
         }
         
         // ==================== Memory Match Game ====================
@@ -5374,6 +5449,14 @@
         
         // Start new game
         function startNewGame() {
+            // Check daily play limit
+            if (!checkGameLimit('memoryMatch', '單詞配對')) {
+                return;
+            }
+            
+            // Record this play
+            recordGamePlay('memoryMatch');
+            
             const difficulty = document.getElementById('difficultySelect').value;
             memoryGameState.difficulty = difficulty;
             const settings = difficultySettings[difficulty];
@@ -5774,6 +5857,32 @@
         
         const TOTAL_LEVELS = 20; // Total levels in the game
         
+        // Save quiz game state to localStorage
+        function saveQuizGameState() {
+            try {
+                localStorage.setItem('quizGameState', JSON.stringify({
+                    currentLevel: quizGameState.currentLevel
+                }));
+                console.log('💾 Quiz game state saved:', quizGameState.currentLevel);
+            } catch (e) {
+                console.error('❌ Failed to save quiz game state:', e);
+            }
+        }
+        
+        // Load quiz game state from localStorage
+        function loadQuizGameState() {
+            try {
+                const saved = localStorage.getItem('quizGameState');
+                if (saved) {
+                    const state = JSON.parse(saved);
+                    quizGameState.currentLevel = state.currentLevel || 1;
+                    console.log('📂 Quiz game state loaded:', quizGameState.currentLevel);
+                }
+            } catch (e) {
+                console.error('❌ Failed to load quiz game state:', e);
+            }
+        }
+        
         // Initialize quiz adventure
         function initQuizAdventure() {
             showLevelMap();
@@ -5817,17 +5926,22 @@
             const levelMap = document.getElementById('levelMap');
             const progress = JSON.parse(localStorage.getItem('quizAdventureProgress') || '{}');
             
+            console.log('🗺️ Rendering level map. Progress:', progress);
+            console.log('📊 Current quizGameState level:', quizGameState.currentLevel);
+            
             levelMap.innerHTML = '';
             
             for (let i = 1; i <= TOTAL_LEVELS; i++) {
                 const levelData = progress[i] || { stars: 0, completed: false };
-                const levelEl = createLevelElement(i, levelData);
+                const isUnlocked = i === 1 || (progress[i - 1] && progress[i - 1].completed);
+                console.log(`  Level ${i}: completed=${levelData.completed}, unlocked=${isUnlocked}`);
+                const levelEl = createLevelElement(i, levelData, progress);
                 levelMap.appendChild(levelEl);
             }
         }
         
         // Create level element
-        function createLevelElement(levelNum, levelData) {
+        function createLevelElement(levelNum, levelData, progress) {
             const levelEl = document.createElement('div');
             const isUnlocked = levelNum === 1 || (progress[levelNum - 1] && progress[levelNum - 1].completed);
             
@@ -6448,6 +6562,8 @@
             const progress = JSON.parse(localStorage.getItem('quizAdventureProgress') || '{}');
             const levelNum = quizGameState.currentLevel;
             
+            console.log('💾 Before saving - Level:', levelNum, 'Passed:', passed, 'Stars:', stars);
+            
             if (passed && (!progress[levelNum] || stars > progress[levelNum].stars)) {
                 progress[levelNum] = {
                     stars: stars,
@@ -6456,6 +6572,10 @@
                     date: new Date().toISOString()
                 };
                 localStorage.setItem('quizAdventureProgress', JSON.stringify(progress));
+                console.log('✅ Progress saved for level', levelNum, ':', progress[levelNum]);
+                console.log('🔓 Next level', levelNum + 1, 'should now be unlocked');
+            } else {
+                console.log('ℹ️ No progress update needed (already completed with same or better score)');
             }
             
             // Award points for completing levels with perfect score (100% accuracy)
@@ -6492,6 +6612,10 @@
             const nextBtn = document.getElementById('nextLevelBtn');
             if (passed && levelNum < TOTAL_LEVELS) {
                 nextBtn.style.display = 'block';
+                // Save progress when passing a level
+                quizGameState.currentLevel = levelNum + 1;
+                saveQuizGameState();
+                console.log(`✅ Level ${levelNum} passed! Progress saved. Next level: ${quizGameState.currentLevel}`);
             } else {
                 nextBtn.style.display = 'none';
             }
@@ -6514,6 +6638,14 @@
         
         // Update startQuizAdventureGame
         function startQuizAdventureGame() {
+            // Check daily play limit
+            if (!checkGameLimit('quizAdventure', '單詞闖關')) {
+                return;
+            }
+            
+            // Record this play
+            recordGamePlay('quizAdventure');
+            
             switchTab('quiz-adventure', null);
             setTimeout(() => {
                 initQuizAdventure();
@@ -7498,6 +7630,9 @@
             // Load points and lottery state
             loadLotteryState();
             
+            // Load quiz game state (adventure level progress)
+            loadQuizGameState();
+            
             // Check for special lottery configuration
             checkSpecialLotteryOnLoad();
             
@@ -7506,6 +7641,13 @@
             
             // Load words from localStorage
             loadWords();
+            
+            // Initialize mastery filter to 'all'
+            const masteryFilter = document.getElementById('masteryFilter');
+            if (masteryFilter) {
+                masteryFilter.value = 'all';
+                currentMasteryFilter = 'all';
+            }
             
             // Initialize offline dictionary in background
             offlineDict.loadDictionary().then((success) => {
@@ -10464,9 +10606,18 @@
             }
         }
         
+        // Filter words by mastery level
+        function filterByMastery(masteryLevel) {
+            currentMasteryFilter = masteryLevel;
+            console.log('📊 Filtering by mastery level:', masteryLevel);
+            
+            // Re-render with current filters
+            renderWordListWithFilters(currentWordListFilter, englishSearchTerm);
+        }
+        
         // Render word list with both date and search filters
         function renderWordListWithFilters(filterDate = null, searchTerm = '') {
-            console.log('🔍 renderWordListWithFilters called:', { filterDate, searchTerm });
+            console.log('🔍 renderWordListWithFilters called:', { filterDate, searchTerm, masteryFilter: currentMasteryFilter });
             
             let filteredWords = words;
             
@@ -10490,6 +10641,27 @@
                     if (!w.english) return false;
                     return w.english.toLowerCase().includes(searchTerm);
                 });
+            }
+            
+            // Apply mastery level filter
+            if (currentMasteryFilter && currentMasteryFilter !== 'all') {
+                console.log('📚 Applying mastery filter:', currentMasteryFilter);
+                const beforeCount = filteredWords.length;
+                
+                filteredWords = filteredWords.filter(w => {
+                    const masteryInfo = getWordMasteryInfo(w);
+                    
+                    if (currentMasteryFilter === 'new') {
+                        return masteryInfo.status === 'new';
+                    } else if (currentMasteryFilter === 'learning') {
+                        return masteryInfo.status === 'learning';
+                    } else if (currentMasteryFilter === 'mastered') {
+                        return masteryInfo.status === 'mastered';
+                    }
+                    return true;
+                });
+                
+                console.log(`📚 After mastery filter: ${beforeCount} → ${filteredWords.length} words`);
             }
             
             filteredWords.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -10925,15 +11097,26 @@
             if (filter === 'mastered') {
                 filteredWords = words.filter(w => {
                     if (!w.srs) return false;
-                    return (w.srs.repetitions > 0 || w.srs.lastReviewDate) && 
-                           w.srs.easeFactor >= 2.3 && 
-                           w.srs.interval > 0;
+                    const hasReviewed = w.srs.repetitions > 0 || w.srs.lastReviewDate;
+                    const notTooHard = w.srs.easeFactor >= 2.3;
+                    const hasProgress = w.srs.interval > 0;
+                    const enoughReviews = w.srs.repetitions >= 3;
+                    
+                    // Mastered: must meet ALL conditions
+                    return hasReviewed && notTooHard && hasProgress && enoughReviews;
                 });
             } else if (filter === 'learning') {
                 filteredWords = words.filter(w => {
                     if (!w.srs) return false;
-                    return (w.srs.repetitions > 0 || w.srs.lastReviewDate) && 
-                           (w.srs.easeFactor < 2.3 || w.srs.interval === 0);
+                    const hasReviewed = w.srs.repetitions > 0 || w.srs.lastReviewDate;
+                    const notTooHard = w.srs.easeFactor >= 2.3;
+                    const hasProgress = w.srs.interval > 0;
+                    const enoughReviews = w.srs.repetitions >= 3;
+                    
+                    // Learning: has reviewed but NOT mastered
+                    // Mastered requires: hasReviewed AND notTooHard AND hasProgress AND enoughReviews
+                    // So learning is: hasReviewed AND NOT (all mastered conditions)
+                    return hasReviewed && !(notTooHard && hasProgress && enoughReviews);
                 });
             } else if (filter === 'new') {
                 filteredWords = words.filter(w => {
@@ -11015,8 +11198,9 @@
             const hasReviewed = word.srs.repetitions > 0 || word.srs.lastReviewDate;
             const notTooHard = word.srs.easeFactor >= 2.3;
             const hasProgress = word.srs.interval > 0;
+            const enoughReviews = word.srs.repetitions >= 3; // Need at least 3 reviews to be considered mastered
             
-            if (hasReviewed && notTooHard && hasProgress) {
+            if (hasReviewed && notTooHard && hasProgress && enoughReviews) {
                 // Mastered - calculate progress based on repetitions and interval
                 const progress = Math.min(100, (word.srs.repetitions * 20) + (word.srs.interval * 5));
                 return {
