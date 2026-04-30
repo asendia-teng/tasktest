@@ -4373,6 +4373,9 @@
             calculateNextReview(word, quality);
             saveWords();
             
+            // Check for level unlock after review (based on mastered words)
+            checkLevelUnlock(words.length);
+            
             // Move to next word
             reviewSession.currentIndex++;
             reviewSession.showAnswer = false;
@@ -5161,13 +5164,13 @@
             const totalWords = words.length;  // Total words added
             
             // Count truly mastered words (based on SRS)
+            // A word is considered "mastered" if:
+            // 1. Has been reviewed at least 3 times (repetitions >= 3)
+            // 2. AND has a good ease factor (>= 2.3 means not too difficult)
+            // 3. AND interval > 0 (has progressed beyond initial state)
             const masteredWords = words.filter(w => {
                 if (!w.srs) return false;
-                // Consider a word "mastered" if:
-                // 1. Has been reviewed at least once (repetitions > 0 OR lastReviewDate exists)
-                // 2. AND has a reasonable ease factor (>= 2.3 means not too difficult)
-                // 3. AND interval > 0 (has progressed beyond initial state)
-                return (w.srs.repetitions > 0 || w.srs.lastReviewDate) && 
+                return w.srs.repetitions >= 3 && 
                        w.srs.easeFactor >= 2.3 && 
                        w.srs.interval > 0;
             });
@@ -7116,8 +7119,18 @@
         
         // Check for newly unlocked levels and trigger lottery
         function checkLevelUnlock(wordCount) {
-            const currentLevel = Math.floor(wordCount / 20);
-            const previousLevel = Math.floor((wordCount - 1) / 20);
+            // Calculate mastered words count
+            const masteredWords = words.filter(w => {
+                if (!w.srs) return false;
+                return w.srs.repetitions >= 3 && 
+                       w.srs.easeFactor >= 2.3 && 
+                       w.srs.interval > 0;
+            });
+            const masteredCount = masteredWords.length;
+            
+            // Use mastered count for level calculation (more meaningful)
+            const currentLevel = Math.floor(masteredCount / 20);
+            const previousLevel = Math.floor((masteredCount - 1) / 20);
             
             // If we just reached a new level
             if (currentLevel > previousLevel && !unlockedLevels.includes(currentLevel)) {
@@ -7337,7 +7350,7 @@
                 id: `level_${i}`,
                 name: name,
                 icon: icon,
-                description: `學會 ${wordThreshold} 個單詞`,
+                description: `熟練掌握 ${wordThreshold} 個單詞（複習3次以上）`,
                 threshold: wordThreshold,
                 level: i
             });
@@ -8282,7 +8295,7 @@
             // Save to localStorage
             saveWords();
             
-            // Check for level unlock and trigger lottery
+            // Check for level unlock based on mastered words count
             checkLevelUnlock(words.length);
             
             // Re-render
