@@ -7,6 +7,8 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
     <!-- Hanzi Writer for stroke order animation -->
     <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+    <!-- PeerJS for P2P sync -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -1738,6 +1740,11 @@
                                 onmouseover="this.style.background='#f57c00'"
                                 onmouseout="this.style.background='#ff9800'">
                             📤 導入數據
+                        </button>
+                        <button onclick="openSyncModal()" style="padding: 8px 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);"
+                                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.4)'"
+                                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(102, 126, 234, 0.3)'">
+                            🔄 同步數據
                         </button>
                     </div>
                     
@@ -11363,5 +11370,723 @@
             transition: width 0.3s ease;
         }
     </style>
+    
+    <!-- PeerJS Sync Modal -->
+    <div id="syncModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; justify-content: center; align-items: center;">
+        <div style="background: white; border-radius: 15px; padding: 30px; max-width: 450px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <h2 style="color: #667eea; margin-bottom: 20px; text-align: center;">🔄 數據同步</h2>
+            
+            <!-- Main Panel -->
+            <div id="syncMainPanel">
+                <p style="text-align: center; color: #666; margin-bottom: 20px; font-size: 0.95em;">
+                    確保兩台設備都已打開此頁面
+                </p>
+                
+                <button onclick="startSyncAsSender()" style="width: 100%; padding: 18px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 1.1em; font-weight: bold; margin-bottom: 12px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); transition: all 0.2s;"
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.4)'"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.3)'">
+                    📤 發送數據<br>
+                    <small style="font-size: 0.7em; opacity: 0.9;">我是舊設備（要導出數據）</small>
+                </button>
+                
+                <button onclick="startSyncAsReceiver()" style="width: 100%; padding: 18px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 12px; cursor: pointer; font-size: 1.1em; font-weight: bold; box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3); transition: all 0.2s;"
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(245, 87, 108, 0.4)'"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(245, 87, 108, 0.3)'">
+                    📥 接收數據<br>
+                    <small style="font-size: 0.7em; opacity: 0.9;">我是新設備（要導入數據）</small>
+                </button>
+                
+                <button onclick="closeSyncModal()" style="width: 100%; margin-top: 15px; padding: 12px; background: #e0e0e0; border: none; border-radius: 8px; cursor: pointer; font-size: 0.95em; transition: all 0.2s;"
+                        onmouseover="this.style.background='#d0d0d0'"
+                        onmouseout="this.style.background='#e0e0e0'">
+                    取消
+                </button>
+            </div>
+            
+            <!-- Waiting Panel -->
+            <div id="syncWaitingPanel" style="display: none; text-align: center;">
+                <div style="font-size: 3em; margin: 20px 0; animation: pulse 1.5s ease-in-out infinite;">⏳</div>
+                <p style="color: #667eea; font-size: 1.1em; font-weight: bold;" id="waitingText">正在等待連接...</p>
+                <p style="color: #999; font-size: 0.9em; margin-top: 10px;">請另一台設備點擊對應按鈕</p>
+                <button onclick="closeSyncModal()" style="width: 100%; margin-top: 20px; padding: 12px; background: #e0e0e0; border: none; border-radius: 8px; cursor: pointer;">取消</button>
+            </div>
+            
+            <!-- Progress Panel -->
+            <div id="syncProgressPanel" style="display: none; text-align: center;">
+                <div style="font-size: 3em; margin: 20px 0;">🔄</div>
+                <p style="color: #667eea; font-size: 1.1em;" id="progressText">正在同步...</p>
+                <div style="background: #e0e0e0; border-radius: 10px; height: 12px; margin: 20px 0; overflow: hidden;">
+                    <div id="progressBar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                </div>
+                <p style="color: #999; font-size: 0.85em;" id="progressDetail"></p>
+            </div>
+            
+            <!-- Preview Panel -->
+            <div id="syncPreviewPanel" style="display: none;">
+                <h3 style="color: #667eea; margin-bottom: 15px; text-align: center;">📊 同步預覽</h3>
+                <div id="previewContent" style="max-height: 400px; overflow-y: auto; background: #f8f9fa; border-radius: 10px; padding: 15px; margin-bottom: 15px;">
+                    <!-- Preview content will be inserted here -->
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="confirmSync()" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; font-weight: bold;">
+                        ✅ 確認同步
+                    </button>
+                    <button onclick="cancelSync()" style="flex: 1; padding: 12px; background: #e0e0e0; color: #666; border: none; border-radius: 8px; cursor: pointer; font-size: 1em;">
+                        ❌ 取消
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Complete Panel -->
+            <div id="syncCompletePanel" style="display: none; text-align: center;">
+                <div style="font-size: 3em; margin: 20px 0;">✅</div>
+                <p style="color: #38a169; font-size: 1.2em; font-weight: bold;">同步成功！</p>
+                <p style="color: #666; margin: 15px 0;" id="syncResultText"></p>
+                <button onclick="closeSyncModal()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; font-weight: bold;">完成</button>
+            </div>
+            
+            <!-- Error Panel -->
+            <div id="syncErrorPanel" style="display: none; text-align: center;">
+                <div style="font-size: 3em; margin: 20px 0;">❌</div>
+                <p style="color: #f5576c; font-size: 1.1em; font-weight: bold;">同步失敗</p>
+                <p style="color: #666; margin: 15px 0;" id="errorText"></p>
+                <button onclick="resetSyncUI()" style="width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em;">重試</button>
+                <button onclick="closeSyncModal()" style="width: 100%; margin-top: 10px; padding: 12px; background: #e0e0e0; border: none; border-radius: 8px; cursor: pointer;">關閉</button>
+            </div>
+        </div>
+    </div>
+    
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.1); }
+        }
+    </style>
+    
+    <script>
+        // ==================== PeerJS Sync with Fixed IDs ====================
+        
+        const SYNC_SENDER_ID = 'dictation-sync-sender-v1';
+        const SYNC_RECEIVER_ID = 'dictation-sync-receiver-v1';
+        
+        let localPeer = null;
+        let remoteConnection = null;
+        let pendingSyncData = null; // Store pending sync data for preview
+        let syncBackup = null; // Store backup before sync
+        
+        // Open sync modal
+        function openSyncModal() {
+            document.getElementById('syncModal').style.display = 'flex';
+            resetSyncUI();
+        }
+        
+        // Close sync modal
+        function closeSyncModal() {
+            document.getElementById('syncModal').style.display = 'none';
+            cleanupPeer();
+        }
+        
+        // Cleanup Peer connection
+        function cleanupPeer() {
+            if (remoteConnection) {
+                remoteConnection.close();
+                remoteConnection = null;
+            }
+            if (localPeer) {
+                localPeer.destroy();
+                localPeer = null;
+            }
+        }
+        
+        // Reset UI
+        function resetSyncUI() {
+            document.getElementById('syncMainPanel').style.display = 'block';
+            document.getElementById('syncWaitingPanel').style.display = 'none';
+            document.getElementById('syncProgressPanel').style.display = 'none';
+            document.getElementById('syncPreviewPanel').style.display = 'none';
+            document.getElementById('syncCompletePanel').style.display = 'none';
+            document.getElementById('syncErrorPanel').style.display = 'none';
+            pendingSyncData = null;
+            syncBackup = null;
+            cleanupPeer();
+        }
+        
+        // Start as sender (old device)
+        function startSyncAsSender() {
+            console.log('📤 Starting as sender...');
+            
+            document.getElementById('syncMainPanel').style.display = 'none';
+            document.getElementById('syncWaitingPanel').style.display = 'block';
+            document.getElementById('waitingText').textContent = '正在創建發送通道...';
+            
+            localPeer = new Peer(SYNC_SENDER_ID);
+            
+            localPeer.on('open', (id) => {
+                console.log('✅ Sender peer opened:', id);
+                document.getElementById('waitingText').textContent = '等待接收方連接...';
+            });
+            
+            localPeer.on('connection', (conn) => {
+                console.log('🔗 Connection received from:', conn.peer);
+                remoteConnection = conn;
+                
+                document.getElementById('syncWaitingPanel').style.display = 'none';
+                document.getElementById('syncProgressPanel').style.display = 'block';
+                updateProgress(10, '連接已建立，準備數據...');
+                
+                conn.on('open', () => {
+                    console.log('✅ Connection ready, sending data...');
+                    sendSyncData(conn);
+                });
+                
+                conn.on('data', (data) => {
+                    handleSenderResponse(data);
+                });
+                
+                conn.on('error', (err) => {
+                    console.error('❌ Connection error:', err);
+                    showSyncError('連接錯誤：' + err.message);
+                });
+            });
+            
+            localPeer.on('error', (err) => {
+                console.error('❌ Peer error:', err);
+                if (err.type === 'unavailable-id') {
+                    console.warn('⚠️ ID already in use, cleaning up...');
+                    const timestampedId = `${SYNC_SENDER_ID}-${Date.now()}`;
+                    retryWithNewId(timestampedId, 'sender');
+                } else {
+                    showSyncError('同步服務錯誤：' + err.message);
+                }
+            });
+        }
+        
+        // Start as receiver (new device)
+        function startSyncAsReceiver() {
+            console.log('📥 Starting as receiver...');
+            
+            document.getElementById('syncMainPanel').style.display = 'none';
+            document.getElementById('syncWaitingPanel').style.display = 'block';
+            document.getElementById('waitingText').textContent = '正在連接發送方...';
+            
+            localPeer = new Peer(SYNC_RECEIVER_ID);
+            
+            localPeer.on('open', () => {
+                console.log('✅ Receiver peer opened');
+                setTimeout(() => {
+                    connectToSender();
+                }, 500);
+            });
+            
+            localPeer.on('error', (err) => {
+                console.error('❌ Peer error:', err);
+                if (err.type === 'unavailable-id') {
+                    const timestampedId = `${SYNC_RECEIVER_ID}-${Date.now()}`;
+                    retryWithNewId(timestampedId, 'receiver');
+                } else {
+                    showSyncError('同步服務錯誤：' + err.message);
+                }
+            });
+        }
+        
+        // Connect to sender
+        function connectToSender() {
+            console.log('🔗 Connecting to sender...');
+            
+            remoteConnection = localPeer.connect(SYNC_SENDER_ID);
+            
+            remoteConnection.on('open', () => {
+                console.log('✅ Connected to sender');
+                document.getElementById('syncWaitingPanel').style.display = 'none';
+                document.getElementById('syncProgressPanel').style.display = 'block';
+                updateProgress(20, '已連接，等待數據...');
+            });
+            
+            remoteConnection.on('data', (data) => {
+                handleReceivedData(data);
+            });
+            
+            remoteConnection.on('error', (err) => {
+                console.error('❌ Connection error:', err);
+                showSyncError('連接失敗：' + err.message);
+            });
+        }
+        
+        // Retry with new ID
+        function retryWithNewId(newId, role) {
+            cleanupPeer();
+            showToast('⚠️ ID 衝突，正在重試...', 2000);
+            
+            setTimeout(() => {
+                if (role === 'sender') {
+                    localPeer = new Peer(newId);
+                    localPeer.on('open', () => {
+                        document.getElementById('waitingText').textContent = '等待接收方連接...';
+                    });
+                    localPeer.on('connection', (conn) => {
+                        remoteConnection = conn;
+                        document.getElementById('syncWaitingPanel').style.display = 'none';
+                        document.getElementById('syncProgressPanel').style.display = 'block';
+                        conn.on('open', () => sendSyncData(conn));
+                        conn.on('data', (data) => handleSenderResponse(data));
+                    });
+                } else {
+                    localPeer = new Peer(newId);
+                    localPeer.on('open', () => {
+                        connectToSender();
+                    });
+                }
+            }, 1000);
+        }
+        
+        // Send sync data
+        function sendSyncData(conn) {
+            updateProgress(30, '正在打包數據...');
+            
+            const syncPayload = {
+                type: 'sync_data',
+                version: '1.0',
+                timestamp: Date.now(),
+                data: {
+                    words: words,
+                    unlockedLevels: unlockedLevels || [],
+                    lotteryChances: lotteryChances || 0,
+                    totalPoints: totalPoints || 0,
+                    dailyTasks: dailyTasks || {},
+                    streakDays: streakDays || 0,
+                    lastLoginDate: lastLoginDate || null,
+                    quizAdventureProgress: JSON.parse(localStorage.getItem('quizAdventureProgress') || '{}'),
+                    gamePlays: getAllGamePlays(),
+                    pointsHistory: JSON.parse(localStorage.getItem('pointsHistory') || '[]'),
+                    translationCache: JSON.parse(localStorage.getItem('translationCache') || '{}')
+                }
+            };
+            
+            console.log('📦 Sending sync data, words count:', syncPayload.data.words.length);
+            updateProgress(50, '正在發送數據...');
+            
+            conn.send(syncPayload);
+            updateProgress(80, '等待確認...');
+        }
+        
+        // Handle received data
+        function handleReceivedData(data) {
+            console.log('📥 Received data:', data.type);
+            
+            if (data.type === 'sync_data') {
+                updateProgress(90, '正在分析差異...');
+                
+                try {
+                    // Calculate differences
+                    const diff = calculateSyncDifferences(data.data);
+                    
+                    // Store pending data and backup
+                    pendingSyncData = data.data;
+                    syncBackup = createDataBackup();
+                    
+                    // Show preview
+                    showSyncPreview(diff);
+                    
+                    // Send ack to sender
+                    remoteConnection.send({ type: 'preview_ready' });
+                } catch (err) {
+                    console.error('❌ Preview error:', err);
+                    showSyncError('預覽失敗：' + err.message);
+                }
+            }
+        }
+        
+        // Handle sender response
+        function handleSenderResponse(data) {
+            if (data.type === 'sync_complete') {
+                showSyncSuccess('數據已成功發送');
+            }
+        }
+        
+        // Calculate sync differences
+        function calculateSyncDifferences(remoteData) {
+            const diff = {
+                newWords: [],
+                updatedWords: [],
+                skippedWords: [],
+                pointsDiff: 0,
+                lotteryDiff: 0,
+                streakDiff: 0,
+                newLevels: []
+            };
+            
+            // Compare words
+            if (remoteData.words && Array.isArray(remoteData.words)) {
+                const localWordsMap = new Map(words.map(w => [w.english.toLowerCase(), w]));
+                
+                remoteData.words.forEach(remoteWord => {
+                    const key = remoteWord.english.toLowerCase();
+                    const localWord = localWordsMap.get(key);
+                    
+                    if (!localWord) {
+                        diff.newWords.push(remoteWord);
+                    } else {
+                        const remoteTime = getLatestTimestamp(remoteWord);
+                        const localTime = getLatestTimestamp(localWord);
+                        
+                        if (remoteTime > localTime) {
+                            diff.updatedWords.push({
+                                word: remoteWord,
+                                oldDate: localTime,
+                                newDate: remoteTime
+                            });
+                        } else {
+                            diff.skippedWords.push(remoteWord);
+                        }
+                    }
+                });
+            }
+            
+            // Compare numeric values
+            if (remoteData.totalPoints !== undefined) {
+                diff.pointsDiff = Math.max(0, (remoteData.totalPoints || 0) - (totalPoints || 0));
+            }
+            
+            if (remoteData.lotteryChances !== undefined) {
+                diff.lotteryDiff = Math.max(0, (remoteData.lotteryChances || 0) - (lotteryChances || 0));
+            }
+            
+            if (remoteData.streakDays !== undefined) {
+                diff.streakDiff = Math.max(0, (remoteData.streakDays || 0) - (streakDays || 0));
+            }
+            
+            // Compare unlocked levels
+            if (remoteData.unlockedLevels) {
+                const localSet = new Set(unlockedLevels || []);
+                remoteData.unlockedLevels.forEach(level => {
+                    if (!localSet.has(level)) {
+                        diff.newLevels.push(level);
+                    }
+                });
+            }
+            
+            return diff;
+        }
+        
+        // Show sync preview
+        function showSyncPreview(diff) {
+            document.getElementById('syncProgressPanel').style.display = 'none';
+            document.getElementById('syncPreviewPanel').style.display = 'block';
+            
+            const previewContent = document.getElementById('previewContent');
+            
+            let html = '<div style="text-align: left;">';
+            
+            // Words summary
+            html += '<div style="margin-bottom: 15px;">';
+            html += `<h4 style="color: #667eea; margin-bottom: 8px;">📚 單詞變化</h4>`;
+            html += `<div style="background: white; padding: 10px; border-radius: 8px; margin-bottom: 5px;">`;
+            html += `<div style="color: #4caf50;">➕ 新增: <strong>${diff.newWords.length}</strong> 個</div>`;
+            html += `<div style="color: #ff9800;">🔄 更新: <strong>${diff.updatedWords.length}</strong> 個</div>`;
+            html += `<div style="color: #999;">⏭️ 跳过: <strong>${diff.skippedWords.length}</strong> 個（本地較新）</div>`;
+            html += `</div>`;
+            
+            // Show sample of new words
+            if (diff.newWords.length > 0) {
+                html += '<div style="font-size: 0.85em; color: #666; margin-top: 5px;">';
+                html += '新增單詞示例: ';
+                const samples = diff.newWords.slice(0, 5).map(w => w.english).join(', ');
+                html += samples + (diff.newWords.length > 5 ? ` 等${diff.newWords.length}個` : '');
+                html += '</div>';
+            }
+            html += '</div>';
+            
+            // Points and stats
+            html += '<div style="margin-bottom: 15px;">';
+            html += `<h4 style="color: #667eea; margin-bottom: 8px;">📊 統計變化</h4>`;
+            html += `<div style="background: white; padding: 10px; border-radius: 8px;">`;
+            
+            if (diff.pointsDiff > 0) {
+                html += `<div style="color: #4caf50;">💰 積分: +${diff.pointsDiff}</div>`;
+            }
+            if (diff.lotteryDiff > 0) {
+                html += `<div style="color: #4caf50;">🎫 抽獎次數: +${diff.lotteryDiff}</div>`;
+            }
+            if (diff.streakDiff > 0) {
+                html += `<div style="color: #4caf50;">🔥 連續天數: +${diff.streakDiff}</div>`;
+            }
+            if (diff.newLevels.length > 0) {
+                html += `<div style="color: #4caf50;">🎮 新關卡: ${diff.newLevels.join(', ')}</div>`;
+            }
+            if (diff.pointsDiff === 0 && diff.lotteryDiff === 0 && diff.streakDiff === 0 && diff.newLevels.length === 0) {
+                html += '<div style="color: #999;">無變化</div>';
+            }
+            
+            html += `</div></div>`;
+            
+            // Summary
+            const totalChanges = diff.newWords.length + diff.updatedWords.length + diff.pointsDiff + diff.lotteryDiff + diff.streakDiff + diff.newLevels.length;
+            html += '<div style="background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%); padding: 12px; border-radius: 8px; text-align: center;">';
+            html += `<div style="font-size: 1.1em; color: #667eea; font-weight: bold;">總計: ${totalChanges} 項變化</div>`;
+            html += '<div style="font-size: 0.85em; color: #666; margin-top: 5px;">確認後將合併到本地數據</div>';
+            html += '</div>';
+            
+            html += '</div>';
+            
+            previewContent.innerHTML = html;
+        }
+        
+        // Confirm sync
+        function confirmSync() {
+            if (!pendingSyncData) {
+                showSyncError('沒有待同步的數據');
+                return;
+            }
+            
+            document.getElementById('syncPreviewPanel').style.display = 'none';
+            document.getElementById('syncProgressPanel').style.display = 'block';
+            updateProgress(95, '正在合併數據...');
+            
+            try {
+                mergeSyncData(pendingSyncData);
+                updateProgress(100, '同步完成！');
+                
+                remoteConnection.send({ type: 'sync_complete' });
+                
+                setTimeout(() => {
+                    const diff = calculateSyncDifferences(pendingSyncData);
+                    const message = `成功同步 ${diff.newWords.length} 個新單詞，更新 ${diff.updatedWords.length} 個單詞`;
+                    showSyncSuccess(message);
+                }, 500);
+            } catch (err) {
+                console.error('❌ Merge error:', err);
+                restoreFromBackup(syncBackup);
+                showSyncError('數據合併失敗，已恢復原狀');
+            }
+        }
+        
+        // Cancel sync
+        function cancelSync() {
+            console.log('❌ Sync cancelled by user');
+            showToast('已取消同步', 2000);
+            resetSyncUI();
+        }
+        
+        // Merge sync data with safety checks
+        function mergeSyncData(remoteData) {
+            console.log('🔄 Merging sync data safely...');
+            
+            let wordsAdded = 0;
+            let wordsUpdated = 0;
+            let wordsSkipped = 0;
+            
+            // Merge words (ADD ONLY, never delete)
+            if (remoteData.words && Array.isArray(remoteData.words)) {
+                const localWordsMap = new Map(words.map(w => [w.english.toLowerCase(), w]));
+                
+                remoteData.words.forEach(remoteWord => {
+                    const key = remoteWord.english.toLowerCase();
+                    const localWord = localWordsMap.get(key);
+                    
+                    if (!localWord) {
+                        // New word - add it
+                        words.push(remoteWord);
+                        wordsAdded++;
+                        console.log(`➕ Added new word: ${remoteWord.english}`);
+                    } else {
+                        // Existing word - compare and update if remote is newer
+                        const remoteTime = getLatestTimestamp(remoteWord);
+                        const localTime = getLatestTimestamp(localWord);
+                        
+                        if (remoteTime > localTime) {
+                            // Remote is newer, update but preserve local-only fields
+                            const preservedFields = ['customExamples', 'userNotes'];
+                            
+                            preservedFields.forEach(field => {
+                                if (localWord[field] && !remoteWord[field]) {
+                                    remoteWord[field] = localWord[field];
+                                }
+                            });
+                            
+                            Object.assign(localWord, remoteWord);
+                            wordsUpdated++;
+                            console.log(`🔄 Updated word: ${remoteWord.english}`);
+                        } else {
+                            // Local is newer or same, skip
+                            wordsSkipped++;
+                            console.log(`⏭️ Skipped word (local is newer): ${remoteWord.english}`);
+                        }
+                    }
+                });
+                
+                saveWords();
+                console.log(`✅ Words merged: ${wordsAdded} added, ${wordsUpdated} updated, ${wordsSkipped} skipped`);
+            }
+            
+            // Merge arrays (union, no deletion)
+            if (remoteData.unlockedLevels) {
+                const merged = [...new Set([...(unlockedLevels || []), ...remoteData.unlockedLevels])];
+                unlockedLevels = merged;
+                localStorage.setItem('unlockedLevels', JSON.stringify(unlockedLevels));
+            }
+            
+            // Merge numeric values (take maximum, never decrease)
+            if (remoteData.lotteryChances !== undefined) {
+                lotteryChances = Math.max(lotteryChances || 0, remoteData.lotteryChances);
+                localStorage.setItem('lotteryChances', lotteryChances.toString());
+            }
+            
+            if (remoteData.totalPoints !== undefined) {
+                totalPoints = Math.max(totalPoints || 0, remoteData.totalPoints);
+                localStorage.setItem('totalPoints', totalPoints.toString());
+            }
+            
+            if (remoteData.streakDays !== undefined) {
+                streakDays = Math.max(streakDays || 0, remoteData.streakDays);
+                localStorage.setItem('streakDays', streakDays.toString());
+            }
+            
+            // Merge objects (deep merge)
+            if (remoteData.quizAdventureProgress) {
+                const localProgress = JSON.parse(localStorage.getItem('quizAdventureProgress') || '{}');
+                const merged = deepMergeObjects(localProgress, remoteData.quizAdventureProgress);
+                localStorage.setItem('quizAdventureProgress', JSON.stringify(merged));
+            }
+            
+            if (remoteData.dailyTasks) {
+                const localTasks = dailyTasks || {};
+                const merged = deepMergeObjects(localTasks, remoteData.dailyTasks);
+                dailyTasks = merged;
+                localStorage.setItem('dailyTasks', JSON.stringify(dailyTasks));
+            }
+            
+            // Merge game plays (add new entries, keep all)
+            if (remoteData.gamePlays) {
+                Object.entries(remoteData.gamePlays).forEach(([key, value]) => {
+                    const existing = localStorage.getItem(key);
+                    if (!existing) {
+                        localStorage.setItem(key, value);
+                    } else {
+                        const existingVal = parseInt(existing) || 0;
+                        const remoteVal = parseInt(value) || 0;
+                        if (remoteVal > existingVal) {
+                            localStorage.setItem(key, value.toString());
+                        }
+                    }
+                });
+            }
+            
+            // Merge arrays from localStorage (union)
+            if (remoteData.pointsHistory) {
+                const localHistory = JSON.parse(localStorage.getItem('pointsHistory') || '[]');
+                const merged = mergeArraysById(localHistory, remoteData.pointsHistory, 'timestamp');
+                localStorage.setItem('pointsHistory', JSON.stringify(merged));
+            }
+            
+            if (remoteData.translationCache) {
+                const localCache = JSON.parse(localStorage.getItem('translationCache') || '{}');
+                const merged = { ...localCache, ...remoteData.translationCache };
+                localStorage.setItem('translationCache', JSON.stringify(merged));
+            }
+            
+            refreshAllUI();
+            return { added: wordsAdded, updated: wordsUpdated, skipped: wordsSkipped };
+        }
+        
+        // Helper: Get latest timestamp from word
+        function getLatestTimestamp(word) {
+            return word.srs?.lastReviewDate || word.date || word.created_at || '';
+        }
+        
+        // Helper: Deep merge two objects
+        function deepMergeObjects(target, source) {
+            const result = { ...target };
+            
+            for (const key in source) {
+                if (source.hasOwnProperty(key)) {
+                    if (isObject(source[key]) && isObject(target[key])) {
+                        result[key] = deepMergeObjects(target[key], source[key]);
+                    } else {
+                        result[key] = source[key];
+                    }
+                }
+            }
+            
+            return result;
+        }
+        
+        // Helper: Check if value is object
+        function isObject(item) {
+            return item && typeof item === 'object' && !Array.isArray(item);
+        }
+        
+        // Helper: Merge arrays by unique ID/timestamp
+        function mergeArraysById(arr1, arr2, idField = 'id') {
+            const map = new Map();
+            
+            arr1.forEach(item => {
+                const id = item[idField] || JSON.stringify(item);
+                map.set(id, item);
+            });
+            
+            arr2.forEach(item => {
+                const id = item[idField] || JSON.stringify(item);
+                if (!map.has(id)) {
+                    map.set(id, item);
+                }
+            });
+            
+            return Array.from(map.values());
+        }
+        
+        // Get all game plays
+        function getAllGamePlays() {
+            const plays = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('gamePlays_')) {
+                    plays[key] = localStorage.getItem(key);
+                }
+            }
+            return plays;
+        }
+        
+        // Update progress
+        function updateProgress(percent, detail) {
+            const bar = document.getElementById('progressBar');
+            const detailEl = document.getElementById('progressDetail');
+            
+            if (bar) bar.style.width = percent + '%';
+            if (detailEl) detailEl.textContent = detail;
+        }
+        
+        // Show success
+        function showSyncSuccess(message) {
+            document.getElementById('syncProgressPanel').style.display = 'none';
+            document.getElementById('syncCompletePanel').style.display = 'block';
+            document.getElementById('syncResultText').textContent = message;
+            showToast('✅ 同步成功', 2000);
+        }
+        
+        // Show error
+        function showSyncError(message) {
+            document.getElementById('syncWaitingPanel').style.display = 'none';
+            document.getElementById('syncProgressPanel').style.display = 'none';
+            document.getElementById('syncErrorPanel').style.display = 'block';
+            document.getElementById('errorText').textContent = message;
+            showToast('❌ 同步失敗', 2000);
+        }
+        
+        // Refresh all UI
+        function refreshAllUI() {
+            if (typeof renderWordList === 'function') renderWordList();
+            if (typeof drawGrowthTree === 'function') drawGrowthTree();
+            if (typeof updateLotteryButton === 'function') updateLotteryButton();
+            if (typeof updatePointsDisplay === 'function') updatePointsDisplay();
+        }
+        
+        // Click outside modal to close
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('syncModal');
+            if (modal && e.target === modal) {
+                closeSyncModal();
+            }
+        });
+    </script>
 </body>
 </html>
