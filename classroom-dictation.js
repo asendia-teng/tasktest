@@ -281,7 +281,13 @@ async function startVoiceInputForItem(button) {
         button.style.background = '#ff4757';
         
         recognition.onresult = async (event) => {
-            const transcript = event.results[0][0].transcript;
+            let transcript = event.results[0][0].transcript;
+            
+            // Format English text based on whether it's a word or phrase/sentence
+            if (type === 'english') {
+                transcript = formatEnglishText(transcript);
+            }
+            
             textInput.value = transcript;
             
             // Auto-translate if English
@@ -314,6 +320,22 @@ async function startVoiceInputForItem(button) {
         showToast('❌ 瀏覽器不支持語音輸入', 2000);
         button.textContent = '🎤';
         button.style.background = '';
+    }
+}
+
+// Format English text: words (no space) -> lowercase first letter, phrases/sentences (with space) -> capitalize first letter
+function formatEnglishText(text) {
+    if (!text || text.trim() === '') return text;
+    
+    const trimmed = text.trim();
+    
+    // Check if it contains spaces (phrase or sentence)
+    if (trimmed.includes(' ')) {
+        // Phrase or sentence: capitalize first letter
+        return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+    } else {
+        // Single word: lowercase first letter
+        return trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
     }
 }
 
