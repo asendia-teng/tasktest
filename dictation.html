@@ -5827,9 +5827,6 @@
                 return;
             }
             
-            // Record this play
-            recordGamePlay('memoryMatch');
-            
             const difficulty = document.getElementById('difficultySelect').value;
             memoryGameState.difficulty = difficulty;
             const settings = difficultySettings[difficulty];
@@ -6163,6 +6160,9 @@
             // Save stats
             saveGameStats(finalScore, memoryGameState.moves, elapsed);
             
+            // Record game play (only when completed successfully)
+            recordGamePlay('memoryMatch');
+            
             console.log('🎉 Game complete! Score:', finalScore, 'Points earned:', pointsEarned);
         }
         
@@ -6218,9 +6218,6 @@
             
             // Start or continue game session
             startGameSession();
-            
-            // Record this play
-            recordGamePlay('memoryMatch');
             
             switchTab('memory-match', null);
             setTimeout(() => {
@@ -7283,6 +7280,12 @@
                 console.log(`ℹ️ Level ${levelNum} passed with ${correct}/${total} correct. Points only awarded for perfect scores.`);
             }
             
+            // Record game play (only when level is completed successfully)
+            if (passed) {
+                recordGamePlay('quizAdventure');
+                console.log('🎮 Quiz adventure play recorded');
+            }
+            
             // Show modal
             document.getElementById('levelCompleteIcon').textContent = passed ? '🎉' : '😢';
             document.getElementById('levelCompleteTitle').textContent = passed ? '關卡完成！' : '挑戰失敗';
@@ -7331,9 +7334,6 @@
             
             // Start or continue game session
             startGameSession();
-            
-            // Record this play
-            recordGamePlay('quizAdventure');
             
             switchTab('quiz-adventure', null);
             setTimeout(() => {
