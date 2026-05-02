@@ -9,6 +9,8 @@
     <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
     <!-- PeerJS for P2P sync -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <!-- Classroom Dictation Feature -->
+    <script src="classroom-dictation.js"></script>
     <style>
         * {
             margin: 0;
@@ -455,6 +457,16 @@
             100% {
                 transform: scale(1);
                 box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
+            }
+        }
+        
+        /* Gentle pulse for timer badge */
+        @keyframes badgePulse {
+            0%, 100% { 
+                transform: scale(1); 
+            }
+            50% { 
+                transform: scale(1.05); 
             }
         }
 
@@ -1474,6 +1486,11 @@
                             <div class="card-label">複習聽寫</div>
                         </div>
                         
+                        <div class="function-card learning" onclick="openClassroomDictation()">
+                            <div class="card-icon">📝</div>
+                            <div class="card-label">課堂默寫</div>
+                        </div>
+                        
                         <div class="function-card learning" onclick="switchTab('word-list')" style="grid-column: span 2;">
                             <div class="card-icon">📖</div>
                             <div class="card-label">查看我的單詞</div>
@@ -1721,6 +1738,13 @@
                 </div>
             </div>
 
+            <!-- Tab 3.5: Classroom Dictation -->
+            <div id="tab-classroom-dictation" class="tab-content">
+                <div id="classroomDictationContainer">
+                    <!-- Content will be loaded dynamically -->
+                </div>
+            </div>
+
             <!-- Tab 4: Growth Tree -->
             <div id="tab-growth-tree" class="tab-content">
                 <div style="text-align: center; padding: 20px; position: relative;">
@@ -1877,6 +1901,8 @@
             <!-- Tab 6: Memory Match Game -->
             <div id="tab-memory-match" class="tab-content">
                 <div style="padding: 20px; max-width: 900px; margin: 0 auto;">
+                    <!-- Session Timer Badge will be shared with quiz adventure (same ID) -->
+                    
                     <!-- Game Header -->
                     <div style="text-align: center; margin-bottom: 20px;">
                         <h2 style="color: #667eea; margin-bottom: 10px;">🎴 單詞配對遊戲</h2>
@@ -1971,6 +1997,19 @@
                                 onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 8px rgba(102, 126, 234, 0.3)'">
                             📖 查看遊戲規則
                         </button>
+                    </div>
+                    
+                    <!-- Session Timer Badge (Floating Top-Right) -->
+                    <div id="sessionTimerBadge" style="position: fixed; top: 80px; right: 20px; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); padding: 10px 15px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; display: none; transition: all 0.3s ease; cursor: pointer; border: 2px solid #4caf50;"
+                         onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 6px 16px rgba(0,0,0,0.2)'"
+                         onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'"
+                         onclick="showToast('⏱️ 遊戲時間限制：每小時自動重置\n保護視力，適度遊戲！', 3000)">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 1.2em;">⏱️</span>
+                            <div id="sessionTimerBadgeText" style="font-size: 0.95em; font-weight: bold; color: #2e7d32; font-family: monospace; white-space: nowrap;">
+                                60:00
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Level Map -->
@@ -2457,12 +2496,98 @@
     </div>
 
     <script>
+        // ============================================================================
+        // APPLICATION ARCHITECTURE - Modular Structure (Single File)
+        // ============================================================================
+        // 
+        // 📑 QUICK NAVIGATION - Search for these markers:
+        //    "// === DATA"         - Data Management & Storage
+        //    "// === SRS"          - Spaced Repetition System
+        //    "// === UI"           - UI Rendering & Components
+        //    "// === DICTATION"    - Dictation Game
+        //    "// === TREE"         - Growth Tree Visualization
+        //    "// === GAMES"        - Game Center (Memory, Quiz, etc.)
+        //    "// === POINTS"       - Points & Lottery System
+        //    "// === TASKS"        - Daily Task System
+        //    "// === QUICKADD"     - Quick Add & Utilities
+        //    "// === ADMIN"        - Admin Mode
+        //    "// === SYNC"         - P2P Sync (PeerJS)
+        //
+        // 📚 MODULE OVERVIEW:
+        //
+        // This application is organized into logical modules for better maintainability:
+        //
+        // 📦 DATA MANAGEMENT (Lines ~2528-7800)
+        //    - Global state: words, userPoints, dailyTaskState
+        //    - localStorage persistence: loadWords(), saveWords()
+        //    - IndexedDB caching: Example sentences, translations
+        //    - Data migration: updatedAt timestamp fixes
+        //
+        // 🎓 SRS SYSTEM (Lines ~4133-4263)
+        //    - Spaced Repetition System implementation
+        //    - Review scheduling and interval calculation
+        //    - Mastery tracking and progress monitoring
+        //
+        // 🎨 UI RENDERING (Lines ~3313-4163, ~7863-8563)
+        //    - Word list rendering and filtering
+        //    - Tab navigation and view switching
+        //    - Modal dialogs and popups
+        //    - Toast notifications
+        //
+        // ✍️ DICTATION GAME (Lines ~4585-5233)
+        //    - Dictation gameplay logic
+        //    - Audio playback and speech recognition
+        //    - Scoring and feedback system
+        //
+        // 🌳 GROWTH TREE (Lines ~5300-5408)
+        //    - Visual progress representation
+        //    - Tree growth animation
+        //    - Achievement tracking
+        //
+        // 🎮 GAME CENTER (Lines ~5474-7425)
+        //    - Memory Match Game (~5561-5978)
+        //    - Quiz Adventure Game (~5978-6814)
+        //    - Points & Lottery System (~6814-7425)
+        //    - Daily Task System (~7425-7763)
+        //
+        // ⚙️ ADMIN MODE (Lines ~10926-11583)
+        //    - Admin controls and settings
+        //    - Data export/import
+        //    - User management
+        //
+        // 🔄 P2P SYNC (Lines ~11588-12684)
+        //    - PeerJS integration
+        //    - Batched data transfer
+        //    - Conflict resolution and merge logic
+        //    - Timestamp-based synchronization
+        //
+        // 🔧 QUICK ADD & UTILITIES (Lines ~10224-10923)
+        //    - Quick word addition via JSON
+        //    - Search and filter functions
+        //    - Autocomplete and translation
+        //
+        // ============================================================================
+        // 💡 MAINTENANCE TIPS:
+        // - Each module is separated by comment headers (=== Module Name ===)
+        // - Search for "// ===" to quickly navigate between modules
+        // - Global state variables are declared at the top (~line 2524)
+        // - Helper functions are grouped with their related modules
+        // - To add new features, find the appropriate module section
+        // - Keep related functions together for better organization
+        // ============================================================================
+        // 🚀 FUTURE ENHANCEMENTS:
+        // - Consider extracting large modules (>2000 lines) into separate files
+        // - Add TypeScript definitions for better type safety
+        // - Implement unit tests for critical functions
+        // - Add performance monitoring and error tracking
+        // ============================================================================
+        
         // Data storage
         let words = [];
         let calendar;
         let exampleCache = {}; // Cache fetched examples (memory, temporary)
         
-        // ==================== Example Sentence Persistent Cache (IndexedDB) ====================
+        // ==================== Example Sentence Persistent Cache (IndexedDB) === DATA ====================
         
         const EXAMPLE_CACHE_DB_NAME = 'ExampleSentencesCacheDB';
         const EXAMPLE_CACHE_STORE_NAME = 'examples';
@@ -2701,7 +2826,7 @@
         let translationCache = {}; // Cache translations (memory, temporary)
         let translationInProgress = new Set(); // Track ongoing translations to prevent duplicates
         
-        // ==================== Translation Persistent Cache (IndexedDB) ====================
+        // ==================== Translation Persistent Cache (IndexedDB) === DATA ====================
         
         const TRANSLATION_CACHE_DB_NAME = 'TranslationCacheDB';
         const TRANSLATION_CACHE_STORE_NAME = 'translations';
@@ -4021,6 +4146,12 @@
                 initReviewTab();
             }
             
+            // Initialize classroom dictation tab when switching to it
+            if (tabName === 'classroom-dictation') {
+                // Classroom dictation is initialized by openClassroomDictation()
+                // No additional initialization needed here
+            }
+            
             // Initialize growth tree tab when switching to it
             if (tabName === 'growth-tree') {
                 initGrowthTreeTab();
@@ -4176,15 +4307,51 @@
 
         // Initialize review tab
         function initReviewTab() {
-            const dueWords = getDueWords();
+            // Check if review container has been overwritten by classroom dictation
             const statsEl = document.getElementById('reviewStats');
             const startBtn = document.getElementById('startReviewBtn');
+            
+            // If elements don't exist, restore the original review tab HTML
+            if (!statsEl || !startBtn) {
+                console.log('🔄 Restoring review tab HTML structure');
+                const container = document.getElementById('reviewContainer');
+                if (container) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 40px 20px;">
+                            <h2 style="color: #667eea; margin-bottom: 20px;">📚 今日複習</h2>
+                            <div id="reviewStats" style="margin-bottom: 30px; font-size: 1.2em; color: #666;">
+                                載入中...
+                            </div>
+                            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                                <button id="startReviewBtn" onclick="startReviewSession()" style="padding: 15px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 1.2em; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+                                    開始複習
+                                </button>
+                                <button id="startDictationBtn" onclick="startDictationSession()" style="padding: 15px 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 10px; font-size: 1.2em; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);">
+                                    🎧 開始聽寫
+                                </button>
+                            </div>
+                            <div id="reviewComplete" style="display: none; margin-top: 30px;">
+                                <div style="font-size: 3em; margin-bottom: 20px;">🎉</div>
+                                <h3 style="color: #51cf66; margin-bottom: 10px;">太棒了！</h3>
+                                <p style="color: #666; margin-bottom: 20px;">你已完成今日所有複習任務</p>
+                                <button onclick="initReviewTab()" style="padding: 10px 20px; background: #f0f4ff; border: none; border-radius: 8px; color: #667eea; cursor: pointer;">
+                                    🔄 重新整理
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            // Now initialize the review tab normally
+            const dueWords = getDueWords();
+            const statsElNow = document.getElementById('reviewStats');
+            const startBtnNow = document.getElementById('startReviewBtn');
             const dictationBtn = document.getElementById('startDictationBtn');
             const completeEl = document.getElementById('reviewComplete');
             
-            // Safety check - elements might not exist if we're in dictation mode
-            if (!statsEl || !startBtn) {
-                console.warn('⚠️ Review tab elements not found, skipping init');
+            if (!statsElNow || !startBtnNow) {
+                console.warn('⚠️ Review tab elements still not found after restoration');
                 return;
             }
             
@@ -4193,16 +4360,16 @@
             }
             
             if (dueWords.length === 0) {
-                statsEl.innerHTML = '<div style="font-size: 2em; margin-bottom: 10px;">✨</div><p>沒有需要複習的單詞</p>';
-                startBtn.style.display = 'none';
+                statsElNow.innerHTML = '<div style="font-size: 2em; margin-bottom: 10px;">✨</div><p>沒有需要複習的單詞</p>';
+                startBtnNow.style.display = 'none';
                 if (dictationBtn) dictationBtn.style.display = 'none';
             } else {
-                statsEl.innerHTML = `
+                statsElNow.innerHTML = `
                     <div style="font-size: 3em; margin-bottom: 10px;">📚</div>
                     <p style="font-size: 1.5em; color: #667eea; font-weight: bold;">${dueWords.length} 個單詞待複習</p>
                     <p style="margin-top: 10px;">今天是你複習這些單詞的好日子！</p>
                 `;
-                startBtn.style.display = 'inline-block';
+                startBtnNow.style.display = 'inline-block';
                 if (dictationBtn) dictationBtn.style.display = 'inline-block';
             }
         }
@@ -4456,7 +4623,7 @@
             console.log('✅ Review stopped, returned to review tab');
         }
 
-        // ==================== Dictation Functions ====================
+        // ==================== Dictation Functions === DICTATION ====================
         
         // Start dictation session
         function startDictationSession() {
@@ -4651,6 +4818,7 @@
                         
                         // Optionally update the word's chinese field for future use
                         word.chinese = displayText;
+                        updateWordTimestamp(word);  // Update timestamp when modifying
                         saveWords(); // Save the updated translation
                     }
                 } catch (error) {
@@ -5170,7 +5338,7 @@
             }, 500);
         });
 
-        // ==================== Growth Tree Functions ====================
+        // ==================== Growth Tree Functions === TREE ====================
         
         // Draw the growth tree based on word count
         function drawGrowthTree() {
@@ -5344,7 +5512,7 @@
             renderAchievements(masteredCount);
         }
         
-        // ==================== Game Center ====================
+        // ==================== Game Center === GAMES ====================
         
         // Initialize game center
         function initGameCenter() {
@@ -5371,6 +5539,10 @@
         // ==================== Daily Game Play Limit ====================
         
         const MAX_DAILY_PLAYS = 5; // Maximum plays per day per game
+        const MAX_SESSION_TIME = 60 * 60 * 1000; // 1 hour in milliseconds (for kids' eye protection)
+        // Session time is tracked in localStorage and resets after 1 hour
+        // Timer persists across page refreshes
+        // Applies to ALL games: Memory Match, Quiz Adventure, etc.
         
         // Check if user can play a specific game today
         function canPlayGame(gameType) {
@@ -5409,6 +5581,200 @@
             return true;
         }
         
+        // ==================== Game Session Time Limit ====================
+        
+        // Get current session start time
+        function getSessionStartTime() {
+            const stored = localStorage.getItem('gameSessionStart');
+            if (stored) {
+                const startTime = parseInt(stored);
+                const now = Date.now();
+                
+                // Check if session has expired (more than 1 hour ago)
+                if (now - startTime > MAX_SESSION_TIME) {
+                    // Session expired, reset
+                    localStorage.removeItem('gameSessionStart');
+                    localStorage.removeItem('gameSessionTime');
+                    console.log('⏰ Game session expired, resetting timer');
+                    return null;
+                }
+                
+                return startTime;
+            }
+            return null;
+        }
+        
+        // Start or continue game session
+        function startGameSession() {
+            let startTime = getSessionStartTime();
+            
+            if (!startTime) {
+                // New session
+                startTime = Date.now();
+                localStorage.setItem('gameSessionStart', startTime.toString());
+                localStorage.setItem('gameSessionTime', '0');
+                console.log('🎮 New game session started');
+            } else {
+                console.log('🎮 Continuing existing game session');
+            }
+            
+            return startTime;
+        }
+        
+        // Get elapsed time in current session
+        function getSessionElapsedTime() {
+            const startTime = getSessionStartTime();
+            if (!startTime) return 0;
+            
+            const elapsed = Date.now() - startTime;
+            return elapsed;
+        }
+        
+        // Get remaining session time
+        function getRemainingSessionTime() {
+            const elapsed = getSessionElapsedTime();
+            const remaining = MAX_SESSION_TIME - elapsed;
+            return Math.max(0, remaining);
+        }
+        
+        // Format time for display
+        function formatTime(milliseconds) {
+            const totalSeconds = Math.floor(milliseconds / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        // Check if session time limit is exceeded
+        function isSessionTimeExceeded() {
+            const elapsed = getSessionElapsedTime();
+            return elapsed >= MAX_SESSION_TIME;
+        }
+        
+        // Check and handle session time limit
+        function checkSessionTimeLimit() {
+            if (isSessionTimeExceeded()) {
+                const remainingPlays = getRemainingPlays('quizAdventure');
+                
+                showTimeLimitModal(remainingPlays);
+                return false;
+            }
+            return true;
+        }
+        
+        // Show time limit modal
+        function showTimeLimitModal(remainingPlays) {
+            const modal = document.getElementById('timeLimitModal');
+            if (!modal) {
+                // Create modal if not exists
+                createTimeLimitModal();
+            }
+            
+            // Update modal content
+            const remainingTime = getRemainingSessionTime();
+            const nextResetTime = new Date(Date.now() + remainingTime);
+            const resetHour = nextResetTime.getHours();
+            const resetMinute = nextResetTime.getMinutes();
+            
+            document.getElementById('timeLimitMessage').innerHTML = `
+                <div style="font-size: 1.2em; margin-bottom: 15px;">
+                    ⏰ 遊戲時間已到！<br>
+                    <span style="font-size: 0.9em; color: #666;">保護視力，休息一下吧</span>
+                </div>
+                <div style="background: #f0f4ff; padding: 15px; border-radius: 10px; margin: 15px 0;">
+                    <div style="font-size: 0.9em; color: #667eea; margin-bottom: 5px;">📊 今日剩餘次數</div>
+                    <div style="font-size: 1.5em; font-weight: bold; color: #667eea;">${remainingPlays} 次</div>
+                </div>
+                <div style="font-size: 0.85em; color: #999; margin-top: 10px;">
+                    下次可玩時間：今天 ${resetHour.toString().padStart(2, '0')}:${resetMinute.toString().padStart(2, '0')}
+                </div>
+            `;
+            
+            // Show modal
+            document.getElementById('timeLimitModal').style.display = 'flex';
+            document.getElementById('timeLimitOverlay').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('timeLimitModal').classList.add('active');
+                document.getElementById('timeLimitOverlay').classList.add('active');
+            }, 10);
+        }
+        
+        // Create time limit modal
+        function createTimeLimitModal() {
+            const modalHTML = `
+                <div id="timeLimitOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9998; transition: opacity 0.3s ease;"></div>
+                <div id="timeLimitModal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 20px; padding: 30px; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); z-index: 9999; transition: all 0.3s ease; opacity: 0;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 4em; margin-bottom: 15px;">😴</div>
+                        <div id="timeLimitMessage"></div>
+                        <button onclick="closeTimeLimitModal()" style="margin-top: 20px; padding: 12px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 1em; font-weight: bold; transition: all 0.2s;"
+                                onmouseover="this.style.transform='scale(1.05)'"
+                                onmouseout="this.style.transform='scale(1)'">
+                            好的，我去休息
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+        
+        // Close time limit modal
+        function closeTimeLimitModal() {
+            const modal = document.getElementById('timeLimitModal');
+            const overlay = document.getElementById('timeLimitOverlay');
+            
+            modal.classList.remove('active');
+            overlay.classList.remove('active');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                overlay.style.display = 'none';
+            }, 300);
+        }
+        
+        // Update session timer display (call this periodically)
+        function updateSessionTimerDisplay() {
+            const remaining = getRemainingSessionTime();
+            const formattedTime = formatTime(remaining);
+            
+            // Update floating badge
+            const badgeEl = document.getElementById('sessionTimerBadge');
+            const badgeTextEl = document.getElementById('sessionTimerBadgeText');
+            
+            if (badgeEl && badgeTextEl) {
+                badgeTextEl.textContent = formattedTime;
+                
+                // Show/hide badge based on game state
+                const isInGame = document.getElementById('tab-quiz-adventure')?.style.display !== 'none' ||
+                                document.getElementById('tab-memory-match')?.style.display !== 'none';
+                
+                if (isInGame) {
+                    badgeEl.style.display = 'block';
+                } else {
+                    badgeEl.style.display = 'none';
+                }
+                
+                // Warning when time is running low
+                if (remaining < 10 * 60 * 1000) { // Less than 10 minutes
+                    badgeEl.style.background = 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)';
+                    badgeEl.style.borderColor = '#ff4757';
+                    badgeTextEl.style.color = '#ff4757';
+                    // Add gentle pulse animation for critical time
+                    badgeEl.style.animation = 'badgePulse 1s infinite';
+                } else if (remaining < 20 * 60 * 1000) { // Less than 20 minutes
+                    badgeEl.style.background = 'linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)';
+                    badgeEl.style.borderColor = '#ffa502';
+                    badgeTextEl.style.color = '#ffa502';
+                    badgeEl.style.animation = 'none';
+                } else {
+                    badgeEl.style.background = 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)';
+                    badgeEl.style.borderColor = '#4caf50';
+                    badgeTextEl.style.color = '#2e7d32';
+                    badgeEl.style.animation = 'none';
+                }
+            }
+        }
+        
         // Update game play badges in game center
         function updateGamePlayBadges() {
             const memoryBadge = document.getElementById('memoryMatchPlaysBadge');
@@ -5431,7 +5797,7 @@
             }
         }
         
-        // ==================== Memory Match Game ====================
+        // ==================== Memory Match Game === GAMES ====================
         
         let memoryGameState = {
             cards: [],
@@ -5840,15 +6206,62 @@
         
         // Update startMemoryMatchGame to actually start the game
         function startMemoryMatchGame() {
+            // Check daily play limit
+            if (!checkGameLimit('memoryMatch', '單詞配對')) {
+                return;
+            }
+            
+            // Check session time limit
+            if (!checkSessionTimeLimit()) {
+                return;
+            }
+            
+            // Start or continue game session
+            startGameSession();
+            
+            // Record this play
+            recordGamePlay('memoryMatch');
+            
             switchTab('memory-match', null);
             setTimeout(() => {
                 if (memoryGameState.matchedPairs === 0 || memoryGameState.matchedPairs === memoryGameState.totalPairs) {
                     startNewGame();
                 }
+                // Start session timer update
+                startSessionTimerUpdate();
             }, 100);
         }
         
-        // ==================== Quiz Adventure Game ====================
+        // ==================== Quiz Adventure Game === GAMES ====================
+        // 
+        // 🎮 GAME FEATURES:
+        // ✅ Infinite levels - no hard limit, progress saved
+        // ✅ Kid-friendly design - fixed 10 questions per level (avoid fatigue)
+        // ✅ Progressive difficulty - time limit decreases,题型解锁
+        // ✅ Smart word selection - SRS-based intelligent question generation
+        // ✅ Adaptive timing - time adjusts based on word mastery level
+        //    - Familiar words: Less time (50-70% of base)
+        //    - Medium mastery: Moderate time (70-99% of base)
+        //    - New/weak words: Full time or extra (100-110% of base)
+        // ✅ Progressive题型解锁 - new question types unlock at higher levels
+        //    - Level 1-4: Listen & Choose, Read & Translate
+        //    - Level 5+: Fill in the Blank
+        //    - Level 10+: Spelling Challenge
+        //    - Level 15+: Sentence Completion
+        // ✅ Adaptive learning - focuses on review and weak words at high levels
+        //
+        // 📊 DIFFICULTY PROGRESSION:
+        //    Questions: Fixed 10 per level (kid-friendly)
+        //    Base Time: 30s → 15s (decreases by 2s every 3 levels)
+        //    Adaptive Time: Adjusted per word based on SRS mastery score
+        //      - Mastery Score = Repetitions(40%) + Ease Factor(30%) + Interval(30%)
+        //      - High mastery (80+): 50-60% of base time
+        //      - Medium mastery (50-79): 70-99% of base time
+        //      - Low mastery (0-49): 100-110% of base time
+        //    Word Selection: Smart SRS-based distribution
+        //      - Early levels: 20% review + 20% weak + 40% recent + 20% random
+        //      - Mid levels: 30% review + 30% weak + 20% recent + 20% random
+        //      - High levels: 40% review + 40% weak + 10% recent + 10% random
         
         let quizGameState = {
             currentLevel: 1,
@@ -5862,7 +6275,9 @@
             defaultTimeLimit: 30 // Default 30 seconds per question
         };
         
-        const TOTAL_LEVELS = 20; // Total levels in the game
+        // Dynamic level system - no hard limit
+        const MAX_DISPLAY_LEVELS = 100; // Maximum levels to display in map at once
+        const LEVEL_BATCH_SIZE = 20; // Show levels in batches of 20
         
         // Save quiz game state to localStorage
         function saveQuizGameState() {
@@ -5888,6 +6303,102 @@
             } catch (e) {
                 console.error('❌ Failed to load quiz game state:', e);
             }
+        }
+        
+        // Get the highest unlocked level based on progress
+        function getMaxUnlockedLevel() {
+            const progress = JSON.parse(localStorage.getItem('quizAdventureProgress') || '{}');
+            let maxLevel = 1;
+            
+            // Find the highest completed level
+            for (let i = 1; i <= MAX_DISPLAY_LEVELS; i++) {
+                if (progress[i] && progress[i].completed) {
+                    maxLevel = i + 1;
+                } else if (i > 1 && !progress[i]) {
+                    // Stop at first gap (sequential progression)
+                    break;
+                }
+            }
+            
+            return maxLevel;
+        }
+        
+        // Calculate dynamic difficulty based on level
+        function getLevelDifficulty(levelNum) {
+            return {
+                // Fixed 10 questions per level for kids (avoid fatigue)
+                questionCount: 10,
+                
+                // Base time limit decreases with level: 30s, 28s, 26s, ... min 15s
+                baseTimeLimit: Math.max(30 - Math.floor((levelNum - 1) / 3) * 2, 15),
+                
+                // Available question types expand with level
+                availableTypes: getAvailableQuestionTypes(levelNum)
+            };
+        }
+        
+        // Calculate adaptive time limit based on word mastery
+        function getAdaptiveTimeLimit(word, baseTimeLimit) {
+            if (!word.srs) return baseTimeLimit;
+            
+            const { repetitions, easeFactor, interval } = word.srs;
+            
+            // Calculate mastery score (0-100)
+            let masteryScore = 0;
+            
+            // Factor 1: Repetitions (0-40 points)
+            masteryScore += Math.min(repetitions * 10, 40);
+            
+            // Factor 2: Ease factor (0-30 points)
+            masteryScore += Math.min((easeFactor - 1.3) * 30, 30);
+            
+            // Factor 3: Interval in days (0-30 points)
+            const intervalDays = interval || 0;
+            masteryScore += Math.min(intervalDays * 2, 30);
+            
+            // Adjust time based on mastery
+            // High mastery (80-100): reduce time by 30-50%
+            // Medium mastery (50-79): reduce time by 10-30%
+            // Low mastery (0-49): keep full time or add 10%
+            
+            let timeMultiplier;
+            if (masteryScore >= 80) {
+                // Very familiar - much less time needed
+                timeMultiplier = 0.5 + (masteryScore - 80) / 200; // 0.5 - 0.6
+            } else if (masteryScore >= 50) {
+                // Somewhat familiar - moderate reduction
+                timeMultiplier = 0.7 + (masteryScore - 50) / 100; // 0.7 - 0.99
+            } else {
+                // Unfamiliar - full time or slightly more
+                timeMultiplier = 1.0 + (50 - masteryScore) / 500; // 1.0 - 1.1
+            }
+            
+            const adjustedTime = Math.round(baseTimeLimit * timeMultiplier);
+            
+            // Ensure reasonable bounds: min 8s, max baseTimeLimit + 5s
+            return Math.max(8, Math.min(adjustedTime, baseTimeLimit + 5));
+        }
+        
+        // Get available question types based on level
+        function getAvailableQuestionTypes(levelNum) {
+            const types = ['listen_choose', 'read_translate'];
+            
+            // Level 5+: Add fill-in-blank
+            if (levelNum >= 5) {
+                types.push('fill_blank');
+            }
+            
+            // Level 10+: Add spelling challenge
+            if (levelNum >= 10) {
+                types.push('spell_word');
+            }
+            
+            // Level 15+: Add sentence completion (if examples exist)
+            if (levelNum >= 15) {
+                types.push('sentence_completion');
+            }
+            
+            return types;
         }
         
         // Initialize quiz adventure
@@ -5932,23 +6443,51 @@
         function renderLevelMap() {
             const levelMap = document.getElementById('levelMap');
             const progress = JSON.parse(localStorage.getItem('quizAdventureProgress') || '{}');
+            const maxUnlocked = getMaxUnlockedLevel();
             
-            console.log('🗺️ Rendering level map. Progress:', progress);
+            console.log('🗺️ Rendering level map. Max unlocked:', maxUnlocked);
             console.log('📊 Current quizGameState level:', quizGameState.currentLevel);
             
             levelMap.innerHTML = '';
             
-            for (let i = 1; i <= TOTAL_LEVELS; i++) {
+            // Display levels from 1 to maxUnlocked + 5 (show some locked levels ahead)
+            const displayEnd = Math.min(maxUnlocked + 5, MAX_DISPLAY_LEVELS);
+            
+            for (let i = 1; i <= displayEnd; i++) {
                 const levelData = progress[i] || { stars: 0, completed: false };
                 const isUnlocked = i === 1 || (progress[i - 1] && progress[i - 1].completed);
-                console.log(`  Level ${i}: completed=${levelData.completed}, unlocked=${isUnlocked}`);
-                const levelEl = createLevelElement(i, levelData, progress);
+                
+                // Add difficulty indicator for higher levels
+                const difficulty = getLevelDifficulty(i);
+                
+                console.log(`  Level ${i}: completed=${levelData.completed}, unlocked=${isUnlocked}, questions=${difficulty.questionCount}, time=${difficulty.timeLimit}s`);
+                
+                const levelEl = createLevelElement(i, levelData, progress, difficulty);
                 levelMap.appendChild(levelEl);
+            }
+            
+            // Add "More Levels Coming Soon" card if at max display
+            if (displayEnd >= MAX_DISPLAY_LEVELS) {
+                const moreEl = document.createElement('div');
+                moreEl.style.cssText = `
+                    background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%);
+                    border: 3px dashed #667eea;
+                    border-radius: 12px;
+                    padding: 20px;
+                    text-align: center;
+                    cursor: default;
+                `;
+                moreEl.innerHTML = `
+                    <div style="font-size: 2em; margin-bottom: 10px;">🚀</div>
+                    <div style="font-size: 1em; color: #667eea; font-weight: bold;">更多關卡開發中...</div>
+                    <div style="font-size: 0.8em; color: #999; margin-top: 5px;">繼續挑戰，無限闖關！</div>
+                `;
+                levelMap.appendChild(moreEl);
             }
         }
         
         // Create level element
-        function createLevelElement(levelNum, levelData, progress) {
+        function createLevelElement(levelNum, levelData, progress, difficulty) {
             const levelEl = document.createElement('div');
             const isUnlocked = levelNum === 1 || (progress[levelNum - 1] && progress[levelNum - 1].completed);
             
@@ -5986,10 +6525,33 @@
             
             const stars = levelData.completed ? '⭐'.repeat(levelData.stars) : (isUnlocked ? '🔒' : '🔒');
             
+            // Add difficulty badge for higher levels
+            let difficultyBadge = '';
+            if (levelNum >= 5 && isUnlocked) {
+                const diffColor = levelNum >= 20 ? '#ff4757' : (levelNum >= 10 ? '#ffa502' : '#2ed573');
+                const diffText = levelNum >= 20 ? '專家' : (levelNum >= 10 ? '進階' : '簡單');
+                difficultyBadge = `<div style="position: absolute; top: -8px; right: -8px; background: ${diffColor}; color: white; font-size: 0.6em; padding: 2px 6px; border-radius: 10px; font-weight: bold;">${diffText}</div>`;
+            }
+            
+            // Show question count and time limit for unlocked levels
+            let levelInfo = '';
+            if (isUnlocked && !levelData.completed) {
+                levelInfo = `
+                    <div style="font-size: 0.7em; color: #666; margin-top: 5px;">
+                        📝 ${difficulty.questionCount}題 | ⏱️ ${difficulty.baseTimeLimit}秒+
+                    </div>
+                    <div style="font-size: 0.6em; color: #999; margin-top: 2px;">
+                        時間根據熟練度調整
+                    </div>
+                `;
+            }
+            
             levelEl.innerHTML = `
+                ${difficultyBadge}
                 <div style="font-size: 1.8em; font-weight: bold; color: ${levelData.completed ? '#38a169' : '#666'}; margin-bottom: 8px;">${levelNum}</div>
                 <div style="font-size: 1.2em; letter-spacing: 3px;">${stars}</div>
                 ${levelData.completed ? '<div style="font-size: 0.75em; color: #38a169; margin-top: 5px;">✅ 已完成</div>' : ''}
+                ${levelInfo}
             `;
             
             return levelEl;
@@ -6025,47 +6587,117 @@
         
         // Generate questions for a level
         function generateQuestions(levelNum) {
-            // Smart word selection: mix of recent words, random words, and review words
-            const availableWords = words.filter(w => w.english && (w.chinese || w.customTranslation));
+            // Get difficulty settings for this level
+            const difficulty = getLevelDifficulty(levelNum);
+            quizGameState.totalQuestions = difficulty.questionCount;
+            quizGameState.defaultTimeLimit = difficulty.baseTimeLimit; // Store base time limit
             
-            if (availableWords.length === 0) {
+            console.log(`📊 Level ${levelNum} difficulty: ${difficulty.questionCount} questions, base time ${difficulty.baseTimeLimit}s`);
+            console.log(`🎯 Available types: ${difficulty.availableTypes.join(', ')}`);
+            
+            // Smart word selection: SRS-based intelligent selection
+            const selectedWords = selectSmartWords(levelNum, difficulty.questionCount);
+            
+            if (selectedWords.length === 0) {
                 showToast('❌ 沒有足夠的單詞，請先添加單詞', 3000);
                 return;
             }
             
-            let selectedWords = [];
-            
-            // Strategy: Mix different types of words
-            const recentCount = Math.min(3, Math.floor(quizGameState.totalQuestions * 0.3)); // 30% recent
-            const randomCount = quizGameState.totalQuestions - recentCount; // 70% random
-            
-            // Get recent words (last added or recently studied)
-            const recentWords = availableWords.slice(-recentCount);
-            selectedWords = [...recentWords];
-            
-            // Fill remaining with random words
-            const remainingWords = availableWords.filter(w => !selectedWords.includes(w));
-            const randomWords = shuffleArray(remainingWords).slice(0, randomCount);
-            selectedWords = [...selectedWords, ...randomWords];
-            
-            // If not enough words, just use what we have
-            if (selectedWords.length < quizGameState.totalQuestions) {
-                selectedWords = shuffleArray(availableWords).slice(0, quizGameState.totalQuestions);
-            }
-            
             // Shuffle the final selection
-            selectedWords = shuffleArray(selectedWords);
+            const shuffledWords = shuffleArray(selectedWords);
             
-            // Generate questions with mixed types
-            quizGameState.questions = selectedWords.map((word, index) => {
-                const questionTypes = ['listen_choose', 'read_translate', 'fill_blank'];
-                // Random question type for variety
-                const type = questionTypes[Math.floor(Math.random() * questionTypes.length)];
+            // Generate questions with mixed types based on level difficulty
+            quizGameState.questions = shuffledWords.map((word, index) => {
+                // Select question type based on available types for this level
+                const type = difficulty.availableTypes[Math.floor(Math.random() * difficulty.availableTypes.length)];
                 
-                return createQuestion(word, type, levelNum);
+                // Calculate adaptive time limit for this specific word
+                const adaptiveTime = getAdaptiveTimeLimit(word, difficulty.baseTimeLimit);
+                
+                const question = createQuestion(word, type, levelNum);
+                question.timeLimit = adaptiveTime; // Add per-question time limit
+                
+                return question;
             });
             
-            console.log(`📚 Level ${levelNum}: Generated ${quizGameState.questions.length} questions (${recentCount} recent + ${randomCount} random)`);
+            console.log(`✅ Level ${levelNum}: Generated ${quizGameState.questions.length} smart questions with adaptive timing`);
+        }
+        
+        // Smart word selection based on SRS data
+        function selectSmartWords(levelNum, count) {
+            const availableWords = words.filter(w => w.english && (w.chinese || w.customTranslation));
+            
+            if (availableWords.length === 0) return [];
+            
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Category 1: Words due for review (highest priority)
+            const reviewWords = availableWords.filter(w => 
+                w.srs && w.srs.nextReviewDate && w.srs.nextReviewDate <= today
+            );
+            
+            // Category 2: Weak words (low mastery)
+            const weakWords = availableWords.filter(w => 
+                w.srs && w.srs.repetitions < 3 && !reviewWords.includes(w)
+            );
+            
+            // Category 3: Recent words (last 20 added)
+            const recentWords = availableWords.slice(-20).filter(w => 
+                !reviewWords.includes(w) && !weakWords.includes(w)
+            );
+            
+            // Category 4: Random words
+            const otherWords = availableWords.filter(w => 
+                !reviewWords.includes(w) && !weakWords.includes(w) && !recentWords.includes(w)
+            );
+            
+            let selectedWords = [];
+            
+            // Distribution strategy based on level
+            let reviewRatio, weakRatio, recentRatio, randomRatio;
+            
+            if (levelNum <= 5) {
+                // Early levels: more recent and random
+                reviewRatio = 0.2;
+                weakRatio = 0.2;
+                recentRatio = 0.4;
+                randomRatio = 0.2;
+            } else if (levelNum <= 15) {
+                // Mid levels: balanced
+                reviewRatio = 0.3;
+                weakRatio = 0.3;
+                recentRatio = 0.2;
+                randomRatio = 0.2;
+            } else {
+                // High levels: focus on review and weak words
+                reviewRatio = 0.4;
+                weakRatio = 0.4;
+                recentRatio = 0.1;
+                randomRatio = 0.1;
+            }
+            
+            // Select words from each category
+            const reviewCount = Math.floor(count * reviewRatio);
+            const weakCount = Math.floor(count * weakRatio);
+            const recentCount = Math.floor(count * recentRatio);
+            const randomCount = count - reviewCount - weakCount - recentCount;
+            
+            selectedWords = [
+                ...shuffleArray(reviewWords).slice(0, reviewCount),
+                ...shuffleArray(weakWords).slice(0, weakCount),
+                ...shuffleArray(recentWords).slice(0, recentCount),
+                ...shuffleArray(otherWords).slice(0, randomCount)
+            ];
+            
+            // If not enough words, fill with random
+            if (selectedWords.length < count) {
+                const remaining = availableWords.filter(w => !selectedWords.includes(w));
+                selectedWords = [...selectedWords, ...shuffleArray(remaining).slice(0, count - selectedWords.length)];
+            }
+            
+            console.log(`🧠 Smart selection: ${reviewCount} review + ${weakCount} weak + ${recentCount} recent + ${randomCount} random = ${selectedWords.length} total`);
+            
+            return selectedWords.slice(0, count);
         }
         
         // Create a question
@@ -6106,6 +6738,40 @@
                 question.correct = word.english.toLowerCase();
                 question.answerType = 'input';
                 question.word = word; // Store full word object for audio
+                
+            } else if (type === 'spell_word') {
+                // Spelling challenge - hear and spell
+                question.text = '🔤 聽音拼寫：請拼出你聽到的單詞';
+                question.audio = word.english;
+                question.correct = word.english.toLowerCase();
+                question.answerType = 'input';
+                question.hint = word.chinese || word.customTranslation;
+                question.word = word;
+                
+            } else if (type === 'sentence_completion') {
+                // Sentence completion using examples
+                if (word.examples && word.examples.length > 0) {
+                    const example = word.examples[0];
+                    const sentence = example.en || example;
+                    // Replace the word with blank
+                    const regex = new RegExp(`\\b${word.english}\\b`, 'i');
+                    const blankSentence = sentence.replace(regex, '_____');
+                    
+                    question.text = `📝 完成句子：${blankSentence}`;
+                    question.correct = word.english.toLowerCase();
+                    question.answerType = 'input';
+                    question.hint = word.chinese || word.customTranslation;
+                    question.word = word;
+                    question.sentence = sentence; // Store original sentence for reference
+                } else {
+                    // Fallback to fill_blank if no examples
+                    const blank = '_'.repeat(word.english.length);
+                    question.text = `✏️ 補全單詞：${blank}`;
+                    question.hint = word.chinese || word.customTranslation;
+                    question.correct = word.english.toLowerCase();
+                    question.answerType = 'input';
+                    question.word = word;
+                }
             }
             
             return question;
@@ -6305,12 +6971,20 @@
             // Get current question to determine time limit
             const question = quizGameState.questions[quizGameState.currentQuestion];
             
-            // Set time limit based on question type
-            // Fill-in-blank needs more time for typing (40s), multiple choice is faster (30s)
-            if (question.answerType === 'input') {
-                quizGameState.timeRemaining = 40; // 40 seconds for typing
+            // Use adaptive time limit from question (calculated based on word mastery)
+            // If not set, fall back to default logic
+            if (question.timeLimit) {
+                // Use the pre-calculated adaptive time limit
+                quizGameState.timeRemaining = question.timeLimit;
+                console.log(`⏱️ Question ${quizGameState.currentQuestion + 1}: Adaptive time ${question.timeLimit}s (word: ${question.word.english})`);
             } else {
-                quizGameState.timeRemaining = quizGameState.defaultTimeLimit; // 30 seconds for multiple choice
+                // Fallback: Set time limit based on question type
+                // Fill-in-blank needs more time for typing (40s), multiple choice is faster (30s)
+                if (question.answerType === 'input') {
+                    quizGameState.timeRemaining = 40; // 40 seconds for typing
+                } else {
+                    quizGameState.timeRemaining = quizGameState.defaultTimeLimit; // Default for multiple choice
+                }
             }
             
             updateTimerDisplay();
@@ -6617,7 +7291,7 @@
             document.getElementById('finalStars').textContent = stars;
             
             const nextBtn = document.getElementById('nextLevelBtn');
-            if (passed && levelNum < TOTAL_LEVELS) {
+            if (passed) {
                 nextBtn.style.display = 'block';
                 // Save progress when passing a level
                 quizGameState.currentLevel = levelNum + 1;
@@ -6650,13 +7324,48 @@
                 return;
             }
             
+            // Check session time limit
+            if (!checkSessionTimeLimit()) {
+                return;
+            }
+            
+            // Start or continue game session
+            startGameSession();
+            
             // Record this play
             recordGamePlay('quizAdventure');
             
             switchTab('quiz-adventure', null);
             setTimeout(() => {
                 initQuizAdventure();
+                // Start session timer update
+                startSessionTimerUpdate();
             }, 100);
+        }
+        
+        // Session timer update interval
+        let sessionTimerInterval = null;
+        
+        // Start updating session timer display
+        function startSessionTimerUpdate() {
+            // Clear existing timer
+            if (sessionTimerInterval) {
+                clearInterval(sessionTimerInterval);
+            }
+            
+            // Update immediately
+            updateSessionTimerDisplay();
+            
+            // Update every second
+            sessionTimerInterval = setInterval(() => {
+                updateSessionTimerDisplay();
+                
+                // Check if time limit exceeded
+                if (isSessionTimeExceeded()) {
+                    clearInterval(sessionTimerInterval);
+                    checkSessionTimeLimit();
+                }
+            }, 1000);
         }
         
         // Update motivational message based on progress
@@ -6684,7 +7393,7 @@
             messageEl.textContent = message;
         }
         
-        // ==================== Points & Lottery System ====================
+        // ==================== Points & Lottery System === POINTS ====================
         
         // Initialize points system
         let userPoints = parseInt(localStorage.getItem('userPoints') || '0');
@@ -7295,7 +8004,7 @@
             hasPendingLottery = localStorage.getItem('hasPendingLottery') === 'true';
         }
         
-        // ==================== Daily Task System ====================
+        // ==================== Daily Task System === TASKS ====================
         
         // Get today's date string (YYYY-MM-DD)
         function getTodayString() {
@@ -7721,7 +8430,9 @@
             const stored = localStorage.getItem('dictationWords');
             if (stored) {
                 words = JSON.parse(stored);
-                // Initialize SRS data for all existing words
+                
+                // Migration: Fix updatedAt for all words
+                let migrationCount = 0;
                 words.forEach(word => {
                     // Include words with English OR Chinese
                     if (word.english || word.chinese) {
@@ -7730,12 +8441,62 @@
                         if (!word.srs.nextReviewDate) {
                             word.srs.nextReviewDate = new Date().toISOString().split('T')[0];
                         }
+                        
+                        // Migration: Fix incorrect updatedAt timestamps
+                        // If updatedAt is at UTC midnight but date is different, recalculate using local time
+                        if (word.updatedAt && word.date) {
+                            const needsMigration = 
+                                // Case 1: updatedAt is date-only format (no time component)
+                                !word.updatedAt.includes('T') ||
+                                // Case 2: updatedAt is at exact UTC midnight (common bug from previous logic)
+                                word.updatedAt.endsWith('T00:00:00.000Z');
+                            
+                            if (needsMigration) {
+                                // Recalculate using local midnight
+                                const localDate = new Date(word.date);
+                                localDate.setHours(0, 0, 0, 0);
+                                const correctUpdatedAt = localDate.toISOString();
+                                
+                                console.log(`🔧 Migrating "${word.english || word.chinese}": ${word.updatedAt} → ${correctUpdatedAt}`);
+                                word.updatedAt = correctUpdatedAt;
+                                migrationCount++;
+                            }
+                        }
+                        
+                        // Backward compatibility: add updatedAt if missing
+                        if (!word.updatedAt) {
+                            // Use createdAt if available (most accurate)
+                            if (word.createdAt) {
+                                word.updatedAt = word.createdAt;
+                            } else if (word.date) {
+                                // For date-only format, set to midnight of that day in LOCAL time
+                                // Create a date object at midnight local time, then convert to ISO
+                                const localDate = new Date(word.date);
+                                localDate.setHours(0, 0, 0, 0);
+                                word.updatedAt = localDate.toISOString();
+                            } else {
+                                // Fallback: use a very old timestamp to ensure any real modification will be newer
+                                word.updatedAt = '2000-01-01T00:00:00.000Z';
+                            }
+                        }
                     }
                 });
+                
+                if (migrationCount > 0) {
+                    console.log(`✅ Migrated ${migrationCount} words' updatedAt timestamps`);
+                    saveWords(); // Save the corrected timestamps
+                }
             }
         }
 
         // Save words to localStorage
+        // Update word's updatedAt timestamp
+        function updateWordTimestamp(word) {
+            if (word) {
+                word.updatedAt = new Date().toISOString();
+            }
+        }
+        
         function saveWords() {
             localStorage.setItem('dictationWords', JSON.stringify(words));
             updateStats();
@@ -8298,6 +9059,7 @@
             
             // Update custom translation
             word.customTranslation = newTranslation;
+            updateWordTimestamp(word);  // Update timestamp when modifying
             saveWords();
             renderWordList();
             showToast('✅ 翻譯已更新', 2000);
@@ -8352,6 +9114,7 @@
                     fromAPI: true
                 });
                 
+                updateWordTimestamp(word);  // Update timestamp when adding example
                 saveWords();
                 renderWordList();
                 
@@ -8368,6 +9131,7 @@
             if (!word || !word.customExamples) return;
             
             word.customExamples.splice(exampleIndex, 1);
+            updateWordTimestamp(word);  // Update timestamp when deleting example
             saveWords();
             renderWordList();
         }
@@ -8396,7 +9160,8 @@
                 english: englishWord,
                 chinese: chineseText,
                 date: wordDate,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()  // Add update timestamp
             };
             
             // If there's an English word, try to get translation
@@ -10038,7 +10803,7 @@
             overlay.classList.remove('active');
         }
         
-        // ==================== Quick Add Feature ====================
+        // ==================== Quick Add Feature === QUICKADD ====================
         
         // Open quick add modal
         function openQuickAddModal() {
@@ -10155,6 +10920,7 @@
                     
                     if (item.customTranslation && typeof item.customTranslation === 'string') {
                         word.customTranslation = item.customTranslation.trim();
+                        updateWordTimestamp(word);  // Update timestamp when modifying
                     }
                     
                     if (item.examples && Array.isArray(item.examples)) {
@@ -10802,7 +11568,7 @@
             }
         }
         
-        // ==================== Admin Mode ====================
+        // ==================== Admin Mode === ADMIN ====================
         
         let logoClickCount = 0;
         let logoClickTimer = null;
@@ -11464,7 +12230,7 @@
     </style>
     
     <script>
-        // ==================== PeerJS Sync with Fixed IDs ====================
+        // ==================== PeerJS Sync with Fixed IDs === SYNC ====================
         
         const SYNC_SENDER_ID = 'dictation-sync-sender-v1';
         const SYNC_RECEIVER_ID = 'dictation-sync-receiver-v1';
@@ -11519,11 +12285,15 @@
             document.getElementById('syncWaitingPanel').style.display = 'block';
             document.getElementById('waitingText').textContent = '正在創建發送通道...';
             
-            localPeer = new Peer(SYNC_SENDER_ID);
+            // Create peer with options for better connectivity
+            localPeer = new Peer(SYNC_SENDER_ID, {
+                debug: 2 // Enable debug logging
+            });
             
             localPeer.on('open', (id) => {
                 console.log('✅ Sender peer opened:', id);
                 document.getElementById('waitingText').textContent = '等待接收方連接...';
+                console.log('🟢 Ready to accept connections');
             });
             
             localPeer.on('connection', (conn) => {
@@ -11532,20 +12302,35 @@
                 
                 document.getElementById('syncWaitingPanel').style.display = 'none';
                 document.getElementById('syncProgressPanel').style.display = 'block';
-                updateProgress(10, '連接已建立，準備數據...');
+                updateProgress(10, '連接已建立，等待接收方就緒...');
+                
+                let receiverReady = false;
                 
                 conn.on('open', () => {
-                    console.log('✅ Connection ready, sending data...');
-                    sendSyncData(conn);
+                    console.log('✅ Connection ready');
+                    updateProgress(15, '連接已建立，等待接收方就緒...');
                 });
                 
                 conn.on('data', (data) => {
-                    handleSenderResponse(data);
+                    console.log('📥 Received from receiver:', data.type);
+                    
+                    if (data.type === 'receiver_ready') {
+                        receiverReady = true;
+                        console.log('✅ Receiver is ready, sending data...');
+                        updateProgress(30, '接收方已就緒，正在發送數據...');
+                        sendSyncData(conn);
+                    } else {
+                        handleSenderResponse(data);
+                    }
                 });
                 
                 conn.on('error', (err) => {
                     console.error('❌ Connection error:', err);
                     showSyncError('連接錯誤：' + err.message);
+                });
+                
+                conn.on('close', () => {
+                    console.log('🔌 Connection closed');
                 });
             });
             
@@ -11555,9 +12340,16 @@
                     console.warn('⚠️ ID already in use, cleaning up...');
                     const timestampedId = `${SYNC_SENDER_ID}-${Date.now()}`;
                     retryWithNewId(timestampedId, 'sender');
+                } else if (err.type === 'network') {
+                    showSyncError('網絡錯誤，請檢查網絡連接');
                 } else {
                     showSyncError('同步服務錯誤：' + err.message);
                 }
+            });
+            
+            localPeer.on('disconnected', () => {
+                console.warn('⚠️ Peer disconnected, attempting to reconnect...');
+                localPeer.reconnect();
             });
         }
         
@@ -11567,15 +12359,16 @@
             
             document.getElementById('syncMainPanel').style.display = 'none';
             document.getElementById('syncWaitingPanel').style.display = 'block';
-            document.getElementById('waitingText').textContent = '正在連接發送方...';
+            document.getElementById('waitingText').textContent = '正在初始化...';
             
             localPeer = new Peer(SYNC_RECEIVER_ID);
             
             localPeer.on('open', () => {
                 console.log('✅ Receiver peer opened');
-                setTimeout(() => {
-                    connectToSender();
-                }, 500);
+                document.getElementById('waitingText').textContent = '正在連接發送方...';
+                
+                // Try to connect with retry logic
+                attemptConnectionWithRetry();
             });
             
             localPeer.on('error', (err) => {
@@ -11583,33 +12376,94 @@
                 if (err.type === 'unavailable-id') {
                     const timestampedId = `${SYNC_RECEIVER_ID}-${Date.now()}`;
                     retryWithNewId(timestampedId, 'receiver');
+                } else if (err.type === 'network') {
+                    showSyncError('網絡錯誤，請檢查網絡連接');
                 } else {
                     showSyncError('同步服務錯誤：' + err.message);
                 }
             });
         }
         
-        // Connect to sender
-        function connectToSender() {
-            console.log('🔗 Connecting to sender...');
+        // Attempt connection with retry
+        function attemptConnectionWithRetry(maxRetries = 5, delay = 1000) {
+            let attempts = 0;
             
-            remoteConnection = localPeer.connect(SYNC_SENDER_ID);
+            function tryConnect() {
+                attempts++;
+                console.log(`🔗 Connection attempt ${attempts}/${maxRetries}...`);
+                
+                try {
+                    remoteConnection = localPeer.connect(SYNC_SENDER_ID, {
+                        reliable: true,
+                        serialization: 'json'
+                    });
+                    
+                    // Set a timeout to detect if connection doesn't open
+                    const connectionTimeout = setTimeout(() => {
+                        if (remoteConnection && remoteConnection.open !== true) {
+                            console.warn('⏱️ Connection timeout');
+                            if (attempts < maxRetries) {
+                                console.log(`⏳ Retrying in ${delay}ms... (${attempts}/${maxRetries})`);
+                                tryConnect();
+                            } else {
+                                showSyncError('連接超時，請確認發送方已準備好並重試');
+                            }
+                        }
+                    }, 10000); // 10 second timeout
+                    
+                    remoteConnection.on('open', () => {
+                        clearTimeout(connectionTimeout);
+                        console.log('✅ Connected to sender');
+                        document.getElementById('syncWaitingPanel').style.display = 'none';
+                        document.getElementById('syncProgressPanel').style.display = 'block';
+                        updateProgress(20, '已連接，等待數據...');
+                        
+                        // Send ready signal to sender
+                        remoteConnection.send({ type: 'receiver_ready' });
+                        console.log('📤 Sent receiver_ready signal');
+                    });
+                    
+                    remoteConnection.on('data', (data) => {
+                        console.log('📥 Received data from sender:', data?.type);
+                        console.log('📊 Data keys:', Object.keys(data || {}));
+                        
+                        if (!data || !data.type) {
+                            console.error('❌ Invalid data received:', data);
+                            return;
+                        }
+                        
+                        handleReceivedData(data);
+                    });
+                    
+                    remoteConnection.on('error', (err) => {
+                        clearTimeout(connectionTimeout);
+                        console.error('❌ Connection error:', err);
+                        
+                        if (attempts < maxRetries) {
+                            console.log(`⏳ Retrying in ${delay}ms... (${attempts}/${maxRetries})`);
+                            setTimeout(tryConnect, delay);
+                        } else {
+                            showSyncError('連接失敗，請確認發送方已準備好並重試');
+                        }
+                    });
+                    
+                    remoteConnection.on('close', () => {
+                        clearTimeout(connectionTimeout);
+                        console.log('🔌 Connection closed');
+                    });
+                    
+                } catch (err) {
+                    console.error('❌ Connection attempt failed:', err);
+                    
+                    if (attempts < maxRetries) {
+                        setTimeout(tryConnect, delay);
+                    } else {
+                        showSyncError('連接失敗，請確認發送方已準備好並重試');
+                    }
+                }
+            }
             
-            remoteConnection.on('open', () => {
-                console.log('✅ Connected to sender');
-                document.getElementById('syncWaitingPanel').style.display = 'none';
-                document.getElementById('syncProgressPanel').style.display = 'block';
-                updateProgress(20, '已連接，等待數據...');
-            });
-            
-            remoteConnection.on('data', (data) => {
-                handleReceivedData(data);
-            });
-            
-            remoteConnection.on('error', (err) => {
-                console.error('❌ Connection error:', err);
-                showSyncError('連接失敗：' + err.message);
-            });
+            tryConnect();
         }
         
         // Retry with new ID
@@ -11633,7 +12487,8 @@
                 } else {
                     localPeer = new Peer(newId);
                     localPeer.on('open', () => {
-                        connectToSender();
+                        document.getElementById('waitingText').textContent = '正在連接發送方...';
+                        attemptConnectionWithRetry();
                     });
                 }
             }, 1000);
@@ -11641,58 +12496,255 @@
         
         // Send sync data
         function sendSyncData(conn) {
+            console.log('📦 Starting to prepare sync data...');
             updateProgress(30, '正在打包數據...');
             
-            const syncPayload = {
-                type: 'sync_data',
-                version: '1.0',
-                timestamp: Date.now(),
-                data: {
-                    words: words,
+            try {
+                // Check if required variables exist
+                if (typeof words === 'undefined') {
+                    console.error('❌ words variable is undefined!');
+                    showSyncError('錯誤：單詞數據未加載');
+                    return;
+                }
+                
+                console.log('📊 Data summary:');
+                console.log('  - Words:', words.length);
+                console.log('  - Unlocked levels:', unlockedLevels?.length || 0);
+                console.log('  - Points:', userPoints || 0);
+                
+                // Analyze data size for each component
+                const wordsSize = JSON.stringify(words).length;
+                const unlockedSize = JSON.stringify(unlockedLevels || []).length;
+                const pointsSize = JSON.stringify(userPoints || 0).length;
+                const quizSize = JSON.stringify(JSON.parse(localStorage.getItem('quizAdventureProgress') || '{}')).length;
+                const gamePlaysSize = JSON.stringify(getAllGamePlays()).length;
+                const pointsHistorySize = JSON.stringify(JSON.parse(localStorage.getItem('pointsHistory') || '[]')).length;
+                const translationCacheSize = JSON.stringify(JSON.parse(localStorage.getItem('translationCache') || '{}')).length;
+                
+                console.log('\n📊 === DETAILED SIZE ANALYSIS ===');
+                console.log('  - Words:', (wordsSize / 1024).toFixed(2), 'KB');
+                console.log('  - Unlocked levels:', (unlockedSize / 1024).toFixed(2), 'KB');
+                console.log('  - User points:', (pointsSize / 1024).toFixed(2), 'KB');
+                console.log('  - Quiz progress:', (quizSize / 1024).toFixed(2), 'KB');
+                console.log('  - Game plays:', (gamePlaysSize / 1024).toFixed(2), 'KB');
+                console.log('  - Points history:', (pointsHistorySize / 1024).toFixed(2), 'KB');
+                console.log('  - Translation cache:', (translationCacheSize / 1024).toFixed(2), 'KB');
+                console.log('==============================\n');
+                
+                // Check first word structure if exists
+                if (words.length > 0) {
+                    console.log('📋 Sample word structure (first word):');
+                    console.log(JSON.stringify(words[0], null, 2));
+                }
+                
+                // Optimize words for sync - remove large fields that can be regenerated
+                const optimizedWords = words.map(word => {
+                    const optimized = {
+                        id: word.id,
+                        english: word.english,
+                        chinese: word.chinese,
+                        date: word.date
+                    };
+                    
+                    // Include SRS data (important for learning progress)
+                    if (word.srs) {
+                        optimized.srs = word.srs;
+                    }
+                    
+                    // Include custom translation
+                    if (word.customTranslation) {
+                        optimized.customTranslation = word.customTranslation;
+                    }
+                    
+                    // Include updatedAt timestamp (critical for sync comparison)
+                    if (word.updatedAt) {
+                        optimized.updatedAt = word.updatedAt;
+                    }
+                    
+                    // Note: examples are NOT synced (too large, can be re-added by user)
+                    
+                    return optimized;
+                });
+                
+                const optimizedWordsSize = JSON.stringify(optimizedWords).length;
+                console.log('\n📊 Optimized words size:', (optimizedWordsSize / 1024).toFixed(2), 'KB');
+                console.log('📊 Size reduction:', ((wordsSize - optimizedWordsSize) / 1024).toFixed(2), 'KB saved\n');
+                
+                // Prepare metadata (non-word data)
+                const metadata = {
                     unlockedLevels: unlockedLevels || [],
-                    lotteryChances: lotteryChances || 0,
-                    totalPoints: totalPoints || 0,
-                    dailyTasks: dailyTasks || {},
-                    streakDays: streakDays || 0,
-                    lastLoginDate: lastLoginDate || null,
+                    userPoints: userPoints || 0,
+                    dailyTaskState: dailyTaskState || {},
                     quizAdventureProgress: JSON.parse(localStorage.getItem('quizAdventureProgress') || '{}'),
                     gamePlays: getAllGamePlays(),
-                    pointsHistory: JSON.parse(localStorage.getItem('pointsHistory') || '[]'),
-                    translationCache: JSON.parse(localStorage.getItem('translationCache') || '{}')
+                    pointsHistory: JSON.parse(localStorage.getItem('pointsHistory') || '[]')
+                };
+                
+                const metadataSize = JSON.stringify(metadata).length;
+                console.log('📊 Metadata size:', (metadataSize / 1024).toFixed(2), 'KB');
+                
+                // Calculate batch size for words
+                const MAX_BATCH_SIZE = 12 * 1024; // 12 KB per batch (leave room for overhead)
+                const avgWordSize = optimizedWordsSize / optimizedWords.length;
+                const wordsPerBatch = Math.max(1, Math.floor((MAX_BATCH_SIZE - metadataSize) / avgWordSize));
+                const totalBatches = Math.ceil(optimizedWords.length / wordsPerBatch);
+                
+                console.log('\n📦 Batch calculation:');
+                console.log('  - Words per batch:', wordsPerBatch);
+                console.log('  - Total batches:', totalBatches);
+                console.log('  - Estimated batch size:', ((metadataSize + wordsPerBatch * avgWordSize) / 1024).toFixed(2), 'KB\n');
+                
+                // Start batched sync
+                startBatchedSync(conn, optimizedWords, metadata, wordsPerBatch, totalBatches);
+                
+            } catch (err) {
+                console.error('❌ Error preparing sync data:', err);
+                showSyncError('準備數據失敗：' + err.message);
+            }
+        }
+        
+        // Send data in batches
+        function startBatchedSync(conn, allWords, metadata, wordsPerBatch, totalBatches) {
+            let currentBatch = 0;
+            
+            function sendNextBatch() {
+                currentBatch++;
+                
+                const startIndex = (currentBatch - 1) * wordsPerBatch;
+                const endIndex = Math.min(startIndex + wordsPerBatch, allWords.length);
+                const batchWords = allWords.slice(startIndex, endIndex);
+                
+                const batchPayload = {
+                    type: 'sync_batch',
+                    batchNumber: currentBatch,
+                    totalBatches: totalBatches,
+                    isLastBatch: currentBatch === totalBatches,
+                    words: batchWords,
+                    // Only include metadata in the last batch
+                    metadata: currentBatch === totalBatches ? metadata : null
+                };
+                
+                const batchSize = JSON.stringify(batchPayload).length;
+                console.log(`📤 Sending batch ${currentBatch}/${totalBatches} (${batchWords.length} words, ${(batchSize / 1024).toFixed(2)} KB)`);
+                
+                updateProgress(30 + (currentBatch / totalBatches) * 50, `發送批次 ${currentBatch}/${totalBatches}...`);
+                
+                try {
+                    conn.send(batchPayload);
+                    
+                    if (currentBatch < totalBatches) {
+                        // Wait a bit before sending next batch to avoid overwhelming the connection
+                        setTimeout(sendNextBatch, 100);
+                    } else {
+                        console.log('✅ All batches sent successfully');
+                        updateProgress(80, '等待確認...');
+                    }
+                } catch (sendErr) {
+                    console.error('❌ Failed to send batch:', sendErr);
+                    showSyncError('發送批次失敗：' + sendErr.message);
                 }
-            };
+            }
             
-            console.log('📦 Sending sync data, words count:', syncPayload.data.words.length);
-            updateProgress(50, '正在發送數據...');
-            
-            conn.send(syncPayload);
-            updateProgress(80, '等待確認...');
+            // Start sending batches
+            sendNextBatch();
         }
         
         // Handle received data
         function handleReceivedData(data) {
-            console.log('📥 Received data:', data.type);
+            console.log('📥 handleReceivedData called');
+            console.log('📊 Data type:', data?.type);
+            console.log('📊 Data keys:', Object.keys(data || {}));
             
-            if (data.type === 'sync_data') {
-                updateProgress(90, '正在分析差異...');
+            // Handle batched sync data
+            if (data.type === 'sync_batch') {
+                console.log(`📦 Received batch ${data.batchNumber}/${data.totalBatches}`);
                 
-                try {
-                    // Calculate differences
-                    const diff = calculateSyncDifferences(data.data);
-                    
-                    // Store pending data and backup
-                    pendingSyncData = data.data;
-                    syncBackup = createDataBackup();
-                    
-                    // Show preview
-                    showSyncPreview(diff);
-                    
-                    // Send ack to sender
-                    remoteConnection.send({ type: 'preview_ready' });
-                } catch (err) {
-                    console.error('❌ Preview error:', err);
-                    showSyncError('預覽失敗：' + err.message);
+                // Initialize batch storage if not exists
+                if (!window.syncBatchStorage) {
+                    window.syncBatchStorage = {
+                        words: [],
+                        metadata: null,
+                        receivedBatches: new Set(),
+                        totalBatches: data.totalBatches
+                    };
                 }
+                
+                // Store batch words
+                if (data.words && Array.isArray(data.words)) {
+                    window.syncBatchStorage.words.push(...data.words);
+                    console.log(`   Added ${data.words.length} words, total: ${window.syncBatchStorage.words.length}`);
+                }
+                
+                // Store metadata from last batch
+                if (data.metadata) {
+                    window.syncBatchStorage.metadata = data.metadata;
+                    console.log('   Received metadata');
+                }
+                
+                // Mark batch as received
+                window.syncBatchStorage.receivedBatches.add(data.batchNumber);
+                
+                updateProgress(30 + (window.syncBatchStorage.receivedBatches.size / data.totalBatches) * 60, 
+                    `接收批次 ${window.syncBatchStorage.receivedBatches.size}/${data.totalBatches}...`);
+                
+                // Check if all batches received
+                if (window.syncBatchStorage.receivedBatches.size === data.totalBatches) {
+                    console.log('✅ All batches received, processing...');
+                    
+                    // Combine all data
+                    const combinedData = {
+                        words: window.syncBatchStorage.words,
+                        ...window.syncBatchStorage.metadata
+                    };
+                    
+                    // Clear batch storage
+                    delete window.syncBatchStorage;
+                    
+                    // Process as normal sync_data
+                    processSyncData(combinedData);
+                } else {
+                    console.log(`   Waiting for remaining batches...`);
+                }
+                return;
+            }
+            
+            // Handle old-style sync_data (for backward compatibility)
+            if (data.type === 'sync_data') {
+                processSyncData(data.data);
+            } else {
+                console.warn('⚠️ Unknown data type:', data.type);
+            }
+        }
+        
+        // Process sync data (extracted from handleReceivedData)
+        function processSyncData(syncData) {
+            console.log('🔄 Processing sync_data...');
+            console.log('📊 Sync data keys:', Object.keys(syncData || {}));
+            console.log('📊 Words count:', syncData?.words?.length || 0);
+            
+            updateProgress(90, '正在分析差異...');
+            
+            try {
+                // Calculate differences
+                const diff = calculateSyncDifferences(syncData);
+                console.log('✅ Differences calculated:', diff);
+                
+                // Store pending data and backup
+                pendingSyncData = syncData;
+                syncBackup = createDataBackup();
+                console.log('💾 Backup created');
+                
+                // Show preview
+                showSyncPreview(diff);
+                console.log('👁️ Preview shown');
+                
+                // Send ack to sender
+                remoteConnection.send({ type: 'preview_ready' });
+                console.log('📤 Sent preview_ready signal');
+            } catch (err) {
+                console.error('❌ Preview error:', err);
+                console.error('❌ Error stack:', err.stack);
+                showSyncError('預覽失敗：' + err.message);
             }
         }
         
@@ -11717,17 +12769,57 @@
             
             // Compare words
             if (remoteData.words && Array.isArray(remoteData.words)) {
-                const localWordsMap = new Map(words.map(w => [w.english.toLowerCase(), w]));
+                // Use combination of english+chinese as key for matching
+                // This handles cases where IDs differ but content is the same
+                const localWordsMap = new Map();
+                words.forEach(w => {
+                    const key = `${w.english || ''}|||${w.chinese || ''}`;
+                    localWordsMap.set(key, w);
+                });
                 
-                remoteData.words.forEach(remoteWord => {
-                    const key = remoteWord.english.toLowerCase();
+                remoteData.words.forEach((remoteWord, index) => {
+                    const key = `${remoteWord.english || ''}|||${remoteWord.chinese || ''}`;
                     const localWord = localWordsMap.get(key);
+                    
+                    // Debug: check first 5 and any that don't match
+                    if (index < 5 || !localWord) {
+                        const displayName = remoteWord.english || remoteWord.chinese || '(empty)';
+                        console.log(`   [${index}] Checking "${displayName}": remoteId=${remoteWord.id}, foundLocal=${!!localWord}`);
+                        if (localWord) {
+                            console.log(`      Local ID: ${localWord.id}, English: "${localWord.english}", Chinese: "${localWord.chinese}"`);
+                        } else {
+                            console.log(`      ❌ No matching local word found for ID ${remoteWord.id}`);
+                            // Check if there's a word with same english/chinese but different ID
+                            const sameEnglish = words.find(w => w.english === remoteWord.english && remoteWord.english);
+                            const sameChinese = words.find(w => w.chinese === remoteWord.chinese && remoteWord.chinese);
+                            if (sameEnglish) {
+                                console.log(`      ⚠️ Found same English "${remoteWord.english}" but different ID: ${sameEnglish.id}`);
+                            }
+                            if (sameChinese) {
+                                console.log(`      ⚠️ Found same Chinese "${remoteWord.chinese}" but different ID: ${sameChinese.id}`);
+                            }
+                        }
+                    }
                     
                     if (!localWord) {
                         diff.newWords.push(remoteWord);
+                        if (index < 10) {
+                            console.log(`   ➕ New word: ${remoteWord.english || remoteWord.chinese} (ID: ${remoteWord.id})`);
+                        }
                     } else {
                         const remoteTime = getLatestTimestamp(remoteWord);
                         const localTime = getLatestTimestamp(localWord);
+                        
+                        // Debug log for first few words
+                        if (diff.newWords.length + diff.updatedWords.length + diff.skippedWords.length < 5) {
+                            const displayName = remoteWord.english || remoteWord.chinese || '(empty)';
+                            console.log(`   🔍 Comparing "${displayName}": remote=${remoteTime}, local=${localTime}`);
+                            
+                            // Also check customTranslation difference
+                            if (remoteWord.customTranslation !== localWord.customTranslation) {
+                                console.log(`   📝 customTranslation differs! Remote: "${remoteWord.customTranslation || '(none)'}", Local: "${localWord.customTranslation || '(none)'}"`);
+                            }
+                        }
                         
                         if (remoteTime > localTime) {
                             diff.updatedWords.push({
@@ -11735,24 +12827,61 @@
                                 oldDate: localTime,
                                 newDate: remoteTime
                             });
+                            if (diff.updatedWords.length <= 5) {
+                                const displayName = remoteWord.english || remoteWord.chinese || '(EMPTY)';
+                                console.log(`   🔄 Updated: "${displayName}" (${localTime} → ${remoteTime})`);
+                            }
+                        } else if (remoteTime === localTime && remoteWord.customTranslation !== localWord.customTranslation) {
+                            // Same timestamp but customTranslation differs
+                            diff.updatedWords.push({
+                                word: remoteWord,
+                                oldDate: localTime,
+                                newDate: remoteTime,
+                                reason: 'customTranslation changed'
+                            });
+                            if (diff.updatedWords.length <= 5) {
+                                const displayName = remoteWord.english || remoteWord.chinese || '(EMPTY)';
+                                console.log(`   📝 Translation update: "${displayName}"`);
+                            }
                         } else {
-                            diff.skippedWords.push(remoteWord);
+                            // Check if timestamps are on the same day but translation differs
+                            const remoteDate = remoteTime.split('T')[0];
+                            const localDate = localTime.split('T')[0];
+                            
+                            if (remoteDate === localDate && remoteWord.customTranslation !== localWord.customTranslation) {
+                                // Same day but different translation - treat as update
+                                diff.updatedWords.push({
+                                    word: remoteWord,
+                                    oldDate: localTime,
+                                    newDate: remoteTime,
+                                    reason: 'customTranslation changed (same day)'
+                                });
+                                if (diff.updatedWords.length <= 5) {
+                                    const displayName = remoteWord.english || remoteWord.chinese || '(EMPTY)';
+                                    console.log(`   📝 Translation update (same day): "${displayName}"`);
+                                }
+                            } else {
+                                diff.skippedWords.push(remoteWord);
+                                if (diff.skippedWords.length <= 3) {
+                                    const displayName = remoteWord.english || remoteWord.chinese || '(EMPTY)';
+                                    console.log(`   ⏭️ Skipped: "${displayName}" (local is newer or same)`);
+                                }
+                            }
                         }
                     }
                 });
             }
             
             // Compare numeric values
-            if (remoteData.totalPoints !== undefined) {
-                diff.pointsDiff = Math.max(0, (remoteData.totalPoints || 0) - (totalPoints || 0));
+            if (remoteData.userPoints !== undefined) {
+                diff.pointsDiff = Math.max(0, (remoteData.userPoints || 0) - (userPoints || 0));
             }
             
-            if (remoteData.lotteryChances !== undefined) {
-                diff.lotteryDiff = Math.max(0, (remoteData.lotteryChances || 0) - (lotteryChances || 0));
-            }
-            
-            if (remoteData.streakDays !== undefined) {
-                diff.streakDiff = Math.max(0, (remoteData.streakDays || 0) - (streakDays || 0));
+            // Compare streak from dailyTaskState
+            if (remoteData.dailyTaskState) {
+                const remoteStreak = remoteData.dailyTaskState.streak || 0;
+                const localStreak = dailyTaskState?.streak || 0;
+                diff.streakDiff = Math.max(0, remoteStreak - localStreak);
             }
             
             // Compare unlocked levels
@@ -11819,10 +12948,23 @@
             
             html += `</div></div>`;
             
-            // Summary
-            const totalChanges = diff.newWords.length + diff.updatedWords.length + diff.pointsDiff + diff.lotteryDiff + diff.streakDiff + diff.newLevels.length;
+            // Summary - only count actual items, not point values
+            const totalItems = diff.newWords.length + diff.updatedWords.length + diff.newLevels.length;
+            const hasPointsChange = diff.pointsDiff > 0;
+            const hasLotteryChange = diff.lotteryDiff > 0;
+            const hasStreakChange = diff.streakDiff > 0;
+            
+            let summaryText = `${totalItems} 項變化`;
+            if (hasPointsChange || hasLotteryChange || hasStreakChange) {
+                const changes = [];
+                if (hasPointsChange) changes.push(`積分+${diff.pointsDiff}`);
+                if (hasLotteryChange) changes.push(`抽獎+${diff.lotteryDiff}`);
+                if (hasStreakChange) changes.push(`連續+${diff.streakDiff}`);
+                summaryText += ` + ${changes.join(', ')}`;
+            }
+            
             html += '<div style="background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%); padding: 12px; border-radius: 8px; text-align: center;">';
-            html += `<div style="font-size: 1.1em; color: #667eea; font-weight: bold;">總計: ${totalChanges} 項變化</div>`;
+            html += `<div style="font-size: 1.1em; color: #667eea; font-weight: bold;">總計: ${summaryText}</div>`;
             html += '<div style="font-size: 0.85em; color: #666; margin-top: 5px;">確認後將合併到本地數據</div>';
             html += '</div>';
             
@@ -11843,14 +12985,18 @@
             updateProgress(95, '正在合併數據...');
             
             try {
+                // Calculate differences BEFORE merging (to show correct stats)
+                const diff = calculateSyncDifferences(pendingSyncData);
+                const newWordsCount = diff.newWords.length;
+                const updatedWordsCount = diff.updatedWords.length;
+                
                 mergeSyncData(pendingSyncData);
                 updateProgress(100, '同步完成！');
                 
                 remoteConnection.send({ type: 'sync_complete' });
                 
                 setTimeout(() => {
-                    const diff = calculateSyncDifferences(pendingSyncData);
-                    const message = `成功同步 ${diff.newWords.length} 個新單詞，更新 ${diff.updatedWords.length} 個單詞`;
+                    const message = `成功同步 ${newWordsCount} 個新單詞，更新 ${updatedWordsCount} 個單詞`;
                     showSyncSuccess(message);
                 }, 500);
             } catch (err) {
@@ -11877,17 +13023,22 @@
             
             // Merge words (ADD ONLY, never delete)
             if (remoteData.words && Array.isArray(remoteData.words)) {
-                const localWordsMap = new Map(words.map(w => [w.english.toLowerCase(), w]));
+                // Use combination of english+chinese as key for matching
+                const localWordsMap = new Map();
+                words.forEach(w => {
+                    const key = `${w.english || ''}|||${w.chinese || ''}`;
+                    localWordsMap.set(key, w);
+                });
                 
                 remoteData.words.forEach(remoteWord => {
-                    const key = remoteWord.english.toLowerCase();
+                    const key = `${remoteWord.english || ''}|||${remoteWord.chinese || ''}`;
                     const localWord = localWordsMap.get(key);
                     
                     if (!localWord) {
                         // New word - add it
                         words.push(remoteWord);
                         wordsAdded++;
-                        console.log(`➕ Added new word: ${remoteWord.english}`);
+                        console.log(`➕ Added new word: ${remoteWord.english || remoteWord.chinese}`);
                     } else {
                         // Existing word - compare and update if remote is newer
                         const remoteTime = getLatestTimestamp(remoteWord);
@@ -11903,13 +13054,52 @@
                                 }
                             });
                             
+                            // Debug: log customTranslation before and after
+                            if (remoteWord.customTranslation || localWord.customTranslation) {
+                                console.log(`   📝 customTranslation - Remote: "${remoteWord.customTranslation || '(none)'}", Local: "${localWord.customTranslation || '(none)'}"`);
+                            }
+                            
                             Object.assign(localWord, remoteWord);
                             wordsUpdated++;
-                            console.log(`🔄 Updated word: ${remoteWord.english}`);
+                            console.log(`🔄 Updated word: ${remoteWord.english || remoteWord.chinese}`);
+                            
+                            // Verify customTranslation was merged
+                            if (remoteWord.customTranslation) {
+                                console.log(`   ✅ customTranslation merged: "${localWord.customTranslation}"`);
+                            }
+                        } else if (remoteTime === localTime) {
+                            // Same timestamp - check if customTranslation differs
+                            if (remoteWord.customTranslation !== localWord.customTranslation) {
+                                console.log(`   📝 customTranslation changed for "${remoteWord.english || remoteWord.chinese}" despite same timestamp`);
+                                console.log(`      Remote: "${remoteWord.customTranslation || '(none)'}", Local: "${localWord.customTranslation || '(none)'}"`);
+                                
+                                // Update only the customTranslation field
+                                localWord.customTranslation = remoteWord.customTranslation;
+                                wordsUpdated++;
+                                console.log(`   ✅ customTranslation synced`);
+                            } else {
+                                // Local is newer or same, skip
+                                wordsSkipped++;
+                                console.log(`⏭️ Skipped word (local is newer): ${remoteWord.english || remoteWord.chinese}`);
+                            }
                         } else {
-                            // Local is newer or same, skip
-                            wordsSkipped++;
-                            console.log(`⏭️ Skipped word (local is newer): ${remoteWord.english}`);
+                            // Check if timestamps are on the same day but translation differs
+                            const remoteDate = remoteTime.split('T')[0];
+                            const localDate = localTime.split('T')[0];
+                            
+                            if (remoteDate === localDate && remoteWord.customTranslation !== localWord.customTranslation) {
+                                // Same day but different translation - update it
+                                console.log(`   📝 customTranslation changed for "${remoteWord.english || remoteWord.chinese}" (same day)`);
+                                console.log(`      Remote: "${remoteWord.customTranslation || '(none)'}", Local: "${localWord.customTranslation || '(none)'}"`);
+                                
+                                localWord.customTranslation = remoteWord.customTranslation;
+                                wordsUpdated++;
+                                console.log(`   ✅ customTranslation synced (same day)`);
+                            } else {
+                                // Local is newer, skip
+                                wordsSkipped++;
+                                console.log(`⏭️ Skipped word (local is newer): ${remoteWord.english || remoteWord.chinese}`);
+                            }
                         }
                     }
                 });
@@ -11988,9 +13178,17 @@
             return { added: wordsAdded, updated: wordsUpdated, skipped: wordsSkipped };
         }
         
-        // Helper: Get latest timestamp from word
+        // Helper: Get latest timestamp from word (returns comparable string)
         function getLatestTimestamp(word) {
-            return word.srs?.lastReviewDate || word.date || word.created_at || '';
+            // Priority: updatedAt > srs.lastReviewDate > date > created_at
+            let timestamp = word.updatedAt || word.srs?.lastReviewDate || word.date || word.created_at || '';
+            
+            // If it's a date-only format (YYYY-MM-DD), convert to full ISO timestamp for proper comparison
+            if (timestamp && !timestamp.includes('T')) {
+                timestamp = new Date(timestamp).toISOString();
+            }
+            
+            return timestamp;
         }
         
         // Helper: Deep merge two objects
@@ -12032,6 +13230,44 @@
             });
             
             return Array.from(map.values());
+        }
+        
+        // Helper: Create backup of current data
+        function createDataBackup() {
+            return {
+                timestamp: Date.now(),
+                words: JSON.parse(JSON.stringify(words)),
+                unlockedLevels: JSON.parse(JSON.stringify(unlockedLevels || [])),
+                userPoints: userPoints || 0,
+                dailyTaskState: JSON.parse(JSON.stringify(dailyTaskState || {})),
+                quizAdventureProgress: JSON.parse(localStorage.getItem('quizAdventureProgress') || '{}'),
+                pointsHistory: JSON.parse(localStorage.getItem('pointsHistory') || '[]')
+            };
+        }
+        
+        // Helper: Restore from backup
+        function restoreFromBackup(backup) {
+            if (!backup) return;
+            
+            console.warn('⚠️ Restoring from backup...');
+            
+            words = backup.words;
+            saveWords();
+            
+            unlockedLevels = backup.unlockedLevels;
+            localStorage.setItem('unlockedLevels', JSON.stringify(unlockedLevels));
+            
+            userPoints = backup.userPoints;
+            localStorage.setItem('userPoints', userPoints.toString());
+            
+            dailyTaskState = backup.dailyTaskState;
+            localStorage.setItem('dailyTaskState', JSON.stringify(dailyTaskState));
+            
+            localStorage.setItem('quizAdventureProgress', JSON.stringify(backup.quizAdventureProgress));
+            localStorage.setItem('pointsHistory', JSON.stringify(backup.pointsHistory));
+            
+            refreshAllUI();
+            showToast('⚠️ 已恢复同步前的数据', 3000);
         }
         
         // Get all game plays
@@ -12087,6 +13323,15 @@
                 closeSyncModal();
             }
         });
+        
+        // ============================================================================
+        // END OF APPLICATION CODE
+        // ============================================================================
+        // Total lines: ~12,707
+        // Last updated: 2026-05-02
+        // Architecture: Single-file modular structure
+        // For questions or modifications, refer to the module navigation guide at top
+        // ============================================================================
     </script>
 </body>
 </html>
