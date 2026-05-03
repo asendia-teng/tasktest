@@ -2003,11 +2003,11 @@
                     <div id="sessionTimerBadge" style="position: fixed; top: 80px; right: 20px; background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); padding: 10px 15px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; display: none; transition: all 0.3s ease; cursor: pointer; border: 2px solid #4caf50;"
                          onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 6px 16px rgba(0,0,0,0.2)'"
                          onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'"
-                         onclick="showToast('⏱️ 遊戲時間限制：每小時自動重置\n保護視力，適度遊戲！', 3000)">
+                         onclick="showToast('⏱️ 遊戲時間限制：每30分鐘自動重置\n保護視力，適度遊戲！', 3000)">
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <span style="font-size: 1.2em;">⏱️</span>
                             <div id="sessionTimerBadgeText" style="font-size: 0.95em; font-weight: bold; color: #2e7d32; font-family: monospace; white-space: nowrap;">
-                                60:00
+                                30:00
                             </div>
                         </div>
                     </div>
@@ -5539,8 +5539,8 @@
         // ==================== Daily Game Play Limit ====================
         
         const MAX_DAILY_PLAYS = 5; // Maximum plays per day per game
-        const MAX_SESSION_TIME = 60 * 60 * 1000; // 1 hour in milliseconds (for kids' eye protection)
-        // Session time is tracked in localStorage and resets after 1 hour
+        const MAX_SESSION_TIME = 30 * 60 * 1000; // 30 minutes in milliseconds (for kids' eye protection)
+        // Session time is tracked in localStorage and resets after 30 minutes
         // Timer persists across page refreshes
         // Applies to ALL games: Memory Match, Quiz Adventure, etc.
         
@@ -5590,7 +5590,7 @@
                 const startTime = parseInt(stored);
                 const now = Date.now();
                 
-                // Check if session has expired (more than 1 hour ago)
+                // Check if session has expired (more than 30 minutes ago)
                 if (now - startTime > MAX_SESSION_TIME) {
                     // Session expired, reset
                     localStorage.removeItem('gameSessionStart');

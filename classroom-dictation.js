@@ -435,21 +435,30 @@ function deleteDictationSession(index) {
 // Start classroom dictation mode
 function startClassroomDictation(index) {
     const session = classroomDictations[index];
-    let currentIndex = 0;
-    let timer = null;
     
     const container = document.getElementById('classroomDictationContainer');
     
-    // Show preparation screen (similar to review dictation)
+    // Show preparation screen with interval selection
     container.innerHTML = `
         <div style="text-align: center; padding: 60px 20px;">
             <div style="font-size: 4em; margin-bottom: 20px;">📝</div>
             <h2 style="color: #4facfe; margin-bottom: 15px;">準備開始聽寫</h2>
             <p style="color: #666; margin-bottom: 10px; font-size: 1.1em;">共 ${session.items.length} 個項目</p>
-            <p style="color: #999; margin-bottom: 30px; font-size: 0.9em;">
-                ${session.type === 'english' ? '英文：播放中文翻譯，10秒自動切換' : '中文：播放粵語，10秒自動切換'}
-            </p>
-            <button onclick="beginClassroomDictation(${index})" style="padding: 15px 40px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 1.2em; font-weight: bold; box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);"
+            
+            <!-- Interval Selection -->
+            <div style="margin: 30px 0; padding: 20px; background: #f9f9f9; border-radius: 10px; max-width: 400px; margin-left: auto; margin-right: auto;">
+                <p style="font-size: 1.1em; color: #666; margin-bottom: 15px;">每個單詞間隔時間</p>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <select id="intervalSelect" style="padding: 10px 20px; font-size: 1.2em; border: 2px solid #4facfe; border-radius: 8px; outline: none; cursor: pointer;">
+                        <option value="10">10 秒</option>
+                        <option value="20">20 秒</option>
+                        <option value="30">30 秒</option>
+                        <option value="40">40 秒</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button onclick="beginClassroomDictationWithInterval(${index})" style="padding: 15px 40px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 1.2em; font-weight: bold; box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);"
                     onmouseover="this.style.transform='scale(1.05)'"
                     onmouseout="this.style.transform='scale(1)'">
                 ▶️ 開始播放
@@ -461,12 +470,25 @@ function startClassroomDictation(index) {
     `;
 }
 
+// Begin classroom dictation playback with selected interval
+function beginClassroomDictationWithInterval(index) {
+    const intervalSeconds = parseInt(document.getElementById('intervalSelect').value);
+    beginClassroomDictation(index, intervalSeconds);
+}
+
 // Begin classroom dictation playback (called after user clicks start button)
-function beginClassroomDictation(index) {
+function beginClassroomDictation(index, intervalSeconds = 10) {
     const session = classroomDictations[index];
-    let currentIndex = 0;
-    let timer = null;
-    let isPlaying = false;  // Flag to prevent duplicate playback
+    
+    // Initialize global control
+    dictationControl = {
+        isPaused: false,
+        countdownTimer: null,
+        nextItemTimer: null,
+        currentIndex: 0,
+        session: session,
+        intervalSeconds: intervalSeconds
+    };
     
     const container = document.getElementById('classroomDictationContainer');
     
@@ -478,47 +500,61 @@ function beginClassroomDictation(index) {
     introUtterance.onend = () => {
         // After intro finishes, wait a bit then show first item
         setTimeout(() => {
-            showNextItem();
+            showNextDictationItem();
         }, 500);
     };
     
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(introUtterance);
+}
+
+// Show next dictation item (global function)
+function showNextDictationItem() {
+    const { currentIndex, session, intervalSeconds } = dictationControl;
+    const container = document.getElementById('classroomDictationContainer');
+    let isPlaying = false;  // Local flag to prevent duplicate playback
     
-    // showNextItem() will be called in introUtterance.onend callback
-    // Don't call it here to avoid duplicate playback
-    function showNextItem() {
-        if (currentIndex >= session.items.length) {
-            // Finished
-            clearInterval(timer);
-            container.innerHTML = `
-                <div style="text-align: center; padding: 60px 20px;">
-                    <div style="font-size: 4em; margin-bottom: 20px;">🎉</div>
-                    <h2 style="color: #51cf66; margin-bottom: 15px;">聽寫完成！</h2>
-                    <p style="color: #666; margin-bottom: 30px;">已完成所有 ${session.items.length} 個項目的聽寫</p>
-                    <button onclick="showClassroomDictationList()" style="padding: 12px 30px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 1.1em; font-weight: bold;">
-                        ↩️ 返回列表
-                    </button>
-                </div>
-            `;
-            return;
-        }
-        
-        const item = session.items[currentIndex];
-        
-        // For English dictation, hide the English text by default
-        const showEnglishText = session.type === 'english' ? 'none' : 'block';
-        
+    if (currentIndex >= session.items.length) {
+        // Finished
         container.innerHTML = `
             <div style="text-align: center; padding: 60px 20px;">
-                <div style="font-size: 1.2em; color: #999; margin-bottom: 20px;">
-                    ${currentIndex + 1} / ${session.items.length}
-                </div>
-                <div style="font-size: 3em; margin-bottom: 30px;">
-                    ${session.type === 'english' ? '📚' : '📖'}
-                </div>
-                <div style="background: white; border-radius: 15px; padding: 40px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 30px;">
-                    <!-- Chinese translation (clickable) -->
+                <div style="font-size: 4em; margin-bottom: 20px;">🎉</div>
+                <h2 style="color: #51cf66; margin-bottom: 15px;">聽寫完成！</h2>
+                <p style="color: #666; margin-bottom: 30px;">已完成所有 ${session.items.length} 個項目的聽寫</p>
+                <button onclick="showClassroomDictationList()" style="padding: 12px 30px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 1.1em; font-weight: bold;">
+                    ↩️ 返回列表
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    const item = session.items[currentIndex];
+    
+    // For English dictation, hide the English text by default
+    const showEnglishText = session.type === 'english' ? 'none' : 'block';
+    
+    container.innerHTML = `
+        <div style="text-align: center; padding: 60px 20px;">
+            <div style="font-size: 1.2em; color: #999; margin-bottom: 20px;">
+                ${currentIndex + 1} / ${session.items.length}
+            </div>
+            <div style="font-size: 3em; margin-bottom: 30px;">
+                ${session.type === 'english' ? '📚' : '📖'}
+            </div>
+            <div style="background: white; border-radius: 15px; padding: 40px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 30px;">
+                <!-- Chinese text (hidden by default for Chinese dictation) -->
+                ${session.type === 'chinese' ? `
+                    <div id="chineseTextDisplay" style="font-size: 1.5em; color: #333; margin-bottom: 20px; cursor: pointer; transition: all 0.2s;" 
+                         onclick="playTranslationAudio('${escapeJs(item.text)}')"
+                         title="點擊播放發音"
+                         onmouseover="this.style.color='#667eea'; this.style.transform='scale(1.05)'"
+                         onmouseout="this.style.color='#333'; this.style.transform='scale(1)'">
+                        ***
+                        <span style="font-size: 0.7em; color: #999; margin-left: 10px;">🔊</span>
+                    </div>
+                ` : `
+                    <!-- For English dictation: show Chinese translation -->
                     <div style="font-size: 1.5em; color: #333; margin-bottom: 20px; cursor: pointer; transition: all 0.2s;" 
                          onclick="playTranslationAudio('${escapeJs(item.translation || item.text)}')"
                          title="點擊播放發音"
@@ -527,76 +563,85 @@ function beginClassroomDictation(index) {
                         ${item.translation || item.text}
                         <span style="font-size: 0.7em; color: #999; margin-left: 10px;">🔊</span>
                     </div>
-                    
-                    <!-- English text (hidden by default for English dictation) -->
+                `}
+                
+                <!-- English text (only for English dictation, hidden by default) -->
+                ${session.type === 'english' ? `
                     <div id="englishTextDisplay" style="font-size: 1.2em; color: #667eea; margin-top: 15px; font-style: italic; display: ${showEnglishText};">
                         ${item.text}
                     </div>
-                    
-                    <!-- Control buttons for English dictation -->
-                    ${session.type === 'english' ? `
-                        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
-                            <button onclick="playHintAudio('${escapeJs(item.text)}')" style="padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.95em;"
-                                    onmouseover="this.style.transform='scale(1.05)'"
-                                    onmouseout="this.style.transform='scale(1)'">
-                                🔊 播放提示
-                            </button>
-                            <button onclick="toggleEnglishText()" style="padding: 10px 20px; background: #f0f4ff; color: #667eea; border: 2px solid #667eea; border-radius: 8px; cursor: pointer; font-size: 0.95em;"
-                                    onmouseover="this.style.background='#667eea'; this.style.color='white'"
-                                    onmouseout="this.style.background='#f0f4ff'; this.style.color='#667eea'">
-                                👁️ 顯示提示
-                            </button>
-                        </div>
-                    ` : ''}
-                </div>
-                <div style="color: #999; font-size: 0.9em;">
-                    <div id="dictationCountdown" style="font-size: 2em; color: #f5576c; font-weight: bold; margin-top: 15px;">10</div>
-                </div>
-            </div>
-        `;
-        
-        // Auto-play Chinese translation, then start countdown after it finishes
-        setTimeout(() => {
-            // Prevent duplicate playback
-            if (isPlaying) {
-                console.log('⚠️ Already playing, skipping auto-play');
-                return;
-            }
-            
-            isPlaying = true;
-            console.log('🔊 Auto-playing audio for', session.type);
-            
-            // Create utterance for the text
-            const textToPlay = item.translation && item.translation !== item.text ? item.translation : item.text;
-            const utterance = new SpeechSynthesisUtterance(textToPlay);
-            utterance.lang = 'zh-HK';
-            utterance.rate = 0.8;
-            
-            // For both English and Chinese: start countdown AFTER the audio finishes
-            utterance.onend = () => {
-                console.log('✅ Audio finished, starting countdown');
-                isPlaying = false;  // Reset flag
+                ` : ''}
                 
-                // Start countdown for both English and Chinese
-                startEnglishCountdown(10, () => {
-                    // Countdown finished, move to next item
-                    currentIndex++;
-                    showNextItem();
-                });
-            };
+                <!-- Control buttons -->
+                <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap;">
+                    ${session.type === 'english' ? `
+                        <button onclick="playHintAudio('${escapeJs(item.text)}')" style="padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.95em;"
+                                onmouseover="this.style.transform='scale(1.05)'"
+                                onmouseout="this.style.transform='scale(1)'">
+                            🔊 播放提示
+                        </button>
+                        <button onclick="toggleEnglishText()" style="padding: 10px 20px; background: #f0f4ff; color: #667eea; border: 2px solid #667eea; border-radius: 8px; cursor: pointer; font-size: 0.95em;"
+                                onmouseover="this.style.background='#667eea'; this.style.color='white'"
+                                onmouseout="this.style.background='#f0f4ff'; this.style.color='#667eea'">
+                            👁️ 顯示提示
+                        </button>
+                    ` : ''}
+                    ${session.type === 'chinese' ? `
+                        <button onclick="toggleChineseText('${escapeJs(item.text)}')" style="padding: 10px 20px; background: #f0f4ff; color: #667eea; border: 2px solid #667eea; border-radius: 8px; cursor: pointer; font-size: 0.95em;"
+                                onmouseover="this.style.background='#667eea'; this.style.color='white'"
+                                onmouseout="this.style.background='#f0f4ff'; this.style.color='#667eea'">
+                            👁️ 顯示提示
+                        </button>
+                    ` : ''}
+                    <button id="pauseResumeBtn" onclick="togglePauseResume()" style="padding: 10px 25px; background: linear-gradient(135deg, #ffa502 0%, #ff6348 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.95em; font-weight: bold;"
+                            onmouseover="this.style.transform='scale(1.05)'"
+                            onmouseout="this.style.transform='scale(1)'">
+                        ⏸️ 暫停
+                    </button>
+                    <button onclick="exitDictation()" style="padding: 10px 25px; background: #f0f0f0; color: #666; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; font-size: 0.95em; font-weight: bold;"
+                            onmouseover="this.style.background='#e0e0e0'"
+                            onmouseout="this.style.background='#f0f0f0'">
+                        🚪 退出
+                    </button>
+                </div>
+                <div style="color: #999; font-size: 0.9em; margin-top: 15px;">
+                    <div id="dictationCountdown" style="font-size: 2em; color: #f5576c; font-weight: bold;">${intervalSeconds}</div>
+                </div>
+        </div>
+    `;
+    
+    // Auto-play Chinese translation, then start countdown after it finishes
+    setTimeout(() => {
+        // Prevent duplicate playback
+        if (isPlaying) {
+            console.log('⚠️ Already playing, skipping auto-play');
+            return;
+        }
+        
+        isPlaying = true;
+        console.log('🔊 Auto-playing audio for', session.type);
+        
+        // Create utterance for the text
+        const textToPlay = item.translation && item.translation !== item.text ? item.translation : item.text;
+        const utterance = new SpeechSynthesisUtterance(textToPlay);
+        utterance.lang = 'zh-HK';
+        utterance.rate = 0.8;
+        
+        // For both English and Chinese: start countdown AFTER the audio finishes
+        utterance.onend = () => {
+            console.log('✅ Audio finished, starting countdown');
+            isPlaying = false;  // Reset flag
             
-            window.speechSynthesis.speak(utterance);
-        }, 500);
-    }
-    
-    // Global function for next button
-    window.nextDictationItem = () => {
-        clearTimeout(timer);
-        currentIndex++;
-        showNextItem();
-    };
-    
-    // Removed: showNextItem() - already called in introUtterance.onend
+            // Start countdown for both English and Chinese
+            startEnglishCountdown(intervalSeconds, () => {
+                // Countdown finished, move to next item
+                dictationControl.currentIndex++;
+                showNextDictationItem();
+            });
+        };
+        
+        window.speechSynthesis.speak(utterance);
+    }, 500);
 }
 
 // Play dictation audio
@@ -701,9 +746,94 @@ function toggleEnglishText() {
     }
 }
 
-// Start countdown for English dictation (similar to review dictation)
-let currentCountdownTimer = null;
+// Toggle Chinese text visibility (for Chinese dictation)
+function toggleChineseText(originalText) {
+    const chineseTextEl = document.getElementById('chineseTextDisplay');
+    if (chineseTextEl) {
+        const currentText = chineseTextEl.childNodes[0].textContent.trim();
+        if (currentText === '***') {
+            // Show original text
+            chineseTextEl.childNodes[0].textContent = originalText + ' ';
+            showToast('✅ 已顯示中文', 1500);
+        } else {
+            // Hide with asterisks
+            chineseTextEl.childNodes[0].textContent = '*** ';
+            showToast('🙈 已隱藏中文', 1500);
+        }
+    }
+}
 
+// Global variables for dictation control
+let dictationControl = {
+    isPaused: false,
+    countdownTimer: null,
+    nextItemTimer: null,
+    currentIndex: 0,
+    session: null,
+    intervalSeconds: 10
+};
+
+// Toggle pause/resume
+function togglePauseResume() {
+    dictationControl.isPaused = !dictationControl.isPaused;
+    const btn = document.getElementById('pauseResumeBtn');
+    
+    if (dictationControl.isPaused) {
+        // Pause
+        if (btn) {
+            btn.innerHTML = '▶️ 繼續';
+            btn.style.background = 'linear-gradient(135deg, #2ed573 0%, #7bed9f 100%)';
+        }
+        // Clear timers
+        if (dictationControl.countdownTimer) {
+            clearInterval(dictationControl.countdownTimer);
+            dictationControl.countdownTimer = null;
+        }
+        // Cancel any ongoing speech
+        window.speechSynthesis.cancel();
+        showToast('⏸️ 已暫停', 1500);
+        console.log('⏸️ Dictation paused');
+    } else {
+        // Resume - restart countdown from the beginning
+        if (btn) {
+            btn.innerHTML = '⏸️ 暫停';
+            btn.style.background = 'linear-gradient(135deg, #ffa502 0%, #ff6348 100%)';
+        }
+        // Restart countdown for current item
+        const { intervalSeconds } = dictationControl;
+        startEnglishCountdown(intervalSeconds, () => {
+            // Countdown finished, move to next item
+            dictationControl.currentIndex++;
+            showNextDictationItem();
+        });
+        showToast('▶️ 已繼續', 1500);
+        console.log('▶️ Dictation resumed');
+    }
+}
+
+// Exit dictation mode
+function exitDictation() {
+    if (confirm('確定要退出默寫模式嗎？')) {
+        // Clear all timers
+        if (dictationControl.countdownTimer) {
+            clearInterval(dictationControl.countdownTimer);
+        }
+        if (dictationControl.nextItemTimer) {
+            clearTimeout(dictationControl.nextItemTimer);
+        }
+        // Cancel speech
+        window.speechSynthesis.cancel();
+        // Reset control
+        dictationControl.isPaused = false;
+        dictationControl.countdownTimer = null;
+        dictationControl.nextItemTimer = null;
+        // Return to list
+        showClassroomDictationList();
+        showToast('🚪 已退出默寫模式', 2000);
+    }
+}
+
+// Start countdown for dictation (supports pause/resume)
 function startEnglishCountdown(totalSeconds, onComplete) {
     let remaining = totalSeconds;
     const countdownEl = document.getElementById('dictationCountdown');
@@ -711,8 +841,8 @@ function startEnglishCountdown(totalSeconds, onComplete) {
     if (!countdownEl) return;
     
     // Clear any existing countdown
-    if (currentCountdownTimer) {
-        clearInterval(currentCountdownTimer);
+    if (dictationControl.countdownTimer) {
+        clearInterval(dictationControl.countdownTimer);
     }
     
     // Show initial value
@@ -725,7 +855,12 @@ function startEnglishCountdown(totalSeconds, onComplete) {
     console.log('⏱️ Starting countdown from', remaining, 'seconds');
     
     // Update every second
-    currentCountdownTimer = setInterval(() => {
+    dictationControl.countdownTimer = setInterval(() => {
+        // Check if paused
+        if (dictationControl.isPaused) {
+            return; // Don't update while paused
+        }
+        
         remaining--;
         console.log('⏱️ Countdown tick:', remaining);
         
@@ -757,8 +892,8 @@ function startEnglishCountdown(totalSeconds, onComplete) {
             console.log('✅ Countdown finished');
             
             // Clear interval
-            clearInterval(currentCountdownTimer);
-            currentCountdownTimer = null;
+            clearInterval(dictationControl.countdownTimer);
+            dictationControl.countdownTimer = null;
             
             setTimeout(() => {
                 if (countdownEl) countdownEl.textContent = '';
