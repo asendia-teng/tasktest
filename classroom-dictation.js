@@ -598,6 +598,11 @@ function showNextDictationItem() {
                             onmouseout="this.style.transform='scale(1)'">
                         ⏸️ 暫停
                     </button>
+                    <button onclick="skipToNextItem()" style="padding: 10px 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.95em; font-weight: bold;"
+                            onmouseover="this.style.transform='scale(1.05)'"
+                            onmouseout="this.style.transform='scale(1)'">
+                        ⏭️ 下一個
+                    </button>
                     <button onclick="exitDictation()" style="padding: 10px 25px; background: #f0f0f0; color: #666; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; font-size: 0.95em; font-weight: bold;"
                             onmouseover="this.style.background='#e0e0e0'"
                             onmouseout="this.style.background='#f0f0f0'">
@@ -770,7 +775,8 @@ let dictationControl = {
     nextItemTimer: null,
     currentIndex: 0,
     session: null,
-    intervalSeconds: 10
+    intervalSeconds: 10,
+    remainingTime: 0  // Track remaining time when paused
 };
 
 // Toggle pause/resume
@@ -779,7 +785,14 @@ function togglePauseResume() {
     const btn = document.getElementById('pauseResumeBtn');
     
     if (dictationControl.isPaused) {
-        // Pause
+        // Pause - save current remaining time
+        const countdownEl = document.getElementById('dictationCountdown');
+        if (countdownEl && countdownEl.textContent !== 'GO!') {
+            dictationControl.remainingTime = parseInt(countdownEl.textContent);
+        } else {
+            dictationControl.remainingTime = dictationControl.intervalSeconds;
+        }
+        
         if (btn) {
             btn.innerHTML = '▶️ 繼續';
             btn.style.background = 'linear-gradient(135deg, #2ed573 0%, #7bed9f 100%)';
@@ -792,22 +805,22 @@ function togglePauseResume() {
         // Cancel any ongoing speech
         window.speechSynthesis.cancel();
         showToast('⏸️ 已暫停', 1500);
-        console.log('⏸️ Dictation paused');
+        console.log('⏸️ Dictation paused, remaining time:', dictationControl.remainingTime);
     } else {
-        // Resume - restart countdown from the beginning
+        // Resume - continue from saved remaining time
         if (btn) {
             btn.innerHTML = '⏸️ 暫停';
             btn.style.background = 'linear-gradient(135deg, #ffa502 0%, #ff6348 100%)';
         }
-        // Restart countdown for current item
-        const { intervalSeconds } = dictationControl;
-        startEnglishCountdown(intervalSeconds, () => {
+        // Resume countdown from where it left off
+        const resumeTime = dictationControl.remainingTime > 0 ? dictationControl.remainingTime : dictationControl.intervalSeconds;
+        startEnglishCountdown(resumeTime, () => {
             // Countdown finished, move to next item
             dictationControl.currentIndex++;
             showNextDictationItem();
         });
         showToast('▶️ 已繼續', 1500);
-        console.log('▶️ Dictation resumed');
+        console.log('▶️ Dictation resumed from', resumeTime, 'seconds');
     }
 }
 
@@ -831,6 +844,22 @@ function exitDictation() {
         showClassroomDictationList();
         showToast('🚪 已退出默寫模式', 2000);
     }
+}
+
+// Skip to next item
+function skipToNextItem() {
+    // Clear current countdown
+    if (dictationControl.countdownTimer) {
+        clearInterval(dictationControl.countdownTimer);
+        dictationControl.countdownTimer = null;
+    }
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+    // Move to next item
+    dictationControl.currentIndex++;
+    dictationControl.remainingTime = 0;  // Reset remaining time
+    showNextDictationItem();
+    showToast('⏭️ 跳到下一個', 1500);
 }
 
 // Start countdown for dictation (supports pause/resume)
