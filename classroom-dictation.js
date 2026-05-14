@@ -82,15 +82,19 @@ function showClassroomDictationList() {
             const typeIcon = session.type === 'english' ? '📚' : '📖';
             const typeText = session.type === 'english' ? '英文' : '中文';
             
+            // Display title if available, otherwise show date + type
+            const displayTitle = session.title ? session.title : `${dateStr} - ${typeText}`;
+            
             html += `
                 <div style="background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-left: 5px solid #4facfe;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                         <div>
                             <div style="font-size: 1.1em; font-weight: bold; color: #333; margin-bottom: 5px;">
-                                ${typeIcon} ${dateStr} - ${typeText}
+                                ${typeIcon} ${displayTitle}
                             </div>
                             <div style="font-size: 0.85em; color: #999;">
                                 📋 ${session.items.length} 個詞組/句子
+                                ${!session.title ? `<span style="margin-left: 10px;">(${dateStr})</span>` : ''}
                             </div>
                         </div>
                         <div style="display: flex; gap: 10px;">
@@ -146,6 +150,15 @@ function showAddDictationForm(editIndex = null) {
             </div>
             
             <div style="background: white; border-radius: 15px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                <!-- Title Input -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; color: #333; font-weight: bold;">📝 默寫標題（選填）</label>
+                    <input type="text" id="dictationTitle" value="${session ? (session.title || '') : ''}" 
+                           placeholder="例如：第一單元詞彙、期中考試範圍..." 
+                           style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1em;">
+                    <p style="font-size: 0.85em; color: #999; margin-top: 5px;">💡 如不填寫，將自動顯示日期和類型</p>
+                </div>
+                
                 <!-- Date Input -->
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; margin-bottom: 8px; color: #333; font-weight: bold;">📅 默寫日期</label>
@@ -376,6 +389,7 @@ function translateItemText(button) {
 
 // Save dictation session
 function saveDictationSession(editIndex = null) {
+    const title = document.getElementById('dictationTitle').value.trim();
     const date = document.getElementById('dictationDate').value;
     const type = document.querySelector('input[name="dictationType"]:checked').value;
     
@@ -399,6 +413,7 @@ function saveDictationSession(editIndex = null) {
     
     const session = {
         id: editIndex !== null ? classroomDictations[editIndex].id : Date.now(),
+        title: title || null,  // Save title if provided, otherwise null
         date,
         type,
         items,
